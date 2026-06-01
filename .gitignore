@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*:Zone.Identifier
+
+# Personal / scratch files not meant for the public repo
+reddit-post-draft.md

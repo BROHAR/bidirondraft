@@ -1,0 +1,145 @@
+.draft-board {
+  height: calc(100vh - 120px);
+  padding: var(--space-3);
+}
+
+.draft-main {
+  display: grid;
+  grid-template-columns: 1fr 400px 380px 350px;
+  gap: var(--space-3);
+  height: 100%;
+  overflow-x: auto;
+}
+
+.draft-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.tabbed-column .tabbed-section {
+  height: 100%;
+}
+
+.right-column .card {
+  flex-shrink: 0;
+}
+
+.right-column .control-panel {
+  max-height: 400px;
+}
+
+@media (max-width: 1600px) {
+  .draft-main {
+    grid-template-columns: 1fr 380px 350px 320px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .draft-main {
+    grid-template-columns: 1fr 350px;
+    grid-template-rows: auto auto;
+  }
+
+  .tabbed-column {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: var(--space-3);
+  }
+
+  .right-column {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 1200px) {
+  .draft-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .left-column, .auction-column, .tabbed-column, .right-column {
+    grid-column: 1;
+    margin-top: 0;
+  }
+}
+
+/* =========================================================
+   Tabbed Section — chunky pixel tabs
+   ========================================================= */
+.tabbed-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tab-nav {
+  display: flex;
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 2px solid var(--gray-950);
+  flex-shrink: 0;
+}
+
+.tab-button {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--gray-800);
+  color: var(--fg2);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 10px var(--space-3);
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+  transition: none;
+}
+
+.tab-button:hover:not(.active) {
+  background: var(--gray-700);
+  color: var(--fg1);
+}
+
+.tab-button.active {
+  background: var(--red-600);
+  color: var(--white);
+  border-bottom-color: var(--red-600);
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-card);
+  border: 2px solid var(--gray-950);
+  border-top: 0;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content > .card {
+  margin-bottom: 0;
+  box-shadow: none;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .draft-board {
+    padding: var(--space-2);
+  }
+
+  .draft-main {
+    gap: var(--space-2);
+  }
+
+  .tab-button {
+    padding: 8px var(--space-2);
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,344 @@
+.control-panel {
+  max-height: 435px;
+  overflow-y: auto;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.panel-header h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+/* =========================================================
+   Draft status chip
+   ========================================================= */
+.draft-status {
+  padding: 6px 12px;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  background: var(--gray-900);
+  color: var(--fg1);
+  box-shadow: 2px 2px 0 var(--gray-950);
+}
+
+.draft-status.setup {
+  background: var(--sky-700);
+  color: var(--white);
+}
+
+.draft-status.nominating {
+  background: var(--gray-900);
+  color: var(--gold-500);
+}
+
+.draft-status.bidding {
+  background: var(--red-600);
+  color: var(--white);
+}
+
+.draft-status.paused {
+  background: var(--gray-700);
+  color: var(--gray-300);
+}
+
+.draft-status.complete {
+  background: var(--field-600);
+  color: var(--white);
+}
+
+/* =========================================================
+   Current info readout
+   ========================================================= */
+.current-info {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+}
+
+.current-info label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 6px;
+}
+
+.team-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg1);
+}
+
+.team-name.human-team {
+  color: var(--accent-positive);
+}
+
+/* =========================================================
+   Control button row
+   ========================================================= */
+.control-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.control-buttons .btn:last-child {
+  min-width: 80px;
+}
+
+/* =========================================================
+   Draft progress (DraftProgress component)
+   ========================================================= */
+.draft-progress {
+  border-top: 2px solid var(--gray-950);
+  padding-top: var(--space-3);
+}
+
+.draft-progress h5 {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.progress-stats-horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.progress-stats-horizontal .stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.progress-stats-horizontal .stat label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+.progress-stats-horizontal .stat .stat-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  color: var(--accent-money);
+  line-height: 1;
+}
+
+.progress-stats .stat {
+  text-align: center;
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 10px 6px;
+}
+
+.progress-stats .stat label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 6px;
+}
+
+.progress-stats .stat .stat-value {
+  display: block;
+  font-family: var(--font-numeric);
+  font-size: var(--fs-lg);
+  color: var(--accent-money);
+  line-height: 1;
+}
+
+.progress-bar {
+  height: 12px;
+  background: var(--gray-900);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--field-400);
+  transition: width 90ms steps(4, end);
+}
+
+.draft-complete {
+  background: var(--field-700);
+  color: var(--white);
+  padding: var(--space-4);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  text-align: center;
+  box-shadow: 4px 4px 0 var(--gray-950);
+}
+
+.draft-complete h4 {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+}
+
+.draft-complete p {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+}
+
+/* =========================================================
+   Auto-Pilot Control
+   ========================================================= */
+.autopilot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.autopilot-header h4 {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.autopilot-status {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--gray-950);
+}
+
+.autopilot-status.active {
+  background: var(--red-600);
+  color: var(--white);
+}
+
+.autopilot-status.inactive {
+  background: var(--gray-700);
+  color: var(--gray-300);
+}
+
+.autopilot-controls {
+  margin-bottom: var(--space-3);
+}
+
+.autopilot-status-info {
+  border-top: 2px solid var(--gray-950);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.next-action label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 4px;
+}
+
+.action-description {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 8px 10px;
+  border-left: 4px solid var(--gray-700);
+}
+
+.action-description.bid {
+  border-left-color: var(--red-500);
+  color: var(--accent-positive);
+}
+
+.action-description.nominate {
+  border-left-color: var(--gold-500);
+  color: var(--accent-money);
+}
+
+.action-description.pass {
+  border-left-color: var(--gray-500);
+  color: var(--fg3);
+}
+
+.action-description.manual,
+.action-description.waiting {
+  border-left-color: var(--gray-700);
+  color: var(--fg2);
+}
+
+.value-adjustments-info {
+  margin-top: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+
+.autopilot-activity {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--gray-950);
+}
+
+.activity-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  color: var(--accent-money);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-money);
+  animation: spinner-blink 0.4s steps(2, end) infinite;
+}
+
+@keyframes spinner-blink {
+  50% { opacity: 0.2; }
+}

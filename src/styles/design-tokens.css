@@ -1,0 +1,315 @@
+/* =========================================================
+   GRIDIRON BID — Tecmo-style Auction Draft Simulator
+   colors_and_type.css
+   ---------------------------------------------------------
+   8/16-bit video-game aesthetic. Saturated NES/SNES palette,
+   chunky pixel typography, hard edges, no anti-aliasing where
+   we can avoid it.
+   ========================================================= */
+
+/* ---------- Webfonts ---------- */
+/* Press Start 2P — display / HUD font (NES-style) */
+/* VT323 — terminal / scoreboard digits */
+/* Silkscreen — small UI labels */
+/* All loaded from Google Fonts as substitutes for ripped Tecmo Bowl bitmap fonts.
+   FLAG: True Tecmo Bowl in-game font is a custom 8x8 bitmap; Press Start 2P is the
+   closest free-license equivalent. Replace with a licensed bitmap if shipped. */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* =========================================================
+     COLOR — NES-inspired palette + gridiron accents
+     ========================================================= */
+
+  /* Field — the green of an astroturf SNES football game */
+  --field-700: #0a4d1a;     /* end-zone shadow */
+  --field-600: #1a7a2e;     /* turf base */
+  --field-500: #3ed598;     /* turf hilight (palette only — unused) */
+  --field-400: #5fd96f;     /* turf scanline — also value-strong / accent-positive */
+  --field-300: #a8f0a8;     /* yard-line glow */
+
+  /* Sky / scoreboard blacks & blues */
+  --sky-900:   #0b0d2a;     /* night-game black-blue */
+  --sky-800:   #14183d;     /* HUD background */
+  --sky-700:   #1f2a6b;     /* uniform navy */
+  --sky-500:   #3a5cff;     /* electric blue (Tecmo logo blue) */
+  --sky-300:   #6ec0ff;     /* score-flash cyan */
+
+  /* Brand reds — jersey numerals, "DRAFT" stamps */
+  --red-700:   #8a0a1c;     /* deep blood red */
+  --red-600:   #c8102e;     /* primary "BID" red */
+  --red-500:   #ff3b3b;     /* hot button red */
+  --red-300:   #ff8a8a;     /* damage flash */
+
+  /* Gold — money, MVP, championship */
+  --gold-700:  #8a6a00;     /* dark coin */
+  --gold-600:  #d4a024;     /* primary gold */
+  --gold-500:  #f5c518;     /* hilight — also pick-card overpay-strong */
+  --gold-300:  #fff2a8;     /* sparkle */
+
+  /* Grays — pixel UI chrome */
+  --gray-950:  #0a0a0a;
+  --gray-900:  #1a1a1a;
+  --gray-800:  #2c2c2c;
+  --gray-700:  #4a4a4a;
+  --gray-500:  #8a8a8a;
+  --gray-300:  #c8c8c8;
+  --gray-100:  #efefef;
+  --white:     #ffffff;
+
+  /* Crowd / accent purple (visiting team alt) */
+  --purple-700: #4a1d8a;
+  --purple-500: #8a3dff;
+
+  /* Pick-card value system — single source of truth for value/fair/overpay */
+  --value-strong:     var(--field-400);             /* #5fd96f */
+  --value-soft:       rgba(95, 217, 111, 0.15);
+  --value-soft-10:    rgba(95, 217, 111, 0.10);
+  --overpay-strong:   var(--gold-500);              /* #f5c518 */
+  --overpay-soft:     rgba(245, 197, 24, 0.15);
+  --overpay-red:      #ef5a5a;
+  --overpay-red-soft: rgba(239, 90, 90, 0.15);
+  --fair-strong:      #8b94ad;
+  --fair-soft:        rgba(139, 148, 173, 0.18);
+  --chip-bg:          #2a3454;
+
+  /* =========================================================
+     SEMANTIC TOKENS
+     ========================================================= */
+
+  /* Surfaces */
+  --bg-stadium:    var(--sky-900);          /* base page bg */
+  --bg-hud:        var(--sky-800);          /* HUD panels */
+  --bg-card:       var(--gray-900);         /* card body */
+  --bg-card-alt:   #131634;                 /* alt row */
+  --bg-field:      var(--field-600);        /* green sections */
+  --bg-overlay:    rgba(11,13,42,0.85);
+
+  /* Foregrounds */
+  --fg1:           var(--white);            /* primary text */
+  --fg2:           var(--gray-300);         /* secondary text */
+  --fg3:           var(--gray-500);         /* muted */
+  --fg-on-field:   var(--white);
+  --fg-on-gold:    var(--sky-900);
+
+  /* Accents */
+  --accent-primary:    var(--red-600);      /* BID, primary CTA */
+  --accent-money:      var(--gold-500);     /* dollar amounts */
+  --accent-team:       var(--sky-500);      /* highlights, links */
+  --accent-positive:   var(--field-400);    /* WON, GAIN */
+  --accent-negative:   var(--red-500);      /* LOST, BUST */
+  --accent-warning:    var(--gold-500);
+
+  /* Borders — pixel-art systems use HARD edges, no soft borders */
+  --border-pixel:      2px solid var(--gray-950);   /* default chunky border */
+  --border-pixel-hi:   2px solid var(--white);      /* highlight inset */
+  --border-pixel-thick: 4px solid var(--gray-950);
+  --border-color:      var(--gray-950);
+
+  /* Shadows — always 1-pixel blocky drop, never soft blur */
+  --shadow-pixel-sm:   2px 2px 0 var(--gray-950);
+  --shadow-pixel:      4px 4px 0 var(--gray-950);
+  --shadow-pixel-lg:   6px 6px 0 var(--gray-950);
+  --shadow-inset-hi:   inset 2px 2px 0 rgba(255,255,255,0.25);
+  --shadow-inset-lo:   inset -2px -2px 0 rgba(0,0,0,0.5);
+  --shadow-bevel:      inset 2px 2px 0 rgba(255,255,255,0.25),
+                       inset -2px -2px 0 rgba(0,0,0,0.5);
+
+  /* Radii — sparingly used. Most things are 0. */
+  --radius-0: 0;
+  --radius-1: 2px;     /* "rounded" = barely */
+  --radius-2: 4px;
+
+  /* Spacing — 8px grid (8-bit, naturally) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Z layers */
+  --z-hud: 10;
+  --z-modal: 100;
+  --z-toast: 200;
+
+  /* =========================================================
+     TYPOGRAPHY — base families
+     ========================================================= */
+  --font-display:    'Chakra Petch', sans-serif;  /* HUD, headers */
+  --font-numeric:    'Chakra Petch', sans-serif;  /* scoreboard */
+  --font-body:       'Chakra Petch', sans-serif;  /* small UI */
+  --font-jersey:     'Jersey 15', 'Press Start 2P', monospace;          /* big jersey numerals */
+
+  /* Sizes — pixel-aligned. Display sizes step by 8px. */
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 16px;
+  --fs-md:   20px;
+  --fs-lg:   24px;
+  --fs-xl:   30px;
+  --fs-2xl:  40px;
+  --fs-3xl:  56px;
+  --fs-4xl:  76px;
+
+  /* Line height — pixel fonts breathe at 1.6 */
+  --lh-tight:  1.1;
+  --lh-normal: 1.6;
+  --lh-loose:  1.8;
+
+  /* Letter spacing — Press Start 2P needs none, body fonts get a kiss of tracking */
+  --ls-tight:  0;
+  --ls-normal: 0.02em;
+  --ls-wide:   0.08em;
+
+  /* =========================================================
+     MOTION — minimal. Chip-tune feel = stepped, not eased.
+     ========================================================= */
+  --ease-step:    steps(4, end);            /* 4-frame stepped */
+  --ease-step-2:  steps(2, end);
+  --ease-snap:    cubic-bezier(.2,.9,.1,1); /* hard arrival */
+  --dur-fast:     90ms;
+  --dur-base:     180ms;
+  --dur-slow:     300ms;
+}
+
+/* =========================================================
+   GLOBAL — pixel-perfect rendering
+   ========================================================= */
+* {
+  /* Crispy pixels everywhere */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+html, body {
+  background: var(--bg-stadium);
+  color: var(--fg1);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-normal);
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================================
+   SEMANTIC TYPE CLASSES
+   ========================================================= */
+.ds-display, h1.ds {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg1);
+  text-shadow: 4px 4px 0 var(--gray-950);
+}
+
+.ds-h1, h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-tight);
+  color: var(--fg1);
+  text-shadow: 3px 3px 0 var(--gray-950);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.ds-h2, h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+  color: var(--fg1);
+  text-shadow: 2px 2px 0 var(--gray-950);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.ds-h3, h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: var(--lh-tight);
+  color: var(--fg1);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.ds-h4, h4 {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--fg1);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.ds-body, p {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--fg2);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.ds-small {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg3);
+}
+
+.ds-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+/* Scoreboard digits — VT323 big & bright */
+.ds-score {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-3xl);
+  line-height: 1;
+  color: var(--accent-money);
+  text-shadow: 0 0 8px rgba(255,200,61,0.6), 3px 3px 0 var(--gray-950);
+  letter-spacing: 0.05em;
+}
+
+/* Money amounts */
+.ds-money {
+  font-family: var(--font-numeric);
+  color: var(--accent-money);
+  font-size: var(--fs-xl);
+}
+.ds-money::before { content: "$"; }
+
+/* Jersey numerals — huge */
+.ds-jersey {
+  font-family: var(--font-jersey);
+  font-size: var(--fs-4xl);
+  color: var(--white);
+  -webkit-text-stroke: 3px var(--gray-950);
+  line-height: 0.9;
+}
+
+/* Code / mono */
+code, .ds-code {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  background: var(--gray-900);
+  padding: 2px 6px;
+  border: var(--border-pixel);
+  color: var(--accent-money);
+}
+
+/* Links */
+a {
+  color: var(--accent-team);
+  text-decoration: none;
+  border-bottom: 2px solid var(--accent-team);
+}
+a:hover {
+  color: var(--gold-500);
+  border-bottom-color: var(--gold-500);
+}

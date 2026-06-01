@@ -1,0 +1,552 @@
+.auction-block {
+  /* Fill the column the same way .player-pool does so the module height tracks
+     the Available Players panel instead of a fixed 810px that overflows on tall
+     screens and shows a scrollbar. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.auction-waiting {
+  text-align: center;
+  padding: var(--space-7) var(--space-3);
+  color: var(--fg3);
+}
+
+.auction-waiting h3,
+.auction-waiting h4 {
+  margin-bottom: var(--space-3);
+  color: var(--fg1);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+}
+
+.auction-waiting p {
+  color: var(--fg2);
+}
+
+.auction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.auction-header h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+/* =========================================================
+   Timer — square scoreboard pixel timer
+   ========================================================= */
+.timer {
+  display: flex;
+  align-items: center;
+}
+
+.timer-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background: var(--gray-900);
+  border: 2px solid var(--gray-950);
+  box-shadow: 4px 4px 0 var(--gray-950),
+              inset 2px 2px 0 rgba(255,255,255,0.15);
+  color: var(--gold-500);
+  font-family: var(--font-numeric);
+  font-size: 36px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.timer-circle.urgent {
+  color: var(--red-500);
+  animation: pulse 0.8s steps(2, end) infinite;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.4; }
+}
+
+/* =========================================================
+   Player on the block — scanline navy panel
+   ========================================================= */
+.player-on-block {
+  margin-bottom: var(--space-5);
+}
+
+.player-card-large {
+  background: linear-gradient(180deg, #181c44 0%, #14183d 100%);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #181c44 0%, #14183d 100%);
+  border: 2px solid var(--gray-950);
+  border-left: 6px solid var(--gold-500);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--gray-950);
+  color: var(--fg1);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.player-info h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+  text-shadow: 2px 2px 0 var(--gray-950);
+  margin-bottom: var(--space-3);
+  color: var(--fg1);
+  text-transform: uppercase;
+}
+
+.player-details {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  flex-wrap: wrap;
+}
+
+.player-details span {
+  background: rgba(0,0,0,0.4);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 4px 10px;
+  color: var(--fg1);
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 6px;
+}
+
+.stat .stat-value {
+  display: block;
+  font-family: var(--font-numeric);
+  font-size: var(--fs-2xl);
+  color: var(--accent-money);
+  line-height: 1;
+}
+
+/* =========================================================
+   Bid Advisor — verdict + recommended max + reasons
+   ========================================================= */
+.advisor {
+  background: var(--gray-950);
+  border: var(--border-pixel);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.advisor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+.advisor-label {
+  color: var(--fg2);
+}
+
+.advisor-verdict {
+  padding: 2px 8px;
+  border: var(--border-pixel);
+  font-weight: bold;
+}
+
+.advisor-verdict.bargain {
+  background: var(--accent-positive);
+  color: var(--gray-950);
+}
+
+.advisor-verdict.fair {
+  background: var(--accent-team);
+  color: var(--gray-950);
+}
+
+.advisor-verdict.stretch {
+  background: var(--accent-warning);
+  color: var(--gray-950);
+}
+
+.advisor-verdict.stop,
+.advisor-verdict.pass {
+  background: var(--accent-negative);
+  color: var(--white);
+}
+
+.advisor-max {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-bottom: 2px solid var(--gray-800);
+  margin-bottom: var(--space-2);
+}
+
+.advisor-max-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+.advisor-max-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-2xl);
+  color: var(--accent-money);
+  line-height: 1;
+}
+
+.advisor-reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.advisor-reasons li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+  padding: 4px 0;
+}
+
+.advisor-reasons .reason-label {
+  flex: 1;
+  margin-right: var(--space-2);
+}
+
+.advisor-reasons .reason-delta {
+  font-family: var(--font-numeric);
+  font-weight: bold;
+}
+
+.advisor-reasons .reason-delta.pos {
+  color: var(--accent-positive);
+}
+
+.advisor-reasons .reason-delta.neg {
+  color: var(--accent-negative);
+}
+
+/* =========================================================
+   Current bid scoreboard
+   ========================================================= */
+.current-bid {
+  text-align: center;
+  margin-bottom: var(--space-5);
+}
+
+.bid-amount {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-4xl);
+  line-height: 1;
+  color: var(--accent-money);
+  text-shadow: 0 0 8px rgba(255,200,61,0.5), 3px 3px 0 var(--gray-950);
+  margin-bottom: var(--space-2);
+}
+
+.bid-team {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--accent-team);
+}
+
+/* =========================================================
+   Bid controls
+   ========================================================= */
+.bid-controls {
+  margin-bottom: var(--space-5);
+}
+
+.bid-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.bid-buttons .btn {
+  padding: 12px var(--space-2);
+}
+
+.budget-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  padding: var(--space-2) 0;
+  border-top: 2px solid var(--gray-950);
+}
+
+.budget-info div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* =========================================================
+   Bidding history
+   ========================================================= */
+.bidding-history {
+  border-top: 2px solid var(--gray-950);
+  padding-top: var(--space-3);
+}
+
+.bidding-history h4 {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.bid-log {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.bid-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-800);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg2);
+}
+
+.bid-entry:last-child {
+  border-bottom: none;
+}
+
+/* =========================================================
+   Skip section
+   ========================================================= */
+.skip-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+}
+
+.skip-btn {
+  min-width: 120px;
+}
+
+.skip-section small {
+  color: var(--fg3);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+/* =========================================================
+   Last Winner banner (NOMINATING state)
+   ========================================================= */
+.last-winner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  margin-bottom: var(--space-4);
+  background: linear-gradient(180deg, #1a2742 0%, #14183d 100%);
+  border: 2px solid var(--gray-950);
+  border-left: 6px solid var(--accent-positive);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--gray-950);
+}
+
+.last-winner-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--accent-positive);
+  flex-shrink: 0;
+}
+
+.last-winner-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg2);
+}
+
+.last-winner-player {
+  color: var(--fg1);
+}
+
+.last-winner-pos {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg1);
+  padding: 1px 6px;
+}
+
+.last-winner-arrow {
+  color: var(--fg3);
+}
+
+.last-winner-team {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-team);
+}
+
+.last-winner-price {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  color: var(--accent-money);
+}
+
+/* =========================================================
+   Nominated by (BIDDING state)
+   ========================================================= */
+.nominated-by {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+.nominated-by-team {
+  color: var(--accent-team);
+  margin-left: 4px;
+}
+
+/* =========================================================
+   Recent Auction History
+   ========================================================= */
+.recent-history {
+  margin-top: var(--space-5);
+  padding: var(--space-3);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+}
+
+.recent-history h5 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: var(--space-3);
+}
+
+.recent-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.recent-pick {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+}
+
+.recent-pick-player {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.recent-pick-player .player-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+}
+
+.recent-pick-player .player-position {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg1);
+  padding: 2px 6px;
+  border-radius: 0;
+  min-width: 28px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.recent-pick-values {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.auction-price {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  color: var(--accent-money);
+}
+
+.estimated-value {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}

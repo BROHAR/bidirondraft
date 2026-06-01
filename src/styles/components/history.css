@@ -1,0 +1,273 @@
+.draft-history {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.history-header h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.draft-picks {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.no-picks {
+  text-align: center;
+  padding: var(--space-7) var(--space-3);
+  color: var(--fg3);
+  font-family: var(--font-body);
+}
+
+.picks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* =========================================================
+   Pick card — color-coded accent bar + variance system
+   ========================================================= */
+.draft-pick {
+  position: relative;
+  padding: 14px 18px 14px 20px;
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.draft-pick::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--fair-strong);
+}
+
+/* Tier modifiers — single source of truth for accent + marker + label + delta */
+.draft-pick--value::before          { background: var(--value-strong); }
+.draft-pick--slight-value::before   { background: var(--value-strong); }
+.draft-pick--fair::before           { background: var(--fair-strong); }
+.draft-pick--slight-overpay::before { background: var(--overpay-strong); }
+.draft-pick--overpay::before        { background: var(--overpay-red); }
+
+/* Top row — pick chip + drafter team chip */
+.pick-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.pick-chip {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--fg1);
+  background: var(--chip-bg);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.pick-team-chip {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--fair-strong);
+  background: var(--chip-bg);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* Body row — player block (left) + price block (right) */
+.pick-body-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.pick-name {
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--fg1);
+}
+
+.pick-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fair-strong);
+}
+
+.pick-pos-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--fg1);
+  background: var(--chip-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.pick-price-block {
+  text-align: right;
+}
+
+.pick-price {
+  font-family: var(--font-numeric);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--fg1);
+}
+
+.pick-est-line {
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--fair-strong);
+}
+
+.pick-delta {
+  font-weight: 600;
+}
+
+.draft-pick--value          .pick-delta { color: var(--value-strong); }
+.draft-pick--slight-value   .pick-delta { color: var(--value-strong); }
+.draft-pick--fair           .pick-delta { color: var(--fair-strong); }
+.draft-pick--slight-overpay .pick-delta { color: var(--overpay-strong); }
+.draft-pick--overpay        .pick-delta { color: var(--overpay-red); }
+
+/* Variance bar — fair zone + tier-colored marker + trailing pill */
+.pick-variance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.variance-track {
+  flex: 1;
+  height: 4px;
+  background: #0a0f1f;
+  border-radius: 2px;
+  position: relative;
+}
+
+.variance-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 42%;
+  width: 16%;
+  background: var(--fair-soft);
+  border-radius: 2px;
+}
+
+.variance-marker {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 10px;
+  border-radius: 1px;
+  transform: translateX(-50%);
+  background: var(--fair-strong);
+}
+
+.draft-pick--value          .variance-marker { background: var(--value-strong); }
+.draft-pick--slight-value   .variance-marker { background: var(--value-strong); }
+.draft-pick--fair           .variance-marker { background: var(--fair-strong); }
+.draft-pick--slight-overpay .variance-marker { background: var(--overpay-strong); }
+.draft-pick--overpay        .variance-marker { background: var(--overpay-red); }
+
+.variance-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  background: var(--fair-soft);
+  color: var(--fair-strong);
+}
+
+.draft-pick--value          .variance-label { background: var(--value-soft);       color: var(--value-strong); }
+.draft-pick--slight-value   .variance-label { background: var(--value-soft);       color: var(--value-strong); }
+.draft-pick--fair           .variance-label { background: var(--fair-soft);        color: var(--fair-strong); }
+.draft-pick--slight-overpay .variance-label { background: var(--overpay-soft);     color: var(--overpay-strong); }
+.draft-pick--overpay        .variance-label { background: var(--overpay-red-soft); color: var(--overpay-red); }
+
+.draft-stats {
+  border-top: 2px solid var(--gray-950);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.draft-stats h5 {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.stats-grid .stat {
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: var(--space-2);
+}
+
+.stats-grid .stat label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 4px;
+}
+
+.stats-grid .stat .stat-value {
+  display: block;
+  font-family: var(--font-numeric);
+  font-size: var(--fs-lg);
+  color: var(--accent-money);
+  line-height: 1;
+}

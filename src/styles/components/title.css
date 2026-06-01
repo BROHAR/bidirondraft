@@ -1,0 +1,126 @@
+.title-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-stadium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.title-screen-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.04) 0 1px,
+    transparent 1px 3px
+  );
+  z-index: 1;
+}
+
+.title-screen-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-7);
+}
+
+.title-screen-mark {
+  image-rendering: pixelated;
+  margin-bottom: var(--space-5);
+  filter: drop-shadow(4px 4px 0 var(--gray-950));
+}
+
+.title-screen-wordmark {
+  font-family: var(--font-display);
+  font-size: 144px;
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-3);
+  text-shadow: 6px 6px 0 var(--gray-950);
+  display: flex;
+  gap: 12px;
+}
+
+.title-screen-bid {
+  color: var(--gold-500);
+}
+
+.title-screen-iron {
+  color: var(--field-400);
+}
+
+.title-screen-tagline {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  letter-spacing: var(--ls-wide);
+  color: var(--accent-team);
+  text-shadow: 2px 2px 0 var(--gray-950);
+  margin-bottom: var(--space-7);
+}
+
+.title-screen-start {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  letter-spacing: 0.1em;
+  color: var(--gold-500);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-3) var(--space-5);
+  text-shadow: 3px 3px 0 var(--gray-950);
+  margin-bottom: var(--space-7);
+}
+
+.title-screen-start:hover {
+  color: var(--white);
+}
+
+.title-screen-start:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 4px;
+}
+
+.title-screen-footer {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg3);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+.blink {
+  animation: blink 1s steps(2, end) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .title-screen-wordmark {
+    font-size: 80px;
+    text-shadow: 4px 4px 0 var(--gray-950);
+  }
+
+  .title-screen-mark {
+    width: 100px;
+    height: 100px;
+  }
+
+  .title-screen-tagline {
+    font-size: var(--fs-sm);
+  }
+
+  .title-screen-start {
+    font-size: var(--fs-md);
+  }
+}

@@ -1,0 +1,303 @@
+.team-details-modal {
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.team-details-section {
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--gray-950);
+}
+
+.team-details-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.team-details-section h4 {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.team-details-section h5 {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+/* Basic Information */
+.team-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+.info-item span {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--fg1);
+}
+
+.info-item .human-team {
+  color: var(--accent-positive);
+}
+
+.info-item .ai-team {
+  color: var(--accent-team);
+}
+
+/* Strategy Information */
+.strategy-info {
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: var(--space-3);
+  border-left: 4px solid var(--accent-team);
+}
+
+.strategy-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  color: var(--fg1);
+  margin-bottom: var(--space-2);
+}
+
+.strategy-description {
+  color: var(--fg2);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  margin-bottom: var(--space-3);
+}
+
+.position-preferences {
+  margin-top: var(--space-3);
+}
+
+.preferences-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.preference-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+}
+
+.preference-item.positive {
+  background: var(--value-soft);
+  color: var(--accent-positive);
+}
+
+.preference-item.negative {
+  background: rgba(255, 59, 59, 0.15);
+  color: var(--red-500);
+}
+
+.preference-item.neutral {
+  background: var(--bg-card-alt);
+  color: var(--fg2);
+}
+
+.preference-item .position {
+  font-family: var(--font-display);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.preference-item .multiplier {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+}
+
+/* Player Lists */
+.player-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.player-item-compact {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 6px var(--space-2);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+}
+
+.player-item-compact .player-name {
+  color: var(--fg1);
+}
+
+.player-item-compact .player-position {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--fg1);
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  padding: 2px 6px;
+  border-radius: 0;
+  text-align: center;
+  min-width: 40px;
+  text-transform: uppercase;
+}
+
+.player-item-compact .player-value {
+  font-family: var(--font-numeric);
+  color: var(--accent-money);
+}
+
+/* Value Modifiers */
+.value-modifiers-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.value-modifier-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+}
+
+.value-modifier-item .player-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  padding: 0;
+}
+
+.value-modifier-item .player-name {
+  color: var(--fg1);
+}
+
+.value-modifier-item .player-position {
+  font-family: var(--font-display);
+  font-size: 12px;
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg1);
+  padding: 2px 6px;
+  border-radius: 0;
+  text-transform: uppercase;
+}
+
+.value-modifier-item .value-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.value-modifier-item .base-value {
+  color: var(--fg3);
+  font-family: var(--font-numeric);
+}
+
+.value-modifier-item .modifier {
+  font-family: var(--font-display);
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+}
+
+.value-modifier-item .modifier.positive {
+  background: var(--value-soft);
+  color: var(--accent-positive);
+}
+
+.value-modifier-item .modifier.negative {
+  background: rgba(255, 59, 59, 0.15);
+  color: var(--red-500);
+}
+
+.value-modifier-item .modifier.zero-value {
+  background: var(--red-700);
+  color: var(--white);
+}
+
+.value-modifier-item .modifier.very-negative {
+  background: var(--red-600);
+  color: var(--white);
+}
+
+.value-modifier-item .adjusted-value {
+  font-family: var(--font-numeric);
+  color: var(--accent-money);
+}
+
+.more-items {
+  color: var(--fg3);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  text-align: center;
+  padding: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .team-details-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .team-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preferences-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .value-modifier-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .value-modifier-item .value-info {
+    justify-content: space-between;
+  }
+}

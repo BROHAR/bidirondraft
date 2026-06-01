@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(python3 -c \"import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))\" 2>/dev/null); case \"$FILE\" in */src/*.js|*/src/*.jsx) ;; *) exit 0 ;; esac; case \"$FILE\" in */styles/*) exit 0 ;; esac; BASENAME=$(basename \"$FILE\" | sed 's/\\.\\(js\\|jsx\\)$//'); PROJECT_ROOT=${FILE%/src/*}; if ! find \"$PROJECT_ROOT/tests\" -iname \"${BASENAME}.test.js\" 2>/dev/null | grep -q .; then echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PostToolUse\\\",\\\"additionalContext\\\":\\\"No test file found for ${BASENAME}. Add tests in tests/unit/ before finishing.\\\"}}\"; fi",
+            "statusMessage": "Checking test coverage..."
+          }
+        ]
+      }
+    ]
+  }
+}
