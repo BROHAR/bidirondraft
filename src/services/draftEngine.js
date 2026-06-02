@@ -784,8 +784,8 @@ export class DraftEngine {
   }
 
   resumeDraft() {
-    const { currentPlayer } = this.store.getState()
-    
+    const { currentPlayer, config } = this.store.getState()
+
     this.store.setState((draft) => {
       if (currentPlayer) {
         draft.draftState = 'BIDDING'
@@ -793,10 +793,24 @@ export class DraftEngine {
         draft.draftState = 'NOMINATING'
       }
     })
-    
+
     // Start timers after state update
     if (currentPlayer) {
       this.startBiddingTimer()
+
+      // Re-kick the AI bidding loop. The processAIBids setTimeout cascade is
+      // not tracked by clearTimers, so it dies during the pause (each pending
+      // callback early-returns once draftState flips to PAUSED) and would
+      // otherwise never restart — leaving the resumed auction with no AI bids
+      // until the next nomination. Realign biddingStartTime so timeElapsed
+      // reflects the time already spent on this player (the bidding timer
+      // resumes from the preserved biddingTimeRemaining), keeping the AI's
+      // early-aggressive window consistent across the pause.
+      const totalBiddingTime = (config?.biddingTimer ?? 0) * 1000
+      this.biddingStartTime = Date.now() - (totalBiddingTime - this.biddingTimeRemaining * 1000)
+      workerTimers.setTimeout(() => {
+        this.processAIBids(currentPlayer)
+      }, 1000 + Math.random() * 2000) // 1-3 second delay, matching startBiddingPhase
     } else {
       this.startNominationPhase()
     }
