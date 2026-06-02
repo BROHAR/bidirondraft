@@ -35,7 +35,7 @@ function TitleScreen() {
           <span className="title-screen-iron">IRON</span>
         </h1>
 
-        <div className="title-screen-tagline">FANTASY FOOTBALL · AUCTION DRAFT</div>
+        <div className="title-screen-tagline">FANTASY FOOTBALL · AUCTION DRAFT SIMULATOR</div>
 
         <button
           type="button"
@@ -46,7 +46,7 @@ function TitleScreen() {
         </button>
 
         <div className="title-screen-footer">
-          ©1989 BIDIRON · 1-PLAYER · AUCTION MODE
+          ©2026 BIDIRON · 1-PLAYER · AUCTION MODE
         </div>
       </div>
     </div>

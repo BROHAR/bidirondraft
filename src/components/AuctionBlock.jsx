@@ -54,6 +54,19 @@ function AuctionBlock() {
     }, 1000)
   }, [isSkipping, draftState, skipPlayerAction])
 
+  // Paused: indicate the pause status rather than falling through to the
+  // generic "Waiting for nomination..." state below.
+  if (draftState === 'PAUSED') {
+    return (
+      <div className="card auction-block">
+        <div className="auction-waiting">
+          <h3>Draft Paused</h3>
+          <p>Resume the draft to continue the auction</p>
+        </div>
+      </div>
+    )
+  }
+
   // Show nomination countdown if we're in the nominating phase
   if (draftState === 'NOMINATING') {
     const lastPick = draftHistory.length > 0 ? draftHistory[draftHistory.length - 1] : null
