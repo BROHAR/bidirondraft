@@ -1,15 +1,22 @@
-// Scrape ESPN fantasy football projections (Sortable Projections view).
-// Scrapes the "All" view across N pages, plus a dedicated D/ST scrape for
-// defenses (ESPN's K position filter is broken — doesn't actually filter
-// rows — but kickers naturally appear in the top 500 by projected points).
-// Writes a CSV with raw passing/rushing/receiving stats + ESPN's fantasy pts.
+// Scrape fantasy football projections.
+//
+// ESPN: fetched from the public kona_player_info JSON API (the same endpoint
+// fantasy.espn.com's projections page calls). We moved off DOM scraping because
+// ESPN's projections table is *virtualized* — only on-screen rows exist in the
+// DOM — so a Playwright/Next-pagination scrape silently dropped a large, fixed
+// cohort of players (Mahomes, Herbert, Stafford, ...). The API returns the full
+// pool deterministically with projected stats. No auth required.
+//
+// Yahoo: still scraped via Playwright (its salary-cap page is not virtualized
+// and works reliably) for the authoritative auction `estimatedValue`.
+//
+// Writes the same CSV shape the previous scraper did, so process.mjs is unchanged.
 
 import { chromium } from 'playwright'
 import fs from 'fs'
 import path from 'path'
 import { normalizePosition } from './positions.mjs'
 
-const URL = 'https://fantasy.espn.com/football/players/projections?leagueFormatId=3'
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 const CSV_COLUMNS = [
@@ -20,334 +27,136 @@ const CSV_COLUMNS = [
   'rec', 'rec_yds', 'rec_td', 'tar',
   // Defense
   'tackles', 'sacks', 'forced_fumbles', 'fum_rec', 'def_int', 'int_td', 'fum_td',
-  // ESPN's projected fantasy points (PPR scoring; used directly for K/DST)
+  // ESPN's projected fantasy points (used directly for K/DST)
   'espn_fpts',
 ]
 
 const NUMBER_RE = /-?\d+(?:\.\d+)?/
-
 function num(s) {
   if (!s) return 0
   const m = String(s).match(NUMBER_RE)
   return m ? parseFloat(m[0]) : 0
 }
 
-// "12/25" -> [12, 25]
-function fraction(s) {
-  if (!s) return [0, 0]
-  const parts = String(s).split('/')
-  return [num(parts[0]), num(parts[1])]
+// ── ESPN kona_player_info API ───────────────────────────────────────────────
+
+// NFL fantasy season. In-season this is the current year; override with
+// ESPN_SEASON if ESPN's projection feed rolls over at a different time.
+const SEASON = Number(process.env.ESPN_SEASON) || new Date().getFullYear()
+
+const ESPN_API = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leaguedefaults/3?view=kona_player_info`
+
+// defaultPositionId → our position code. Only app-relevant positions are kept.
+const ESPN_POSITION = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'DST' }
+
+// proTeamId → abbreviation (ESPN's fixed mapping; 0 = free agent).
+const ESPN_TEAM = {
+  0: 'FA', 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN',
+  8: 'DET', 9: 'GB', 10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA',
+  16: 'MIN', 17: 'NE', 18: 'NO', 19: 'NYG', 20: 'NYJ', 21: 'PHI', 22: 'ARI', 23: 'PIT',
+  24: 'LAC', 25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WSH', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU',
 }
 
-// Extract structured rows from the three side-by-side tables (player / stats /
-// fantasy pts). Uses HTML structure (not text suffix matching) for player info.
-async function extractCurrentPageRows(page) {
-  return page.evaluate(() => {
-    const leftTable = document.querySelector('table.Table--fixed-left')
-    const rightTable = document.querySelector('table.Table--fixed-right')
-    const middleTable = Array.from(document.querySelectorAll('table.Table--align-right'))
-      .find(t => !t.classList.contains('Table--fixed-left') && !t.classList.contains('Table--fixed-right'))
-    if (!leftTable || !middleTable || !rightTable) return []
+// ESPN stat IDs (verified against known 2026 projections). We only need the ones
+// process.mjs scores from; pass_comp/pass_att are carried for completeness.
+const STAT = {
+  pass_comp: 1, pass_att: 0, pass_yds: 3, pass_td: 4, int: 20,
+  rush_car: 23, rush_yds: 24, rush_td: 25,
+  rec: 53, rec_yds: 42, rec_td: 43, tar: 58,
+}
 
-    const leftRows = Array.from(leftTable.querySelectorAll('tbody tr'))
-    const middleRows = Array.from(middleTable.querySelectorAll('tbody tr'))
-    const rightRows = Array.from(rightTable.querySelectorAll('tbody tr'))
-    const n = Math.min(leftRows.length, middleRows.length, rightRows.length)
+// ESPN injuryStatus → the short superscript codes the app/players.json use.
+function mapInjury(status) {
+  switch (status) {
+    case 'QUESTIONABLE': return 'Q'
+    case 'DOUBTFUL': return 'D'
+    case 'OUT': return 'O'
+    case 'INJURY_RESERVE': return 'IR'
+    case 'SUSPENSION': return 'SUSP'
+    case 'PHYSICALLY_UNABLE_TO_PERFORM': return 'PUP'
+    default: return '' // ACTIVE / NORMAL / undefined
+  }
+}
 
-    const out = []
-    for (let i = 0; i < n; i++) {
-      // Target the <a> inside .player-column__athlete so the sibling
-      // injury-status span (e.g. "Q" for Questionable) doesn't bleed into the
-      // name. Falls back to the div's title attribute if the anchor is absent
-      // (e.g. for D/ST rows that may render slightly differently).
-      const nameEl = leftRows[i].querySelector('.player-column__athlete a')
-      const teamEl = leftRows[i].querySelector('.playerinfo__playerteam')
-      const posEl = leftRows[i].querySelector('.playerinfo__playerpos')
-      const injuryEl = leftRows[i].querySelector('.player-column__athlete .playerinfo__injurystatus')
-      const name = nameEl?.textContent?.trim()
-        || leftRows[i].querySelector('.player-column__athlete')?.getAttribute('title')?.trim()
-        || ''
-      const team = teamEl?.textContent?.trim() || ''
-      const position = posEl?.textContent?.trim() || ''
-      const injuryStatus = injuryEl?.textContent?.trim() || ''
-      const stats = Array.from(middleRows[i].querySelectorAll('td')).map(td => td.textContent?.trim() || '')
-      const fpts = Array.from(rightRows[i].querySelectorAll('td')).map(td => td.textContent?.trim() || '')
-      // For D/ST, the team cell holds full name and position is "D/ST". Strip
-      // the trailing " D/ST" from the leftRow's title attribute / span text so
-      // names look like "Broncos D/ST".
-      out.push({ name, team, position, injuryStatus, stats, fpts })
-    }
-    return out
+const round1 = n => Math.round((n || 0) * 10) / 10
+
+async function fetchEspnProjections() {
+  // x-fantasy-filter drives the query. A sort clause is required (the API
+  // returns nothing without one). filterStatsForTopScoringPeriodIds with the
+  // 00<season>/10<season> ids ensures the season actual + projection stat
+  // blocks are included on each player.
+  const filter = {
+    players: {
+      limit: 1500,
+      sortDraftRanks: { sortPriority: 1, sortAsc: true, value: 'PPR' },
+      filterStatsForTopScoringPeriodIds: { value: 2, additionalValue: [`00${SEASON}`, `10${SEASON}`] },
+    },
+  }
+
+  const res = await fetch(ESPN_API, {
+    headers: {
+      'x-fantasy-filter': JSON.stringify(filter),
+      'x-fantasy-platform': 'kona-PROD',
+      'x-fantasy-source': 'kona',
+      accept: 'application/json',
+      'user-agent': USER_AGENT,
+    },
   })
-}
-
-// Wait until ESPN's three synchronized tables (frozen-left names, middle stats,
-// right fantasy points) have all rendered the SAME number of rows — and at
-// least `expectedRows` when that's known. extractCurrentPageRows() takes the
-// min row count across the three tables; ESPN paints the bottom rows of a page
-// a beat after the top, so extracting too early silently truncates the page and
-// drops mid-tier players (e.g. Mahomes, Herbert) that sit near a page's bottom.
-async function waitForFullRows(page, expectedRows = null) {
-  try {
-    await page.waitForFunction(
-      expected => {
-        const count = sel => {
-          const t = document.querySelector(sel)
-          return t ? t.querySelectorAll('tbody tr').length : 0
-        }
-        const left = count('table.Table--fixed-left')
-        const right = count('table.Table--fixed-right')
-        const middle = (() => {
-          const t = Array.from(document.querySelectorAll('table.Table--align-right'))
-            .find(x => !x.classList.contains('Table--fixed-left') && !x.classList.contains('Table--fixed-right'))
-          return t ? t.querySelectorAll('tbody tr').length : 0
-        })()
-        if (left === 0 || left !== right || left !== middle) return false
-        return expected ? left >= expected : true
-      },
-      expectedRows,
-      { timeout: 12000, polling: 250 }
-    )
-  } catch {
-    console.log(`    (waitForFullRows: tables never reached ${expectedRows ?? 'a synced count'} in time; extracting what rendered)`)
+  if (!res.ok) {
+    throw new Error(`ESPN API returned HTTP ${res.status} (${ESPN_API})`)
   }
-  // Small settle so a final in-flight row finishes painting before extraction.
-  await page.waitForTimeout(400)
-}
-
-async function setupSortableView(page) {
-  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('table.Table', { timeout: 30000 })
-  await page.waitForTimeout(2000)
-  // Click "Sortable Projections" via DOM (sticky nav intercepts real clicks)
-  const switched = await page.evaluate(() => {
-    const btn = Array.from(document.querySelectorAll('button.player--filters__projections-button'))
-      .find(b => b.textContent?.trim() === 'Sortable Projections')
-    if (!btn) return false
-    btn.click()
-    return true
-  })
-  if (!switched) throw new Error('Could not switch to Sortable Projections view')
-  await page.waitForSelector('table.Table--fixed-left', { timeout: 15000 })
-  // Long warmup wait — the page's pagination component doesn't reliably
-  // process the first Next click until ~10s after Sortable view loads.
-  // Empirically anything shorter causes the first page advance to silently fail.
-  await page.waitForTimeout(10000)
-}
-
-// Click the TOT (total projected fantasy points) column header so the top-N
-// scrape captures the highest-projected players. ESPN's default sort isn't
-// always points-descending, which was causing legitimate fantasy starters
-// like Mahomes / Herbert to fall outside the top 500 rows. Clicks again if
-// the first click landed in ascending order.
-async function sortByTotalPoints(page) {
-  const readFirstName = () => page.evaluate(() =>
-    document.querySelector('table.Table--fixed-left tbody tr .player-column__athlete a')
-      ?.textContent?.trim() || ''
-  )
-  const readFirstTotal = () => page.evaluate(() => {
-    // The right-hand table holds the projected-points columns; its first td
-    // per row is the TOT total.
-    const tables = document.querySelectorAll('table.Table')
-    const right = tables[tables.length - 1]
-    return parseFloat(right?.querySelector('tbody tr td')?.textContent || '0')
-  })
-  const clickTotHeader = () => page.evaluate(() => {
-    const headers = Array.from(document.querySelectorAll('table th'))
-    const target = headers.find(h => /^(tot|fpts|proj)$/i.test(h.textContent?.trim() || ''))
-    if (!target) return false
-    target.click()
-    return true
-  })
-
-  // If the table already loads sorted by TOT descending (ESPN's default in
-  // 2026), skip the sort dance entirely — clicking would only flip to
-  // ascending and force a second click to flip back.
-  const startingTotal = await readFirstTotal()
-  if (startingTotal >= 50) {
-    return
+  const data = await res.json()
+  const entries = data.players || []
+  if (entries.length === 0) {
+    throw new Error('ESPN API returned 0 players — the filter or endpoint may have changed.')
   }
 
-  const before = await readFirstName()
-  if (!(await clickTotHeader())) throw new Error('TOT sort header not found')
-  try {
-    await page.waitForFunction(
-      prev => {
-        const cur = document.querySelector('table.Table--fixed-left tbody tr .player-column__athlete a')
-          ?.textContent?.trim() || ''
-        return cur && cur !== prev
-      },
-      before,
-      { timeout: 15000 }
-    )
-  } catch {
-    // If the first row didn't change the table may already have been sorted
-    // by total points — that's fine, we'll verify direction below.
-  }
-  await page.waitForTimeout(1500)
-
-  // If the top row's total is suspiciously low we got ascending order — click
-  // once more to flip to descending. Threshold of 50 is well below any
-  // starter's projected total and well above a deep bench player's.
-  const firstTotal = await readFirstTotal()
-  if (firstTotal < 50) {
-    await clickTotHeader()
-    await page.waitForTimeout(2000)
-  }
-}
-
-async function filterPosition(page, label, expectedPositionChip) {
-  const clicked = await page.evaluate(target => {
-    const l = Array.from(document.querySelectorAll('label.picker-option'))
-      .find(x => x.textContent?.trim() === target)
-    if (!l) return false
-    l.click()
-    return true
-  }, label)
-  if (!clicked) throw new Error(`Position filter "${label}" not found`)
-  // Wait for the filter to actually apply: the first row's position chip
-  // should match the expected position. ESPN's filter is async (~3-8s).
-  try {
-    await page.waitForFunction(
-      expected => {
-        const chip = document.querySelector('table.Table--fixed-left tbody tr .playerinfo__playerpos')
-        return chip && chip.textContent?.trim() === expected
-      },
-      expectedPositionChip,
-      { timeout: 20000 }
-    )
-  } catch {
-    throw new Error(`Position filter "${label}" did not apply (chip never matched "${expectedPositionChip}")`)
-  }
-  await page.waitForTimeout(1500)
-}
-
-// Click "Next" pagination and wait for the table's first row to change.
-// ESPN's pagination is async with ~3-6s update latency and is sometimes
-// flaky — we retry the click once if the content didn't update.
-async function gotoNextPage(page) {
-  const prevFirst = await page.evaluate(() => {
-    const f = document.querySelector('table.Table--fixed-left tbody tr .player-column__athlete')
-    return f?.textContent?.trim() || ''
-  })
-
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const clicked = await page.evaluate(() => {
-      const btn = document.querySelector('button.Pagination__Button--next')
-      if (!btn || btn.disabled) return false
-      btn.click()
-      return true
-    })
-    if (!clicked) return false
-
-    try {
-      await page.waitForFunction(
-        previous => {
-          const first = document.querySelector('table.Table--fixed-left tbody tr .player-column__athlete')
-          return first && first.textContent?.trim() !== previous
-        },
-        prevFirst,
-        { timeout: 15000 }
-      )
-      await page.waitForTimeout(1500)
-      return true
-    } catch {
-      // Click was swallowed; try one more time
-      if (attempt === 1) {
-        await page.waitForTimeout(2000)
-        continue
-      }
-      return false
-    }
-  }
-  return false
-}
-
-function parseOffensiveRow(row) {
-  const position = normalizePosition(row.position)
-  // Drop the row entirely when no app-relevant position remains
-  // (e.g. CB-only, LB-only). Multi-position players keep the first
-  // app-relevant code (e.g. WR,CB → WR).
-  if (!position) return null
-  // Stats columns when no position filter (or All filter) is active:
-  //   C/A, PassYDS, PassTD, INT, CAR, RushYDS, RushTD, REC, RecYDS, RecTD, TAR, %ROST, +/-
-  const [pass_comp, pass_att] = fraction(row.stats[0])
-  return {
-    name: row.name,
-    position,
-    team: row.team,
-    injury_status: row.injuryStatus || '',
-    pass_comp,
-    pass_att,
-    pass_yds: num(row.stats[1]),
-    pass_td: num(row.stats[2]),
-    int: num(row.stats[3]),
-    rush_car: num(row.stats[4]),
-    rush_yds: num(row.stats[5]),
-    rush_td: num(row.stats[6]),
-    rec: num(row.stats[7]),
-    rec_yds: num(row.stats[8]),
-    rec_td: num(row.stats[9]),
-    tar: num(row.stats[10]),
-    espn_fpts: num(row.fpts[0]),
-  }
-}
-
-function parseDefenseRow(row) {
-  // After D/ST filter, middle table columns are:
-  //   TT, SCK, FF, FR, INT, ITD, FTD, %ROST, +/-
-  return {
-    name: row.name,
-    position: 'DST',
-    team: row.team,
-    injury_status: row.injuryStatus || '',
-    tackles: num(row.stats[0]),
-    sacks: num(row.stats[1]),
-    forced_fumbles: num(row.stats[2]),
-    fum_rec: num(row.stats[3]),
-    def_int: num(row.stats[4]),
-    int_td: num(row.stats[5]),
-    fum_td: num(row.stats[6]),
-    espn_fpts: num(row.fpts[0]),
-  }
-}
-
-async function scrapePages(page, maxPages, parser, opts = {}) {
-  const { expectedRowsPerPage = null, label = '' } = opts
+  const projId = `10${SEASON}`
   const rows = []
-  let shortfall = 0
-  for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-    // Make sure the page's three tables have fully (and equally) rendered before
-    // reading them, so we don't truncate the page via Math.min (see waitForFullRows).
-    await waitForFullRows(page, expectedRowsPerPage)
+  for (const entry of entries) {
+    const pl = entry.player
+    if (!pl) continue
+    const position = ESPN_POSITION[pl.defaultPositionId]
+    if (!position) continue // skip IDP / non-app positions
 
-    const raw = await extractCurrentPageRows(page)
-    if (raw.length === 0) {
-      console.log(`    [page ${pageNum}] empty rows, stopping`)
-      break
+    const proj = (pl.stats || []).find(s => s.statSourceId === 1 && s.id === projId)
+    const st = proj?.stats || {}
+    const espn_fpts = round1(proj?.appliedTotal)
+
+    const base = {
+      name: pl.fullName,
+      position,
+      team: ESPN_TEAM[pl.proTeamId] ?? '',
+      injury_status: mapInjury(pl.injuryStatus),
+      espn_fpts,
     }
-    const firstName = raw[0]?.name || ''
-    console.log(`    [page ${pageNum}] ${raw.length} rows starting with ${firstName}`)
-    // Every page except the last should be full. A short page means the render
-    // race truncated it — surface it loudly so a partial scrape never passes silently.
-    if (expectedRowsPerPage && raw.length < expectedRowsPerPage && pageNum < maxPages) {
-      shortfall += expectedRowsPerPage - raw.length
-      console.log(`    [page ${pageNum}] ⚠ only ${raw.length}/${expectedRowsPerPage} rows captured`)
+
+    if (position === 'K' || position === 'DST') {
+      // K/DST score off ESPN's projected total directly (process.mjs).
+      rows.push(base)
+      continue
     }
-    for (const r of raw) {
-      const parsed = parser(r)
-      if (parsed && parsed.name) rows.push(parsed)
-    }
-    if (pageNum < maxPages) {
-      const advanced = await gotoNextPage(page)
-      if (!advanced) {
-        console.log(`    [page ${pageNum}->next] failed to advance, stopping`)
-        break
-      }
-    }
-  }
-  if (shortfall > 0) {
-    console.log(`    ⚠ ${label || 'scrape'}: ~${shortfall} rows lost to truncated pages`)
+
+    // Offensive players: carry raw stats so process.mjs computes std/half/ppr.
+    // Skip players projected for 0 points — undraftable, and keeps the pool
+    // close to its historical size instead of dumping ~1000 entries.
+    if (espn_fpts <= 0) continue
+    const g = id => round1(st[id])
+    rows.push({
+      ...base,
+      pass_comp: g(STAT.pass_comp),
+      pass_att: g(STAT.pass_att),
+      pass_yds: g(STAT.pass_yds),
+      pass_td: g(STAT.pass_td),
+      int: g(STAT.int),
+      rush_car: g(STAT.rush_car),
+      rush_yds: g(STAT.rush_yds),
+      rush_td: g(STAT.rush_td),
+      rec: g(STAT.rec),
+      rec_yds: g(STAT.rec_yds),
+      rec_td: g(STAT.rec_td),
+      tar: g(STAT.tar),
+    })
   }
   return rows
 }
@@ -361,21 +170,16 @@ function rowToCsv(row) {
   }).join(',')
 }
 
-// Yahoo's draft analysis salary-cap page: gives each player's "Proj $" auction
-// valuation. Public page, no login required. ?count=500 returns 500 rows in
-// one request (no pagination loop needed).
+// ── Yahoo salary-cap "Proj $" (Playwright) ──────────────────────────────────
+
+// Yahoo's draft analysis salary-cap page: each player's "Proj $" auction value.
+// Public page, ?count=500 returns 500 rows in one request.
 const YAHOO_URL = 'https://football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap&count=500'
 
 async function scrapeYahooSalcap(page) {
   await page.goto(YAHOO_URL, { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.waitForSelector('table tbody tr', { timeout: 30000 })
   await page.waitForTimeout(2000)
-  // Yahoo's player cell has structured elements:
-  //   [data-tst="player-name"]: name
-  //   [data-tst="player-position"]: position chip (WR/RB/QB/TE/K/D)
-  //   Team is the text-node sibling of the position span ("NE - WR" => team="NE")
-  // A trailing "NA" status badge in the same cell would otherwise corrupt the
-  // position if we relied on textContent.
   const rows = await page.evaluate(() => {
     const trs = Array.from(document.querySelectorAll('table tbody tr'))
     return trs.map(tr => {
@@ -409,61 +213,27 @@ function rowToYahooCsv(row) {
   }).join(',')
 }
 
+// ── Orchestration ───────────────────────────────────────────────────────────
+
 export async function scrapeAll(opts = {}) {
-  const { offensivePages = 10, dstPages = 1, outputDir = 'data/projections' } = opts
+  const { outputDir = 'data/projections' } = opts
 
   fs.mkdirSync(outputDir, { recursive: true })
 
+  console.log(`→ Fetching ESPN projections (kona_player_info API, season ${SEASON})...`)
+  const allRows = await fetchEspnProjections()
+  console.log(`  ${allRows.length} players (positions: ${Object.entries(countBy(allRows, 'position')).map(([k, v]) => `${k}=${v}`).join(', ')})`)
+  if (allRows.length < 400) {
+    throw new Error(`ESPN API returned only ${allRows.length} usable players — expected several hundred.`)
+  }
+
+  console.log('→ Scraping Yahoo salary-cap "Proj $" values...')
   const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ userAgent: USER_AGENT, viewport: { width: 1280, height: 800 } })
   const page = await context.newPage()
-
-  console.log('→ Loading ESPN projections...')
-  await setupSortableView(page)
-  console.log('→ Sorting by TOT (projected points, descending)...')
-  await sortByTotalPoints(page)
-
-  console.log(`→ Scraping ${offensivePages} pages of All players (offensive view captures K naturally)...`)
-  // ESPN's Sortable Projections paginates 50 rows/page; every page but the last
-  // should be full. Pass that expectation so truncated pages are caught.
-  const ESPN_PAGE_SIZE = 50
-  const offensive = await scrapePages(page, offensivePages, parseOffensiveRow, {
-    expectedRowsPerPage: ESPN_PAGE_SIZE,
-    label: 'offensive',
-  })
-  console.log(`  ${offensive.length} players (positions: ${Object.entries(countBy(offensive, 'position')).map(([k, v]) => `${k}=${v}`).join(', ')})`)
-  const expectedOffensive = offensivePages * ESPN_PAGE_SIZE
-  if (offensive.length < expectedOffensive * 0.97) {
-    console.log(`  ⚠ Expected ~${expectedOffensive} rows from ${offensivePages} pages, only got ${offensive.length}`)
-  }
-
-  console.log(`→ Scraping defenses (D/ST filter, ${dstPages} page)...`)
-  // ESPN's position filter becomes unresponsive after extensive pagination,
-  // so reload the page to get a fresh component state before filtering.
-  await setupSortableView(page)
-  await sortByTotalPoints(page)
-  await filterPosition(page, 'D/ST', 'D/ST')
-  // The D/ST view is a single page of ~32 defenses (fewer than a full page), so
-  // no fixed per-page expectation — waitForFullRows just syncs the three tables.
-  const defenses = await scrapePages(page, dstPages, parseDefenseRow, { label: 'D/ST' })
-  console.log(`  ${defenses.length} defenses`)
-
-  console.log(`→ Scraping Yahoo salary-cap "Proj $" values...`)
   const yahoo = await scrapeYahooSalcap(page)
-  console.log(`  ${yahoo.length} players (positions: ${Object.entries(countBy(yahoo, 'position')).map(([k, v]) => `${k}=${v}`).join(', ')})`)
-
   await browser.close()
-
-  // De-dup by name+position (offensive scrape might also pick up some D/ST that
-  // appeared in top N by projection — prefer the dedicated D/ST scrape values)
-  const byKey = new Map()
-  for (const r of offensive) byKey.set(r.name + '|' + r.position, r)
-  for (const r of defenses) byKey.set(r.name + '|' + r.position, r)
-  const allRows = Array.from(byKey.values())
-
-  if (allRows.length === 0) {
-    throw new Error('Scrape produced 0 rows. ESPN selectors may have changed.')
-  }
+  console.log(`  ${yahoo.length} players (positions: ${Object.entries(countBy(yahoo, 'position')).map(([k, v]) => `${k}=${v}`).join(', ')})`)
 
   const date = new Date().toISOString().slice(0, 10)
   const csvPath = path.join(outputDir, `projections-${date}.csv`)
