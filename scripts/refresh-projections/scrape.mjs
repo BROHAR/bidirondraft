@@ -81,6 +81,40 @@ async function extractCurrentPageRows(page) {
   })
 }
 
+// Wait until ESPN's three synchronized tables (frozen-left names, middle stats,
+// right fantasy points) have all rendered the SAME number of rows — and at
+// least `expectedRows` when that's known. extractCurrentPageRows() takes the
+// min row count across the three tables; ESPN paints the bottom rows of a page
+// a beat after the top, so extracting too early silently truncates the page and
+// drops mid-tier players (e.g. Mahomes, Herbert) that sit near a page's bottom.
+async function waitForFullRows(page, expectedRows = null) {
+  try {
+    await page.waitForFunction(
+      expected => {
+        const count = sel => {
+          const t = document.querySelector(sel)
+          return t ? t.querySelectorAll('tbody tr').length : 0
+        }
+        const left = count('table.Table--fixed-left')
+        const right = count('table.Table--fixed-right')
+        const middle = (() => {
+          const t = Array.from(document.querySelectorAll('table.Table--align-right'))
+            .find(x => !x.classList.contains('Table--fixed-left') && !x.classList.contains('Table--fixed-right'))
+          return t ? t.querySelectorAll('tbody tr').length : 0
+        })()
+        if (left === 0 || left !== right || left !== middle) return false
+        return expected ? left >= expected : true
+      },
+      expectedRows,
+      { timeout: 12000, polling: 250 }
+    )
+  } catch {
+    console.log(`    (waitForFullRows: tables never reached ${expectedRows ?? 'a synced count'} in time; extracting what rendered)`)
+  }
+  // Small settle so a final in-flight row finishes painting before extraction.
+  await page.waitForTimeout(400)
+}
+
 async function setupSortableView(page) {
   await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.waitForSelector('table.Table', { timeout: 30000 })
@@ -278,9 +312,15 @@ function parseDefenseRow(row) {
   }
 }
 
-async function scrapePages(page, maxPages, parser, label = '') {
+async function scrapePages(page, maxPages, parser, opts = {}) {
+  const { expectedRowsPerPage = null, label = '' } = opts
   const rows = []
+  let shortfall = 0
   for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+    // Make sure the page's three tables have fully (and equally) rendered before
+    // reading them, so we don't truncate the page via Math.min (see waitForFullRows).
+    await waitForFullRows(page, expectedRowsPerPage)
+
     const raw = await extractCurrentPageRows(page)
     if (raw.length === 0) {
       console.log(`    [page ${pageNum}] empty rows, stopping`)
@@ -288,6 +328,12 @@ async function scrapePages(page, maxPages, parser, label = '') {
     }
     const firstName = raw[0]?.name || ''
     console.log(`    [page ${pageNum}] ${raw.length} rows starting with ${firstName}`)
+    // Every page except the last should be full. A short page means the render
+    // race truncated it — surface it loudly so a partial scrape never passes silently.
+    if (expectedRowsPerPage && raw.length < expectedRowsPerPage && pageNum < maxPages) {
+      shortfall += expectedRowsPerPage - raw.length
+      console.log(`    [page ${pageNum}] ⚠ only ${raw.length}/${expectedRowsPerPage} rows captured`)
+    }
     for (const r of raw) {
       const parsed = parser(r)
       if (parsed && parsed.name) rows.push(parsed)
@@ -299,6 +345,9 @@ async function scrapePages(page, maxPages, parser, label = '') {
         break
       }
     }
+  }
+  if (shortfall > 0) {
+    console.log(`    ⚠ ${label || 'scrape'}: ~${shortfall} rows lost to truncated pages`)
   }
   return rows
 }
@@ -375,8 +424,18 @@ export async function scrapeAll(opts = {}) {
   await sortByTotalPoints(page)
 
   console.log(`→ Scraping ${offensivePages} pages of All players (offensive view captures K naturally)...`)
-  const offensive = await scrapePages(page, offensivePages, parseOffensiveRow)
+  // ESPN's Sortable Projections paginates 50 rows/page; every page but the last
+  // should be full. Pass that expectation so truncated pages are caught.
+  const ESPN_PAGE_SIZE = 50
+  const offensive = await scrapePages(page, offensivePages, parseOffensiveRow, {
+    expectedRowsPerPage: ESPN_PAGE_SIZE,
+    label: 'offensive',
+  })
   console.log(`  ${offensive.length} players (positions: ${Object.entries(countBy(offensive, 'position')).map(([k, v]) => `${k}=${v}`).join(', ')})`)
+  const expectedOffensive = offensivePages * ESPN_PAGE_SIZE
+  if (offensive.length < expectedOffensive * 0.97) {
+    console.log(`  ⚠ Expected ~${expectedOffensive} rows from ${offensivePages} pages, only got ${offensive.length}`)
+  }
 
   console.log(`→ Scraping defenses (D/ST filter, ${dstPages} page)...`)
   // ESPN's position filter becomes unresponsive after extensive pagination,
@@ -384,7 +443,9 @@ export async function scrapeAll(opts = {}) {
   await setupSortableView(page)
   await sortByTotalPoints(page)
   await filterPosition(page, 'D/ST', 'D/ST')
-  const defenses = await scrapePages(page, dstPages, parseDefenseRow)
+  // The D/ST view is a single page of ~32 defenses (fewer than a full page), so
+  // no fixed per-page expectation — waitForFullRows just syncs the three tables.
+  const defenses = await scrapePages(page, dstPages, parseDefenseRow, { label: 'D/ST' })
   console.log(`  ${defenses.length} defenses`)
 
   console.log(`→ Scraping Yahoo salary-cap "Proj $" values...`)

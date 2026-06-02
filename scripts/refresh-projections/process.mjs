@@ -146,10 +146,13 @@ export async function processCsv(csvPath, yahooCsvPath = null) {
   const csv = fs.readFileSync(csvPath, 'utf-8')
   const rows = parseCsv(csv)
 
-  // Build Yahoo Proj $ lookup keyed by normalized name + position.
+  // Build Yahoo Proj $ lookup keyed by normalized name + position. Keep the
+  // rank-ordered list too (Yahoo's CSV is in draft-rank order) for the
+  // completeness guardrail below.
   const yahooByKey = new Map()
+  let yahooRows = []
   if (yahooCsvPath && fs.existsSync(yahooCsvPath)) {
-    const yahooRows = parseYahooCsv(fs.readFileSync(yahooCsvPath, 'utf-8'))
+    yahooRows = parseYahooCsv(fs.readFileSync(yahooCsvPath, 'utf-8'))
     for (const y of yahooRows) {
       yahooByKey.set(normalizeName(y.name) + y.position, y.proj_dollars)
     }
@@ -165,6 +168,26 @@ export async function processCsv(csvPath, yahooCsvPath = null) {
     _normalized: normalizeName(row.name),
     _standard: standardPoints(row), // for ranking new players
   }))
+
+  // Completeness guardrail. Yahoo's top draft-ranked players should virtually
+  // all appear in the ESPN scrape; if a chunk of them is missing, the scrape was
+  // truncated (the historical Math.min row-render race in scrape.mjs) and we must
+  // NOT overwrite players.json with an incomplete pool. DST is excluded — its
+  // name/value handling differs and it's clamped regardless.
+  const scrapedKeys = new Set(scraped.map(p => p._normalized + p.position))
+  if (yahooRows.length > 0) {
+    const TOP_N = 150
+    const MAX_MISSING = 8 // tolerate a few name-normalization mismatches
+    const topYahoo = yahooRows.filter(y => y.position && y.position !== 'DST').slice(0, TOP_N)
+    const missingTop = topYahoo.filter(y => !scrapedKeys.has(normalizeName(y.name) + y.position))
+    if (missingTop.length > MAX_MISSING) {
+      console.error(`\n✗ Completeness check FAILED: ${missingTop.length} of Yahoo's top ${TOP_N} players are absent from the ESPN scrape:`)
+      for (const y of missingTop) console.error(`    - ${y.name} (${y.position})`)
+      console.error('  The ESPN scrape was likely truncated mid-render. players.json was NOT modified.\n')
+      throw new Error(`Scrape incomplete: ${missingTop.length} of top-${TOP_N} Yahoo players missing (max allowed ${MAX_MISSING})`)
+    }
+    console.log(`  ✓ Completeness: ${topYahoo.length - missingTop.length}/${topYahoo.length} of Yahoo's top ${TOP_N} present in scrape`)
+  }
 
   // Sort offensive players by standard points for rank-based defaults
   const offensiveByRank = scraped
