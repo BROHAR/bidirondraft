@@ -33,25 +33,24 @@ npm run refresh-projections
 
 That single command does the full refresh and ends by overwriting `src/data/players.json` in place. No further action required.
 
-> Prerequisite: the scrape needs Playwright's Chromium binary. On a fresh clone or after a Playwright version bump, run `npx playwright install chromium` first — otherwise it fails with `Executable doesn't exist … chrome-headless-shell`.
+> Prerequisite: the Yahoo step needs Playwright's Chromium binary. On a fresh clone or after a Playwright version bump, run `npx playwright install chromium` first — otherwise it fails with `Executable doesn't exist … chrome-headless-shell`. (ESPN no longer needs a browser — see below.)
 
 After it finishes, optionally:
 
 - `npm run test:run` to confirm the test suite still passes
 - `git add src/data/players.json data/projections/projections-*.csv data/projections/yahoo-salcap-*.csv && git commit -m "Refresh player projections"` if the user wants the new data committed
 
-Expected runtime: ~2-3 minutes (ESPN's pagination is async with multi-second latency per page; the script handles this with a 10s warmup + first-row-change detection per Next click).
+Expected runtime: ~15-30 seconds. ESPN is a single JSON API request; the only browser work is the Yahoo page scrape.
 
 ### What the refresh does
 
 Implemented in `scripts/refresh-projections/`:
 
-- **`scrape.mjs`** — Playwright (Chromium, headless). Three passes in one browser session:
-  1. ESPN Sortable Projections "All" view, 10 pages × 50 rows = 500 offensive players. Captures top kickers naturally (ESPN's K position filter is broken — only changes column headers, not row filter).
-  2. ESPN D/ST filter view, 1 page = 32 defenses. Re-navigates the page first because the position filter goes unresponsive after extensive pagination.
-  3. Yahoo Fantasy salary-cap draft analysis (`?count=500`), single request, used for the authoritative auction `estimatedValue`.
+- **`scrape.mjs`** — Two sources:
+  1. **ESPN** — the public `kona_player_info` JSON API (`lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/<SEASON>/segments/0/leaguedefaults/3?view=kona_player_info`), the same endpoint the projections page itself calls. Driven by an `x-fantasy-filter` header (requires a sort clause, or it returns nothing) plus `x-fantasy-platform`/`x-fantasy-source` headers. No auth. Returns the full ~1000-player pool deterministically with projected stats. **We moved off DOM scraping because ESPN's projections table is _virtualized_** — only on-screen rows exist in the DOM — which made a Playwright/pagination scrape non-deterministic and silently dropped a fixed cohort of starters (Mahomes, Herbert, Stafford, …). ESPN stat IDs (e.g. pass_yds=3, rush_yds=24, rec=53), position IDs (1=QB…16=DST), and proTeam IDs are mapped into the same CSV shape the old scraper emitted. `appliedTotal` from the season projection (`statSourceId===1`) is the projected points — used directly for K/DST. Offensive players projected for 0 points are dropped. Season defaults to the current year; override with `ESPN_SEASON`.
+  2. **Yahoo** — salary-cap draft analysis (`?count=500`) via Playwright (its page isn't virtualized), single request, used for the authoritative auction `estimatedValue`.
 
-- **`process.mjs`** — Computes fantasy points (standard / halfPPR / ppr) from raw passing+rushing+receiving stats. K and DST use ESPN's projected points directly. Merges by normalized name + position: Yahoo's "Proj $" wins for `estimatedValue` when matched; otherwise the existing `players.json` value is preserved; new entries get a rank-based default. `byeWeek` is preserved from existing entries (Sortable Projections doesn't expose it).
+- **`process.mjs`** — Computes fantasy points (standard / halfPPR / ppr) from raw passing+rushing+receiving stats. K and DST use ESPN's projected points directly. Merges by normalized name + position: Yahoo's "Proj $" wins for `estimatedValue` when matched; otherwise the existing `players.json` value is preserved; new entries get a rank-based default. `byeWeek` is preserved from existing entries (the projection feed doesn't expose it). **Completeness guardrail:** throws (leaving `players.json` untouched) if more than 8 of Yahoo's top-150 players are absent from the ESPN data — the safety net that caught the virtualized-scrape bug.
 
 - **`index.mjs`** — Orchestrator (the npm entry point).
 
@@ -65,6 +64,7 @@ Useful for diffing scrapes over time and troubleshooting if a future ESPN/Yahoo 
 
 ### Things that can break
 
-- **ESPN selector changes**: `scrape.mjs` keys on `.player-column__athlete a`, `.playerinfo__playerteam`, `.playerinfo__playerpos`, `button.Pagination__Button--next`, `.Pagination__list__item--active`, `label.picker-option`. If a refresh throws a clear "could not switch to Sortable Projections view" or "Position filter did not apply" error, ESPN changed their HTML — open the page in a browser, inspect the new structure, update selectors.
-- **Yahoo selector changes**: keys on `[data-tst="player-name"]` and `[data-tst="player-position"]`. Same playbook.
-- **Pagination timing**: ESPN's pagination is debounced/async. If pages stop advancing partway through (only N×50 rows scraped instead of 500), bump the `waitForFunction` timeout in `gotoNextPage` (currently 15s) or the post-Sortable-switch warmup wait (currently 10s).
+- **ESPN API changes**: if the fetch returns an HTTP error or 0 players, the `x-fantasy-filter` shape, the `view`, the headers, or the season may have changed. Open the live projections page with DevTools → Network, find the `lm-api-reads` request, and copy its current URL/headers/filter. The completeness guardrail will catch silent gaps even if the request still succeeds.
+- **ESPN stat-ID drift**: the numeric stat IDs (pass_yds=3, pass_td=4, int=20, rush_yds=24, rush_td=25, rec=53, rec_yds=42, rec_td=43, …) are ESPN constants mapped in `scrape.mjs`. If projections look wrong, re-verify an ID against a known player's projected line.
+- **Yahoo selector changes**: keys on `[data-tst="player-name"]` and `[data-tst="player-position"]`. Open the page and update selectors.
+- **Completeness guardrail fires**: `process.mjs` aborts the refresh if >8 of Yahoo's top-150 players are missing from the ESPN data — meaning the ESPN fetch came back incomplete. Fix the fetch; don't raise the threshold to force a write of bad data.
