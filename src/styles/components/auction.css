@@ -1,10 +1,11 @@
 .auction-block {
   /* Fill the column the same way .player-pool does so the module height tracks
-     the Available Players panel instead of a fixed 810px that overflows on tall
-     screens and shows a scrollbar. */
+     the Available Players panel instead of a fixed 810px. Clip overflow with no
+     scrollbar — the bid advisor and other content stay anchored at the top, and
+     any excess is simply hidden rather than producing a module scrollbar. */
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .auction-waiting {

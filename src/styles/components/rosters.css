@@ -44,6 +44,9 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  /* Breathing room so the scrollbar (when the roster list is long) doesn't sit
+     flush against the Max Bid figure at the top-right. */
+  padding-right: var(--space-2);
 }
 
 .team-info {
