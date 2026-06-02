@@ -817,6 +817,32 @@ describe('DraftEngine', () => {
       engine.resumeDraft()
       expect(store.getState().draftState).toBe('BIDDING')
     })
+
+    // Regression: pausing clears the bidding timer but NOT the processAIBids
+    // setTimeout cascade — those callbacks die on their own once draftState is
+    // PAUSED. resumeDraft must re-kick the loop, or the resumed auction gets
+    // zero AI bids and the nominator steals the player for $1 / their standing
+    // bid, with AI only "resuming" on the next nomination (the reported bug).
+    it('re-kicks the AI bidding loop when resuming a live auction', () => {
+      const teams = engine.createTeams(defaultConfig)
+      const player = new Player({ id: 'p1', name: 'Test', position: 'QB', team: 'KC', estimatedValue: 30, byeWeek: 5 })
+      store.setState(draft => {
+        draft.teams = teams
+        draft.config = defaultConfig
+        draft.draftState = 'BIDDING'
+        draft.currentPlayer = player
+        draft.currentBid = 1
+      })
+      engine.biddingTimeRemaining = 15
+
+      engine.pauseDraft()
+      expect(engine.aiManager.processAIBidding).not.toHaveBeenCalled()
+
+      engine.resumeDraft()
+      // The re-kick is scheduled 1-3s out; advance past the window.
+      vi.advanceTimersByTime(3000)
+      expect(engine.aiManager.processAIBidding).toHaveBeenCalled()
+    })
   })
 
   describe('updateTeamPsychology', () => {
