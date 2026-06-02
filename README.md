@@ -47,10 +47,10 @@ npm run refresh-projections
 ```
 
 > ⚠️ **Third-party data disclaimer.** This script uses Playwright to scrape publicly
-> visible projection pages from ESPN and Yahoo Fantasy (it sends a desktop Chrome
-> `User-Agent`). The player names, projections, and auction values are the property of
-> their respective owners; this project is **not affiliated with or endorsed by** the
-> NFL, ESPN, or Yahoo. Scraping and redistributing this data may be contrary to those
+> visible projection pages (it sends a desktop Chrome `User-Agent`). The player names,
+> projections, and auction values are the property of their respective owners; this
+> project is **not affiliated with or endorsed by** these sites. Scraping and
+> redistributing this data may be contrary to those
 > sites' Terms of Service — run the refresh and use the resulting data **at your own
 > risk and for personal use only**. See `scripts/refresh-projections/` and `CLAUDE.md`
 > for how the refresh works.
