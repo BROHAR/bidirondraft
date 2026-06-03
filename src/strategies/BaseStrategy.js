@@ -127,8 +127,13 @@ export class BaseStrategy {
       adjustments += (topBoost - 1.0) * baseValue
     }
 
-    // Apply early draft aggression (smaller boost)
-    if (this.team.roster.length < 4) {
+    // Apply early draft aggression (smaller boost). Gated behind a coin-flip
+    // so the boost doesn't fire for every team at once during the draft
+    // opening — when all rosters are <4 and budgets are full — which uniformly
+    // bid up the first wave of nominations and drained budgets before the
+    // mid-tier came up. ~50% application halves that league-wide inflation
+    // while still letting some teams come out swinging on a given auction.
+    if (this.team.roster.length < 4 && Math.random() < 0.5) {
       const earlyBoost = this.getEarlyDraftMultiplier() - 1.0
       adjustments += earlyBoost * baseValue
     }
@@ -193,9 +198,11 @@ export class BaseStrategy {
     }
 
     // Defensive ceiling. Nothing in the AI strategy stack should value a
-    // player above 1.35× book — that's just outside the legitimate envelope
-    // of tier-cap × combinedBoost (1.12 × 1.20 = 1.344). Catches hidden
-    // escape paths. User hard-pins return earlier and aren't affected.
+    // player above 1.35× book — the outer edge of the legitimate envelope of
+    // tier-cap × combinedBoost (the widest tier cap, mid at 1.25, × the 1.20
+    // boost cap = 1.50, clamped here; top tiers sit far lower at 1.05 × 1.20 =
+    // 1.26). Catches hidden escape paths. User hard-pins return earlier and
+    // aren't affected.
     finalValue = Math.min(finalValue, baseValue * 1.35)
 
     // Position-aware ceiling for K/DST. Kickers and defenses are worth a
@@ -231,33 +238,22 @@ export class BaseStrategy {
   }
 
   getMaxBidForPlayer(player) {
-    // Variable bid ceilings based on team strategy and situation
-    const budgetSpent = this.team.budget - this.team.remainingBudget
-    const budgetRatio = budgetSpent / this.team.budget
-    
     // Base multipliers with competitive caps for top players. Elite/high tiers
-    // are tightened so most $50+ overpays land within ~$5 of book value, with
-    // a thin tail to ~$15 when pacing/urgency boosts compound. Mid/low tiers
-    // keep more variance — overpay drama on sleepers is intentional.
+    // are tightened to ~book value: with ~12 bidders the *realized* contested
+    // price approaches the max order-statistic of these per-team multipliers
+    // (the winner pays just over the runner-up), so the cap effectively IS the
+    // sale price for any contested stud. The old 1.12/1.10 caps therefore meant
+    // every contested stud sold at ~1.1x book, front-loading budget onto the
+    // top tier and starving mid-tier auctions later (the reported "early/
+    // expensive overspend, mid-tier sells for $1" pattern). Mid/low tiers keep
+    // wide variance — overpay drama on sleepers is intentional.
     let multiplier
     if (player.estimatedValue >= 50) {
-      // Elite: 0-8% over base, cash bonus 1.05x, hard cap 1.12
-      multiplier = 1.00 + Math.random() * 0.08
-
-      if (budgetRatio < 0.3 && Math.random() < 0.3) {
-        multiplier *= 1.05
-      }
-
-      multiplier = Math.min(multiplier, 1.12)
+      // Elite: ~book value (0-5% over).
+      multiplier = 1.00 + Math.random() * 0.05
     } else if (player.estimatedValue >= 30) {
-      // High: 0-6% over base, cash bonus 1.05x, hard cap 1.10
-      multiplier = 1.00 + Math.random() * 0.06
-
-      if (budgetRatio < 0.25 && Math.random() < 0.25) {
-        multiplier *= 1.05
-      }
-
-      multiplier = Math.min(multiplier, 1.10)
+      // High: ~book value (0-5% over).
+      multiplier = 1.00 + Math.random() * 0.05
     } else if (player.estimatedValue >= 15) {
       // Mid: increased variance (0-25% over)
       multiplier = 1.00 + Math.random() * 0.25
@@ -354,14 +350,28 @@ export class BaseStrategy {
   }
 
   getEarlyDraftMultiplier() {
-    return 1.05 + Math.random() * 0.15 // 1.05x to 1.2x (much more conservative)
+    return 1.0 + Math.random() * 0.10 // 1.0x to 1.1x (lowered to curb early-draft inflation)
   }
 
   getPositionNeedMultiplier(position) {
-    const need = this.team.getPositionNeed(position)
-    if (need <= 0) return 0.55 // Strong discount for backup/excess slot
-    if (need >= 2) return 1.2  // Premium for high need positions
-    return 1.0
+    const baseNeed = this.team.getPositionNeed(position)
+    if (baseNeed >= 2) return 1.2  // multiple base starters still open → premium
+    if (baseNeed === 1) return 1.0 // one base starter still open
+
+    // baseNeed === 0: this position's base starter slots are full. Before
+    // applying the deep backup discount, check whether the player could still
+    // fill an open FLEX (RB/WR/TE) or SUPERFLEX (QB/RB/WR/TE) *starting* slot.
+    // getPositionNeed only counts base slots, so without this the entire
+    // mid-tier RB/WR market gets discounted to 0.55x the moment base slots
+    // fill — even with FLEX/SUPERFLEX wide open — and those players (Etienne,
+    // G. Wilson, etc.) draw no real bids and sell for $1. Mirrors
+    // hasOpenStartingSlot / getStarterUrgencyBoost, which already treat a FLEX
+    // opening as a startable slot.
+    const flexEligible = ['RB', 'WR', 'TE'].includes(position) && this.team.getFlexNeed() > 0
+    const sfEligible = ['QB', 'RB', 'WR', 'TE'].includes(position) && this.team.getSuperflexNeed() > 0
+    if (flexEligible || sfEligible) return 1.0 // still filling a starting slot
+
+    return 0.55 // genuine bench depth — deep discount
   }
 
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {

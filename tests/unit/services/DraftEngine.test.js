@@ -154,6 +154,43 @@ describe('DraftEngine', () => {
     })
   })
 
+  describe('league-size value calibration (budget anchor)', () => {
+    // The top-(totalSpots) players are the ones that actually get drafted, so
+    // their estimatedValue should sum to ≈ the total auction budget — otherwise
+    // realized prices can't track estimatedValue on average. Regression guard
+    // for the inflate-only bug: in small leagues raw book exceeded the budget,
+    // the anchor refused to scale down, and the surplus book forced systematic
+    // below-estimate sales (mid-tier players selling for $1).
+    const sumTopN = (players, n) =>
+      [...players].sort((a, b) => b.estimatedValue - a.estimatedValue)
+        .slice(0, n).reduce((s, p) => s + p.estimatedValue, 0)
+
+    const poolOf = (count, valueAt) =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `p${i}`, name: `P${i}`, position: ['QB', 'RB', 'WR'][i % 3],
+        team: 'KC', estimatedValue: valueAt(i), byeWeek: 7, projectedPoints: 300 - i
+      }))
+
+    it('deflates an over-budget pool so top-(totalSpots) book ≈ total budget', () => {
+      // 12 teams (top-60 tilt is neutral here) × $100 = $1200, 3 spots each → 36
+      // drafted. A pool worth ~$58 each sums far above the budget; the old
+      // inflate-only anchor left it at ~1.7× budget.
+      const config = { ...defaultConfig, numberOfTeams: 12, budgetPerTeam: 100, rosterPositions: { QB: 1, RB: 1, WR: 1 } }
+      engine.initializeDraft(config, { players: poolOf(40, i => 60 - (i % 5)) })
+      const sum = sumTopN(store.getState().availablePlayers, 36)
+      expect(sum).toBeGreaterThan(1200 * 0.92)
+      expect(sum).toBeLessThan(1200 * 1.08)
+    })
+
+    it('still inflates an under-budget pool up to the total budget', () => {
+      const config = { ...defaultConfig, numberOfTeams: 12, budgetPerTeam: 200, rosterPositions: { QB: 1, RB: 1, WR: 1 } }
+      engine.initializeDraft(config, { players: poolOf(40, i => 10 - (i % 3)) })
+      const sum = sumTopN(store.getState().availablePlayers, 36)
+      expect(sum).toBeGreaterThan(2400 * 0.92)
+      expect(sum).toBeLessThan(2400 * 1.08)
+    })
+  })
+
   describe('createTeams', () => {
     it('creates the correct number of teams', () => {
       const teams = engine.createTeams(defaultConfig)
