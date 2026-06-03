@@ -7,8 +7,8 @@
       "team": "ATL",
       "estimatedValue": 62,
       "projectedPoints": {
-        "standard": 279.3,
-        "halfPPR": 317,
+        "standard": 279.1,
+        "halfPPR": 316.9,
         "ppr": 354.7
       },
       "byeWeek": 5,
@@ -21,9 +21,9 @@
       "team": "CIN",
       "estimatedValue": 61,
       "projectedPoints": {
-        "standard": 216.9,
-        "halfPPR": 276.7,
-        "ppr": 336.4
+        "standard": 217.6,
+        "halfPPR": 277.3,
+        "ppr": 337.1
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -35,9 +35,9 @@
       "team": "DET",
       "estimatedValue": 60,
       "projectedPoints": {
-        "standard": 293.2,
-        "halfPPR": 327.1,
-        "ppr": 361
+        "standard": 292.4,
+        "halfPPR": 326.3,
+        "ppr": 360.2
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -51,7 +51,7 @@
       "projectedPoints": {
         "standard": 235.6,
         "halfPPR": 297.1,
-        "ppr": 358.5
+        "ppr": 358.6
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -63,9 +63,9 @@
       "team": "SEA",
       "estimatedValue": 58,
       "projectedPoints": {
-        "standard": 211.6,
-        "halfPPR": 270,
-        "ppr": 328.4
+        "standard": 211.5,
+        "halfPPR": 269.9,
+        "ppr": 328.2
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -77,9 +77,9 @@
       "team": "SF",
       "estimatedValue": 57,
       "projectedPoints": {
-        "standard": 272.1,
-        "halfPPR": 312.3,
-        "ppr": 352.5
+        "standard": 272,
+        "halfPPR": 312.2,
+        "ppr": 352.4
       },
       "byeWeek": 14,
       "injuryStatus": ""
@@ -93,7 +93,7 @@
       "projectedPoints": {
         "standard": 191.6,
         "halfPPR": 243.7,
-        "ppr": 295.7
+        "ppr": 295.8
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -105,9 +105,9 @@
       "team": "IND",
       "estimatedValue": 54,
       "projectedPoints": {
-        "standard": 262.8,
-        "halfPPR": 286.5,
-        "ppr": 310.2
+        "standard": 263,
+        "halfPPR": 286.7,
+        "ppr": 310.4
       },
       "byeWeek": 11,
       "injuryStatus": ""
@@ -120,8 +120,8 @@
       "estimatedValue": 52,
       "projectedPoints": {
         "standard": 207.3,
-        "halfPPR": 266.3,
-        "ppr": 325.3
+        "halfPPR": 266.4,
+        "ppr": 325.4
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -148,8 +148,8 @@
       "estimatedValue": 48,
       "projectedPoints": {
         "standard": 183,
-        "halfPPR": 238.4,
-        "ppr": 293.8
+        "halfPPR": 238.3,
+        "ppr": 293.7
       },
       "byeWeek": 6,
       "injuryStatus": ""
@@ -161,9 +161,9 @@
       "team": "LV",
       "estimatedValue": 46,
       "projectedPoints": {
-        "standard": 217.6,
+        "standard": 217.7,
         "halfPPR": 250.1,
-        "ppr": 282.5
+        "ppr": 282.6
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -189,9 +189,9 @@
       "team": "ATL",
       "estimatedValue": 43,
       "projectedPoints": {
-        "standard": 170.2,
-        "halfPPR": 221,
-        "ppr": 271.8
+        "standard": 169.5,
+        "halfPPR": 220.4,
+        "ppr": 271.4
       },
       "byeWeek": 5,
       "injuryStatus": ""
@@ -203,9 +203,9 @@
       "team": "PHI",
       "estimatedValue": 42,
       "projectedPoints": {
-        "standard": 231.4,
-        "halfPPR": 253,
-        "ppr": 274.6
+        "standard": 231.6,
+        "halfPPR": 253.1,
+        "ppr": 274.7
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -217,8 +217,8 @@
       "team": "CIN",
       "estimatedValue": 42,
       "projectedPoints": {
-        "standard": 209,
-        "halfPPR": 241.1,
+        "standard": 209.1,
+        "halfPPR": 241.2,
         "ppr": 273.2
       },
       "byeWeek": 10,
@@ -246,8 +246,8 @@
       "estimatedValue": 38,
       "projectedPoints": {
         "standard": 141.9,
-        "halfPPR": 191.1,
-        "ppr": 240.3
+        "halfPPR": 191,
+        "ppr": 240.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -273,9 +273,9 @@
       "team": "KC",
       "estimatedValue": 36,
       "projectedPoints": {
-        "standard": 223.7,
-        "halfPPR": 247.7,
-        "ppr": 271.7
+        "standard": 223.8,
+        "halfPPR": 247.8,
+        "ppr": 271.9
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -301,9 +301,9 @@
       "team": "ARI",
       "estimatedValue": 34,
       "projectedPoints": {
-        "standard": 140.5,
-        "halfPPR": 196.4,
-        "ppr": 252.4
+        "standard": 140.4,
+        "halfPPR": 196.3,
+        "ppr": 252.2
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -329,9 +329,9 @@
       "team": "NYG",
       "estimatedValue": 32,
       "projectedPoints": {
-        "standard": 166.3,
-        "halfPPR": 211.2,
-        "ppr": 256.2
+        "standard": 141.9,
+        "halfPPR": 180,
+        "ppr": 218.1
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -371,9 +371,9 @@
       "team": "BAL",
       "estimatedValue": 29,
       "projectedPoints": {
-        "standard": 254.1,
-        "halfPPR": 264.8,
-        "ppr": 275.5
+        "standard": 254.9,
+        "halfPPR": 265.6,
+        "ppr": 276.3
       },
       "byeWeek": 7,
       "injuryStatus": ""
@@ -386,8 +386,8 @@
       "estimatedValue": 28,
       "projectedPoints": {
         "standard": 148.7,
-        "halfPPR": 193.9,
-        "ppr": 239.1
+        "halfPPR": 193.8,
+        "ppr": 239
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -399,9 +399,9 @@
       "team": "NE",
       "estimatedValue": 27,
       "projectedPoints": {
-        "standard": 163,
-        "halfPPR": 206,
-        "ppr": 249.1
+        "standard": 162.9,
+        "halfPPR": 205.9,
+        "ppr": 248.9
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -413,9 +413,9 @@
       "team": "KC",
       "estimatedValue": 26,
       "projectedPoints": {
-        "standard": 188.2,
-        "halfPPR": 239.9,
-        "ppr": 291.5
+        "standard": 174.2,
+        "halfPPR": 222.2,
+        "ppr": 270.2
       },
       "byeWeek": 10,
       "injuryStatus": "Q"
@@ -455,9 +455,9 @@
       "team": "BAL",
       "estimatedValue": 24,
       "projectedPoints": {
-        "standard": 328.2,
-        "halfPPR": 328.2,
-        "ppr": 328.2
+        "standard": 328.6,
+        "halfPPR": 328.6,
+        "ppr": 328.6
       },
       "byeWeek": 7,
       "injuryStatus": ""
@@ -483,9 +483,9 @@
       "team": "NYJ",
       "estimatedValue": 21,
       "projectedPoints": {
-        "standard": 154.8,
-        "halfPPR": 206.5,
-        "ppr": 258.2
+        "standard": 154.6,
+        "halfPPR": 206,
+        "ppr": 257.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -497,9 +497,9 @@
       "team": "LAR",
       "estimatedValue": 20,
       "projectedPoints": {
-        "standard": 210.8,
-        "halfPPR": 227.5,
-        "ppr": 244.2
+        "standard": 209.5,
+        "halfPPR": 226.2,
+        "ppr": 242.9
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -525,9 +525,9 @@
       "team": "NO",
       "estimatedValue": 19,
       "projectedPoints": {
-        "standard": 198.1,
-        "halfPPR": 220.4,
-        "ppr": 242.7
+        "standard": 198,
+        "halfPPR": 220.3,
+        "ppr": 242.6
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -540,8 +540,8 @@
       "estimatedValue": 18,
       "projectedPoints": {
         "standard": 220.8,
-        "halfPPR": 246.8,
-        "ppr": 272.8
+        "halfPPR": 246.7,
+        "ppr": 272.6
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -553,8 +553,8 @@
       "team": "DAL",
       "estimatedValue": 17,
       "projectedPoints": {
-        "standard": 223.2,
-        "halfPPR": 241.8,
+        "standard": 223.1,
+        "halfPPR": 241.7,
         "ppr": 260.3
       },
       "byeWeek": 12,
@@ -583,7 +583,7 @@
       "projectedPoints": {
         "standard": 165.9,
         "halfPPR": 199.6,
-        "ppr": 233.4
+        "ppr": 233.5
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -595,9 +595,9 @@
       "team": "LAC",
       "estimatedValue": 17,
       "projectedPoints": {
-        "standard": 140.5,
-        "halfPPR": 180.3,
-        "ppr": 220.1
+        "standard": 140.4,
+        "halfPPR": 180.2,
+        "ppr": 220
       },
       "byeWeek": 12,
       "injuryStatus": ""
@@ -652,7 +652,7 @@
       "estimatedValue": 15,
       "projectedPoints": {
         "standard": 139.1,
-        "halfPPR": 179.5,
+        "halfPPR": 179.4,
         "ppr": 219.8
       },
       "byeWeek": 12,
@@ -665,9 +665,9 @@
       "team": "TB",
       "estimatedValue": 15,
       "projectedPoints": {
-        "standard": 184.4,
-        "halfPPR": 203.8,
-        "ppr": 223.2
+        "standard": 183.7,
+        "halfPPR": 203.2,
+        "ppr": 222.6
       },
       "byeWeek": 9,
       "injuryStatus": "Q"
@@ -679,9 +679,9 @@
       "team": "CIN",
       "estimatedValue": 14,
       "projectedPoints": {
-        "standard": 305.7,
-        "halfPPR": 305.7,
-        "ppr": 305.7
+        "standard": 306.1,
+        "halfPPR": 306.1,
+        "ppr": 306.1
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -693,9 +693,9 @@
       "team": "NYG",
       "estimatedValue": 13,
       "projectedPoints": {
-        "standard": 194,
+        "standard": 194.1,
         "halfPPR": 218.7,
-        "ppr": 243.3
+        "ppr": 243.4
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -707,9 +707,9 @@
       "team": "TB",
       "estimatedValue": 13,
       "projectedPoints": {
-        "standard": 146,
-        "halfPPR": 177.7,
-        "ppr": 209.5
+        "standard": 152.8,
+        "halfPPR": 186.1,
+        "ppr": 219.3
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -778,8 +778,8 @@
       "estimatedValue": 9,
       "projectedPoints": {
         "standard": 122,
-        "halfPPR": 165.4,
-        "ppr": 208.7
+        "halfPPR": 165.3,
+        "ppr": 208.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -791,7 +791,7 @@
       "team": "NE",
       "estimatedValue": 9,
       "projectedPoints": {
-        "standard": 165.7,
+        "standard": 165.8,
         "halfPPR": 187.3,
         "ppr": 208.9
       },
@@ -805,9 +805,9 @@
       "team": "CLE",
       "estimatedValue": 8,
       "projectedPoints": {
-        "standard": 193.5,
-        "halfPPR": 209.4,
-        "ppr": 225.4
+        "standard": 193.4,
+        "halfPPR": 209.3,
+        "ppr": 225.2
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -847,9 +847,9 @@
       "team": "JAX",
       "estimatedValue": 7,
       "projectedPoints": {
-        "standard": 173,
-        "halfPPR": 189.8,
-        "ppr": 206.7
+        "standard": 172.8,
+        "halfPPR": 189.6,
+        "ppr": 206.5
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -861,7 +861,7 @@
       "team": "HOU",
       "estimatedValue": 7,
       "projectedPoints": {
-        "standard": 161.6,
+        "standard": 161.7,
         "halfPPR": 177.4,
         "ppr": 193.2
       },
@@ -889,9 +889,9 @@
       "team": "PHI",
       "estimatedValue": 7,
       "projectedPoints": {
-        "standard": 325.2,
-        "halfPPR": 325.2,
-        "ppr": 325.2
+        "standard": 325.1,
+        "halfPPR": 325.1,
+        "ppr": 325.1
       },
       "byeWeek": 9,
       "injuryStatus": ""
@@ -919,7 +919,7 @@
       "projectedPoints": {
         "standard": 134.1,
         "halfPPR": 173.1,
-        "ppr": 212.1
+        "ppr": 212
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -945,9 +945,9 @@
       "team": "SEA",
       "estimatedValue": 5,
       "projectedPoints": {
-        "standard": 168.1,
-        "halfPPR": 182.3,
-        "ppr": 196.5
+        "standard": 169,
+        "halfPPR": 183.2,
+        "ppr": 197.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -960,7 +960,7 @@
       "estimatedValue": 5,
       "projectedPoints": {
         "standard": 126.2,
-        "halfPPR": 160.6,
+        "halfPPR": 160.5,
         "ppr": 194.9
       },
       "byeWeek": 0,
@@ -974,8 +974,8 @@
       "estimatedValue": 5,
       "projectedPoints": {
         "standard": 121.7,
-        "halfPPR": 155.4,
-        "ppr": 189.1
+        "halfPPR": 155.5,
+        "ppr": 189.2
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -988,8 +988,8 @@
       "estimatedValue": 5,
       "projectedPoints": {
         "standard": 134.8,
-        "halfPPR": 168.8,
-        "ppr": 202.8
+        "halfPPR": 168.7,
+        "ppr": 202.7
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -1001,9 +1001,9 @@
       "team": "NYG",
       "estimatedValue": 5,
       "projectedPoints": {
-        "standard": 305,
-        "halfPPR": 305,
-        "ppr": 305
+        "standard": 305.7,
+        "halfPPR": 305.7,
+        "ppr": 305.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1015,9 +1015,9 @@
       "team": "PIT",
       "estimatedValue": 5,
       "projectedPoints": {
-        "standard": 145.4,
-        "halfPPR": 168.5,
-        "ppr": 191.5
+        "standard": 146.1,
+        "halfPPR": 169.2,
+        "ppr": 192.2
       },
       "byeWeek": 5,
       "injuryStatus": ""
@@ -1029,9 +1029,9 @@
       "team": "PIT",
       "estimatedValue": 5,
       "projectedPoints": {
-        "standard": 157.7,
-        "halfPPR": 172.3,
-        "ppr": 186.9
+        "standard": 157.8,
+        "halfPPR": 172.4,
+        "ppr": 187
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -1043,9 +1043,9 @@
       "team": "LAC",
       "estimatedValue": 5,
       "projectedPoints": {
-        "standard": 288.3,
-        "halfPPR": 288.3,
-        "ppr": 288.3
+        "standard": 288.2,
+        "halfPPR": 288.2,
+        "ppr": 288.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1057,9 +1057,9 @@
       "team": "CLE",
       "estimatedValue": 4,
       "projectedPoints": {
-        "standard": 105,
-        "halfPPR": 146.5,
-        "ppr": 188.1
+        "standard": 104.8,
+        "halfPPR": 146.2,
+        "ppr": 187.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1072,11 +1072,11 @@
       "estimatedValue": 4,
       "projectedPoints": {
         "standard": 121.3,
-        "halfPPR": 152.2,
-        "ppr": 183
+        "halfPPR": 152.1,
+        "ppr": 182.9
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_159",
@@ -1127,9 +1127,9 @@
       "team": "ATL",
       "estimatedValue": 3,
       "projectedPoints": {
-        "standard": 105.5,
+        "standard": 105.4,
         "halfPPR": 145.6,
-        "ppr": 185.6
+        "ppr": 185.7
       },
       "byeWeek": 5,
       "injuryStatus": ""
@@ -1197,9 +1197,9 @@
       "team": "TB",
       "estimatedValue": 3,
       "projectedPoints": {
-        "standard": 103.8,
-        "halfPPR": 135.6,
-        "ppr": 167.4
+        "standard": 97.9,
+        "halfPPR": 128,
+        "ppr": 158.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1213,7 +1213,7 @@
       "projectedPoints": {
         "standard": 154.5,
         "halfPPR": 173.7,
-        "ppr": 192.9
+        "ppr": 192.8
       },
       "byeWeek": 14,
       "injuryStatus": ""
@@ -1225,9 +1225,9 @@
       "team": "LAR",
       "estimatedValue": 3,
       "projectedPoints": {
-        "standard": 133.7,
-        "halfPPR": 142,
-        "ppr": 150.4
+        "standard": 133.6,
+        "halfPPR": 141.9,
+        "ppr": 150.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1253,9 +1253,9 @@
       "team": "JAX",
       "estimatedValue": 3,
       "projectedPoints": {
-        "standard": 293,
-        "halfPPR": 293,
-        "ppr": 293
+        "standard": 292.6,
+        "halfPPR": 292.6,
+        "ppr": 292.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1267,9 +1267,9 @@
       "team": "PIT",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 108.8,
-        "halfPPR": 153,
-        "ppr": 197.2
+        "standard": 109.4,
+        "halfPPR": 153.6,
+        "ppr": 197.8
       },
       "byeWeek": 12,
       "injuryStatus": ""
@@ -1281,9 +1281,9 @@
       "team": "MIN",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 143.1,
-        "halfPPR": 166.6,
-        "ppr": 190.1
+        "standard": 143.2,
+        "halfPPR": 166.7,
+        "ppr": 190.2
       },
       "byeWeek": 6,
       "injuryStatus": ""
@@ -1297,7 +1297,7 @@
       "projectedPoints": {
         "standard": 112.8,
         "halfPPR": 147.7,
-        "ppr": 182.5
+        "ppr": 182.6
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -1323,9 +1323,9 @@
       "team": "JAX",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 120.1,
-        "halfPPR": 148.6,
-        "ppr": 177.1
+        "standard": 119.5,
+        "halfPPR": 148.1,
+        "ppr": 176.6
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -1337,9 +1337,9 @@
       "team": "TB",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 121.6,
-        "halfPPR": 147.6,
-        "ppr": 173.5
+        "standard": 121,
+        "halfPPR": 147,
+        "ppr": 173
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1367,7 +1367,7 @@
       "projectedPoints": {
         "standard": 128.2,
         "halfPPR": 151.7,
-        "ppr": 175.1
+        "ppr": 175.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1407,9 +1407,9 @@
       "team": "KC",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 102.9,
-        "halfPPR": 139.5,
-        "ppr": 176.2
+        "standard": 103.2,
+        "halfPPR": 139.9,
+        "ppr": 176.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1436,8 +1436,8 @@
       "estimatedValue": 2,
       "projectedPoints": {
         "standard": 89.6,
-        "halfPPR": 127.5,
-        "ppr": 165.3
+        "halfPPR": 127.4,
+        "ppr": 165.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1477,9 +1477,9 @@
       "team": "KC",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 116.5,
-        "halfPPR": 144,
-        "ppr": 171.6
+        "standard": 116.8,
+        "halfPPR": 144.4,
+        "ppr": 172.1
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -1506,7 +1506,7 @@
       "estimatedValue": 2,
       "projectedPoints": {
         "standard": 84.8,
-        "halfPPR": 112,
+        "halfPPR": 112.1,
         "ppr": 139.3
       },
       "byeWeek": 0,
@@ -1520,7 +1520,7 @@
       "estimatedValue": 2,
       "projectedPoints": {
         "standard": 106,
-        "halfPPR": 141.3,
+        "halfPPR": 141.2,
         "ppr": 176.5
       },
       "byeWeek": 0,
@@ -1533,9 +1533,9 @@
       "team": "DAL",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 95.4,
-        "halfPPR": 132.1,
-        "ppr": 168.7
+        "standard": 94.8,
+        "halfPPR": 131.5,
+        "ppr": 168.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1547,9 +1547,9 @@
       "team": "WSH",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 141.5,
-        "halfPPR": 147.8,
-        "ppr": 154.1
+        "standard": 140.8,
+        "halfPPR": 147.1,
+        "ppr": 153.4
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -1575,9 +1575,9 @@
       "team": "SEA",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 114.5,
-        "halfPPR": 124.6,
-        "ppr": 134.8
+        "standard": 113.1,
+        "halfPPR": 123.2,
+        "ppr": 133.4
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -1589,9 +1589,9 @@
       "team": "LAC",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 112.6,
-        "halfPPR": 139,
-        "ppr": 165.4
+        "standard": 112.5,
+        "halfPPR": 138.9,
+        "ppr": 165.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1603,9 +1603,9 @@
       "team": "NE",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 111.7,
-        "halfPPR": 141.5,
-        "ppr": 171.3
+        "standard": 112.3,
+        "halfPPR": 142.1,
+        "ppr": 171.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1631,9 +1631,9 @@
       "team": "MIN",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 117.3,
-        "halfPPR": 124,
-        "ppr": 130.7
+        "standard": 117.4,
+        "halfPPR": 124.1,
+        "ppr": 130.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1673,9 +1673,9 @@
       "team": "NYG",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 92.6,
-        "halfPPR": 124.4,
-        "ppr": 156.3
+        "standard": 93.6,
+        "halfPPR": 125.5,
+        "ppr": 157.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1687,9 +1687,9 @@
       "team": "JAX",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 67.8,
-        "halfPPR": 69.8,
-        "ppr": 71.9
+        "standard": 67.7,
+        "halfPPR": 69.7,
+        "ppr": 71.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1715,9 +1715,9 @@
       "team": "KC",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 292.6,
-        "halfPPR": 292.6,
-        "ppr": 292.6
+        "standard": 292.5,
+        "halfPPR": 292.5,
+        "ppr": 292.5
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -1729,9 +1729,9 @@
       "team": "LAR",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 299.4,
-        "halfPPR": 299.4,
-        "ppr": 299.4
+        "standard": 299,
+        "halfPPR": 299,
+        "ppr": 299
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1743,9 +1743,9 @@
       "team": "BUF",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 96.2,
+        "standard": 96.1,
         "halfPPR": 125.8,
-        "ppr": 155.5
+        "ppr": 155.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1757,9 +1757,9 @@
       "team": "MIN",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 253.3,
-        "halfPPR": 253.3,
-        "ppr": 253.3
+        "standard": 254.4,
+        "halfPPR": 254.4,
+        "ppr": 254.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1785,9 +1785,9 @@
       "team": "DET",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 273.7,
-        "halfPPR": 273.7,
-        "ppr": 273.7
+        "standard": 273.3,
+        "halfPPR": 273.3,
+        "ppr": 273.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1870,8 +1870,8 @@
       "estimatedValue": 2,
       "projectedPoints": {
         "standard": 25.9,
-        "halfPPR": 33.5,
-        "ppr": 41.1
+        "halfPPR": 33.4,
+        "ppr": 41
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1897,26 +1897,12 @@
       "team": "CIN",
       "estimatedValue": 2,
       "projectedPoints": {
-        "standard": 21.2,
-        "halfPPR": 29.9,
-        "ppr": 38.5
+        "standard": 21.8,
+        "halfPPR": 30.5,
+        "ppr": 39.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
-    },
-    {
-      "id": "player_457",
-      "name": "Julian Hill",
-      "position": "TE",
-      "team": "NE",
-      "estimatedValue": 2,
-      "projectedPoints": {
-        "standard": 21.3,
-        "halfPPR": 28.8,
-        "ppr": 36.3
-      },
-      "byeWeek": 0,
-      "injuryStatus": "IR"
     },
     {
       "id": "player_087",
@@ -1967,9 +1953,9 @@
       "team": "CLE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 101.8,
-        "halfPPR": 132.5,
-        "ppr": 163.2
+        "standard": 101.5,
+        "halfPPR": 132.1,
+        "ppr": 162.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -1981,7 +1967,7 @@
       "team": "BUF",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 100.6,
+        "standard": 100.5,
         "halfPPR": 135.6,
         "ppr": 170.6
       },
@@ -1995,9 +1981,9 @@
       "team": "HOU",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 103.2,
-        "halfPPR": 115.3,
-        "ppr": 127.4
+        "standard": 104.5,
+        "halfPPR": 116.6,
+        "ppr": 128.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2023,9 +2009,9 @@
       "team": "DET",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 113.7,
-        "halfPPR": 122.3,
-        "ppr": 130.9
+        "standard": 113.6,
+        "halfPPR": 122.2,
+        "ppr": 130.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2051,9 +2037,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 90.1,
-        "halfPPR": 117,
-        "ppr": 144
+        "standard": 89.9,
+        "halfPPR": 116.8,
+        "ppr": 143.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2065,9 +2051,9 @@
       "team": "TB",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 86.2,
+        "standard": 86.1,
         "halfPPR": 109.7,
-        "ppr": 133.3
+        "ppr": 133.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2093,9 +2079,9 @@
       "team": "DAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 171.8,
-        "halfPPR": 171.8,
-        "ppr": 171.8
+        "standard": 171.6,
+        "halfPPR": 171.6,
+        "ppr": 171.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2107,9 +2093,9 @@
       "team": "HOU",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 128.7,
-        "halfPPR": 128.7,
-        "ppr": 128.7
+        "standard": 128.2,
+        "halfPPR": 128.2,
+        "ppr": 128.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2121,9 +2107,9 @@
       "team": "DEN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 130.7,
-        "halfPPR": 130.7,
-        "ppr": 130.7
+        "standard": 130.8,
+        "halfPPR": 130.8,
+        "ppr": 130.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2135,9 +2121,9 @@
       "team": "CLE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 87.3,
-        "halfPPR": 113.1,
-        "ppr": 138.8
+        "standard": 87,
+        "halfPPR": 112.7,
+        "ppr": 138.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2149,9 +2135,9 @@
       "team": "PHI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 60.5,
-        "halfPPR": 62.3,
-        "ppr": 64.1
+        "standard": 61.1,
+        "halfPPR": 62.9,
+        "ppr": 64.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2163,9 +2149,9 @@
       "team": "SEA",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 119.5,
-        "halfPPR": 119.5,
-        "ppr": 119.5
+        "standard": 120.5,
+        "halfPPR": 120.5,
+        "ppr": 120.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2178,7 +2164,7 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 80.7,
-        "halfPPR": 119.5,
+        "halfPPR": 119.6,
         "ppr": 158.4
       },
       "byeWeek": 0,
@@ -2205,9 +2191,9 @@
       "team": "NE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 100.3,
-        "halfPPR": 100.3,
-        "ppr": 100.3
+        "standard": 100.4,
+        "halfPPR": 100.4,
+        "ppr": 100.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2261,9 +2247,9 @@
       "team": "LAR",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 121.1,
-        "halfPPR": 121.1,
-        "ppr": 121.1
+        "standard": 123.3,
+        "halfPPR": 123.3,
+        "ppr": 123.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2275,9 +2261,9 @@
       "team": "ATL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 86,
-        "halfPPR": 90.4,
-        "ppr": 94.7
+        "standard": 85.9,
+        "halfPPR": 90.3,
+        "ppr": 94.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2289,9 +2275,9 @@
       "team": "BAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 116.3,
-        "halfPPR": 116.3,
-        "ppr": 116.3
+        "standard": 118,
+        "halfPPR": 118,
+        "ppr": 118
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2303,9 +2289,9 @@
       "team": "HOU",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 157.5,
-        "halfPPR": 157.5,
-        "ppr": 157.5
+        "standard": 157.7,
+        "halfPPR": 157.7,
+        "ppr": 157.7
       },
       "byeWeek": 6,
       "injuryStatus": ""
@@ -2359,9 +2345,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 95,
-        "halfPPR": 128.5,
-        "ppr": 162
+        "standard": 94.9,
+        "halfPPR": 128.3,
+        "ppr": 161.7
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -2373,9 +2359,9 @@
       "team": "LAR",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 159.8,
-        "halfPPR": 159.8,
-        "ppr": 159.8
+        "standard": 159.5,
+        "halfPPR": 159.5,
+        "ppr": 159.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2388,8 +2374,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 74.3,
-        "halfPPR": 80.7,
-        "ppr": 87
+        "halfPPR": 80.6,
+        "ppr": 86.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2429,9 +2415,9 @@
       "team": "NO",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 268.9,
-        "halfPPR": 268.9,
-        "ppr": 268.9
+        "standard": 267.9,
+        "halfPPR": 267.9,
+        "ppr": 267.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2443,9 +2429,9 @@
       "team": "JAX",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 147.2,
-        "halfPPR": 147.2,
-        "ppr": 147.2
+        "standard": 146.7,
+        "halfPPR": 146.7,
+        "ppr": 146.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2457,9 +2443,9 @@
       "team": "BAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 112,
-        "halfPPR": 141,
-        "ppr": 170
+        "standard": 112.1,
+        "halfPPR": 141.1,
+        "ppr": 170.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2471,9 +2457,9 @@
       "team": "DET",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 146.1,
-        "halfPPR": 146.1,
-        "ppr": 146.1
+        "standard": 145.8,
+        "halfPPR": 145.8,
+        "ppr": 145.8
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -2485,9 +2471,9 @@
       "team": "MIN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 72.5,
-        "halfPPR": 72.5,
-        "ppr": 72.5
+        "standard": 71.7,
+        "halfPPR": 71.7,
+        "ppr": 71.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2499,9 +2485,9 @@
       "team": "CLE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 106.3,
-        "halfPPR": 106.3,
-        "ppr": 106.3
+        "standard": 103.9,
+        "halfPPR": 103.9,
+        "ppr": 103.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2513,9 +2499,9 @@
       "team": "IND",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 271.5,
-        "halfPPR": 271.5,
-        "ppr": 271.5
+        "standard": 271.9,
+        "halfPPR": 271.9,
+        "ppr": 271.9
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -2527,9 +2513,9 @@
       "team": "JAX",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 78.1,
-        "halfPPR": 78.1,
-        "ppr": 78.1
+        "standard": 79.7,
+        "halfPPR": 79.7,
+        "ppr": 79.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2555,9 +2541,9 @@
       "team": "BAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 145.6,
-        "halfPPR": 145.6,
-        "ppr": 145.6
+        "standard": 145.8,
+        "halfPPR": 145.8,
+        "ppr": 145.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2569,9 +2555,9 @@
       "team": "CLE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 85.8,
-        "halfPPR": 113.3,
-        "ppr": 140.7
+        "standard": 85.6,
+        "halfPPR": 113,
+        "ppr": 140.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2583,9 +2569,9 @@
       "team": "NYG",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 69.3,
-        "halfPPR": 86.9,
-        "ppr": 104.4
+        "standard": 63.6,
+        "halfPPR": 79.6,
+        "ppr": 95.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2597,9 +2583,9 @@
       "team": "DET",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 108.7,
-        "halfPPR": 108.7,
-        "ppr": 108.7
+        "standard": 108.2,
+        "halfPPR": 108.2,
+        "ppr": 108.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2625,9 +2611,9 @@
       "team": "MIN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 141.9,
-        "halfPPR": 141.9,
-        "ppr": 141.9
+        "standard": 142.1,
+        "halfPPR": 142.1,
+        "ppr": 142.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2639,9 +2625,9 @@
       "team": "PIT",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 142.3,
-        "halfPPR": 142.3,
-        "ppr": 142.3
+        "standard": 142.6,
+        "halfPPR": 142.6,
+        "ppr": 142.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2667,9 +2653,9 @@
       "team": "LAC",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 94.4,
-        "halfPPR": 94.4,
-        "ppr": 94.4
+        "standard": 94.1,
+        "halfPPR": 94.1,
+        "ppr": 94.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2723,9 +2709,9 @@
       "team": "NE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 94.1,
-        "halfPPR": 122,
-        "ppr": 150
+        "standard": 94,
+        "halfPPR": 121.9,
+        "ppr": 149.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2737,9 +2723,9 @@
       "team": "TB",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 268.6,
-        "halfPPR": 268.6,
-        "ppr": 268.6
+        "standard": 268.7,
+        "halfPPR": 268.7,
+        "ppr": 268.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2767,7 +2753,7 @@
       "projectedPoints": {
         "standard": 79.9,
         "halfPPR": 111.6,
-        "ppr": 143.3
+        "ppr": 143.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2780,8 +2766,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 83.8,
-        "halfPPR": 113.3,
-        "ppr": 142.8
+        "halfPPR": 113.4,
+        "ppr": 142.9
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -2821,9 +2807,9 @@
       "team": "KC",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 100.4,
-        "halfPPR": 100.4,
-        "ppr": 100.4
+        "standard": 100.8,
+        "halfPPR": 100.8,
+        "ppr": 100.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2919,9 +2905,9 @@
       "team": "HOU",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 249.7,
-        "halfPPR": 249.7,
-        "ppr": 249.7
+        "standard": 250.1,
+        "halfPPR": 250.1,
+        "ppr": 250.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -2948,11 +2934,11 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 74.2,
-        "halfPPR": 104.1,
-        "ppr": 133.9
+        "halfPPR": 104,
+        "ppr": 133.8
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_298",
@@ -3017,9 +3003,9 @@
       "team": "TEN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 14.8,
-        "halfPPR": 16.9,
-        "ppr": 19
+        "standard": 15.5,
+        "halfPPR": 17.7,
+        "ppr": 19.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3087,9 +3073,9 @@
       "team": "SEA",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 249.9,
-        "halfPPR": 249.9,
-        "ppr": 249.9
+        "standard": 249.8,
+        "halfPPR": 249.8,
+        "ppr": 249.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3130,8 +3116,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 50.6,
-        "halfPPR": 54.7,
-        "ppr": 58.9
+        "halfPPR": 54.8,
+        "ppr": 59
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3143,9 +3129,9 @@
       "team": "CLE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 56.8,
-        "halfPPR": 71.6,
-        "ppr": 86.4
+        "standard": 56.6,
+        "halfPPR": 71.3,
+        "ppr": 86.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3158,8 +3144,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 53.7,
-        "halfPPR": 67,
-        "ppr": 80.3
+        "halfPPR": 66.9,
+        "ppr": 80.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3213,9 +3199,9 @@
       "team": "TB",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 94.5,
-        "halfPPR": 94.5,
-        "ppr": 94.5
+        "standard": 92.9,
+        "halfPPR": 92.9,
+        "ppr": 92.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3227,9 +3213,9 @@
       "team": "GB",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 89.2,
-        "halfPPR": 89.2,
-        "ppr": 89.2
+        "standard": 89.3,
+        "halfPPR": 89.3,
+        "ppr": 89.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3257,7 +3243,7 @@
       "projectedPoints": {
         "standard": 24.2,
         "halfPPR": 35,
-        "ppr": 45.8
+        "ppr": 45.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3339,9 +3325,9 @@
       "team": "DAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 46.7,
-        "halfPPR": 51.1,
-        "ppr": 55.5
+        "standard": 31.3,
+        "halfPPR": 33.5,
+        "ppr": 35.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3395,9 +3381,9 @@
       "team": "PHI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 35.9,
-        "halfPPR": 46.6,
-        "ppr": 57.2
+        "standard": 36.5,
+        "halfPPR": 47.1,
+        "ppr": 57.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3409,23 +3395,9 @@
       "team": "IND",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 87.9,
-        "halfPPR": 87.9,
-        "ppr": 87.9
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
-      "id": "player_187",
-      "name": "Jason Sanders",
-      "position": "K",
-      "team": "NYG",
-      "estimatedValue": 1,
-      "projectedPoints": {
-        "standard": 142.4,
-        "halfPPR": 142.4,
-        "ppr": 142.4
+        "standard": 87.6,
+        "halfPPR": 87.6,
+        "ppr": 87.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3437,11 +3409,25 @@
       "team": "CIN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 141.8,
-        "halfPPR": 141.8,
-        "ppr": 141.8
+        "standard": 142,
+        "halfPPR": 142,
+        "ppr": 142
       },
       "byeWeek": 10,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_389",
+      "name": "Nick Folk",
+      "position": "K",
+      "team": "ATL",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 141.2,
+        "halfPPR": 141.2,
+        "ppr": 141.2
+      },
+      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -3466,7 +3452,7 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 38.5,
-        "halfPPR": 51.1,
+        "halfPPR": 51,
         "ppr": 63.6
       },
       "byeWeek": 0,
@@ -3507,9 +3493,9 @@
       "team": "SEA",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 32,
-        "halfPPR": 35.4,
-        "ppr": 38.8
+        "standard": 33,
+        "halfPPR": 36.4,
+        "ppr": 39.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3521,9 +3507,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 232.5,
-        "halfPPR": 232.5,
-        "ppr": 232.5
+        "standard": 233,
+        "halfPPR": 233,
+        "ppr": 233
       },
       "byeWeek": 8,
       "injuryStatus": ""
@@ -3535,9 +3521,9 @@
       "team": "ARI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 203.7,
-        "halfPPR": 203.7,
-        "ppr": 203.7
+        "standard": 204.8,
+        "halfPPR": 204.8,
+        "ppr": 204.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3557,17 +3543,17 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_229",
-      "name": "Dyami Brown",
+      "id": "player_435",
+      "name": "Jahan Dotson",
       "position": "WR",
-      "team": "WSH",
+      "team": "ATL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 55.7,
-        "halfPPR": 70.6,
-        "ppr": 85.6
+        "standard": 52.9,
+        "halfPPR": 68.8,
+        "ppr": 84.8
       },
-      "byeWeek": 8,
+      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -3633,9 +3619,9 @@
       "team": "CIN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 87.7,
-        "halfPPR": 87.7,
-        "ppr": 87.7
+        "standard": 87.6,
+        "halfPPR": 87.6,
+        "ppr": 87.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3647,23 +3633,9 @@
       "team": "CHI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 85.2,
-        "halfPPR": 85.2,
-        "ppr": 85.2
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
-      "id": "player_389",
-      "name": "Nick Folk",
-      "position": "K",
-      "team": "ATL",
-      "estimatedValue": 1,
-      "projectedPoints": {
-        "standard": 141.4,
-        "halfPPR": 141.4,
-        "ppr": 141.4
+        "standard": 87.2,
+        "halfPPR": 87.2,
+        "ppr": 87.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3683,14 +3655,28 @@
       "injuryStatus": ""
     },
     {
+      "id": "player_497",
+      "name": "Jake Elliott",
+      "position": "K",
+      "team": "PHI",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 135.8,
+        "halfPPR": 135.8,
+        "ppr": 135.8
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
       "id": "player_168",
       "name": "Cade Otton",
       "position": "TE",
       "team": "TB",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 63.1,
-        "halfPPR": 87.1,
+        "standard": 63,
+        "halfPPR": 87,
         "ppr": 111.1
       },
       "byeWeek": 9,
@@ -3711,29 +3697,15 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_435",
-      "name": "Jahan Dotson",
-      "position": "WR",
-      "team": "ATL",
-      "estimatedValue": 1,
-      "projectedPoints": {
-        "standard": 42.1,
-        "halfPPR": 54.8,
-        "ppr": 67.5
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_412",
       "name": "49ers D/ST",
       "position": "DST",
       "team": "SF",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 80.7,
-        "halfPPR": 80.7,
-        "ppr": 80.7
+        "standard": 82.1,
+        "halfPPR": 82.1,
+        "ppr": 82.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3745,9 +3717,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 80.6,
-        "halfPPR": 80.6,
-        "ppr": 80.6
+        "standard": 81.5,
+        "halfPPR": 81.5,
+        "ppr": 81.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3759,9 +3731,9 @@
       "team": "NO",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 80.1,
-        "halfPPR": 80.1,
-        "ppr": 80.1
+        "standard": 76.9,
+        "halfPPR": 76.9,
+        "ppr": 76.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3773,9 +3745,9 @@
       "team": "CAR",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 73.6,
-        "halfPPR": 73.6,
-        "ppr": 73.6
+        "standard": 74.9,
+        "halfPPR": 74.9,
+        "ppr": 74.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3830,8 +3802,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 6.5,
-        "halfPPR": 8.5,
-        "ppr": 10.5
+        "halfPPR": 8.4,
+        "ppr": 10.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3843,8 +3815,8 @@
       "team": "SEA",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 8.7,
-        "halfPPR": 9.4,
+        "standard": 8.8,
+        "halfPPR": 9.5,
         "ppr": 10.1
       },
       "byeWeek": 0,
@@ -3899,9 +3871,9 @@
       "team": "ARI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 31.2,
-        "halfPPR": 31.2,
-        "ppr": 31.2
+        "standard": 29.7,
+        "halfPPR": 29.7,
+        "ppr": 29.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -3969,9 +3941,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 29.8,
-        "halfPPR": 43.5,
-        "ppr": 57.3
+        "standard": 29.7,
+        "halfPPR": 43.4,
+        "ppr": 57.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4025,9 +3997,9 @@
       "team": "DAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 11.4,
-        "halfPPR": 11.4,
-        "ppr": 11.4
+        "standard": 11,
+        "halfPPR": 11,
+        "ppr": 11
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4089,29 +4061,15 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_497",
-      "name": "Jake Elliott",
-      "position": "K",
-      "team": "PHI",
-      "estimatedValue": 1,
-      "projectedPoints": {
-        "standard": 135.5,
-        "halfPPR": 135.5,
-        "ppr": 135.5
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_503",
       "name": "Charlie Smyth",
       "position": "K",
       "team": "NO",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 137.8,
-        "halfPPR": 137.8,
-        "ppr": 137.8
+        "standard": 137.5,
+        "halfPPR": 137.5,
+        "ppr": 137.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4145,15 +4103,29 @@
       "injuryStatus": "Q"
     },
     {
+      "id": "player_739",
+      "name": "Ben Sauls",
+      "position": "K",
+      "team": "NYG",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 139.3,
+        "halfPPR": 139.3,
+        "ppr": 139.3
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
       "id": "player_518",
       "name": "Blake Grupe",
       "position": "K",
       "team": "IND",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 132.6,
-        "halfPPR": 132.6,
-        "ppr": 132.6
+        "standard": 132.8,
+        "halfPPR": 132.8,
+        "ppr": 132.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4165,9 +4137,9 @@
       "team": "WSH",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 128.7,
-        "halfPPR": 128.7,
-        "ppr": 128.7
+        "standard": 128.5,
+        "halfPPR": 128.5,
+        "ppr": 128.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4179,9 +4151,9 @@
       "team": "NE",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 128.8,
-        "halfPPR": 128.8,
-        "ppr": 128.8
+        "standard": 129,
+        "halfPPR": 129,
+        "ppr": 129
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4291,9 +4263,9 @@
       "team": "NYG",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 69,
-        "halfPPR": 69,
-        "ppr": 69
+        "standard": 69.6,
+        "halfPPR": 69.6,
+        "ppr": 69.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4305,9 +4277,9 @@
       "team": "TEN",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 66.9,
-        "halfPPR": 66.9,
-        "ppr": 66.9
+        "standard": 67.2,
+        "halfPPR": 67.2,
+        "ppr": 67.2
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4319,9 +4291,9 @@
       "team": "DAL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 65.7,
-        "halfPPR": 65.7,
-        "ppr": 65.7
+        "standard": 64.7,
+        "halfPPR": 64.7,
+        "ppr": 64.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4333,9 +4305,9 @@
       "team": "WSH",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 62.7,
-        "halfPPR": 62.7,
-        "ppr": 62.7
+        "standard": 61.6,
+        "halfPPR": 61.6,
+        "ppr": 61.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4347,9 +4319,9 @@
       "team": "ATL",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 59,
-        "halfPPR": 59,
-        "ppr": 59
+        "standard": 60,
+        "halfPPR": 60,
+        "ppr": 60
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4361,9 +4333,9 @@
       "team": "LV",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 57.3,
-        "halfPPR": 57.3,
-        "ppr": 57.3
+        "standard": 57.1,
+        "halfPPR": 57.1,
+        "ppr": 57.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4375,9 +4347,9 @@
       "team": "BUF",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 56.9,
-        "halfPPR": 56.9,
-        "ppr": 56.9
+        "standard": 57,
+        "halfPPR": 57,
+        "ppr": 57
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4389,9 +4361,9 @@
       "team": "ARI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 51.3,
-        "halfPPR": 51.3,
-        "ppr": 51.3
+        "standard": 51.4,
+        "halfPPR": 51.4,
+        "ppr": 51.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4403,9 +4375,9 @@
       "team": "MIA",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 44.7,
-        "halfPPR": 44.7,
-        "ppr": 44.7
+        "standard": 43.9,
+        "halfPPR": 43.9,
+        "ppr": 43.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4417,9 +4389,9 @@
       "team": "HOU",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 35.1,
-        "halfPPR": 45.9,
-        "ppr": 56.7
+        "standard": 35.2,
+        "halfPPR": 46,
+        "ppr": 56.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4464,6 +4436,20 @@
         "ppr": 41.2
       },
       "byeWeek": 8,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_104",
+      "name": "Odell Beckham Jr.",
+      "position": "WR",
+      "team": "NYG",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 23.3,
+        "halfPPR": 30.4,
+        "ppr": 37.6
+      },
+      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -4520,7 +4506,7 @@
         "ppr": 26.5
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_563",
@@ -4544,8 +4530,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 12.6,
-        "halfPPR": 18.8,
-        "ppr": 25
+        "halfPPR": 18.7,
+        "ppr": 24.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4688,7 +4674,7 @@
         "ppr": 16.2
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_653",
@@ -4697,9 +4683,9 @@
       "team": "KC",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 10.9,
-        "halfPPR": 14.1,
-        "ppr": 17.3
+        "standard": 11,
+        "halfPPR": 14.2,
+        "ppr": 17.4
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4726,8 +4712,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 6.1,
-        "halfPPR": 8,
-        "ppr": 9.9
+        "halfPPR": 7.9,
+        "ppr": 9.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4880,8 +4866,8 @@
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 6.1,
-        "halfPPR": 7.7,
-        "ppr": 9.4
+        "halfPPR": 7.8,
+        "ppr": 9.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -4921,9 +4907,9 @@
       "team": "PHI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 9.1,
-        "halfPPR": 9.1,
-        "ppr": 9.1
+        "standard": 9.5,
+        "halfPPR": 9.5,
+        "ppr": 9.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -5131,9 +5117,9 @@
       "team": "PHI",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 5,
-        "halfPPR": 6.6,
-        "ppr": 8.3
+        "standard": 5.6,
+        "halfPPR": 7.2,
+        "ppr": 8.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -5215,9 +5201,9 @@
       "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
-        "standard": 9.9,
-        "halfPPR": 9.9,
-        "ppr": 9.9
+        "standard": 8.6,
+        "halfPPR": 8.6,
+        "ppr": 8.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -5414,6 +5400,20 @@
         "standard": 3.1,
         "halfPPR": 3.1,
         "ppr": 3.1
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_109",
+      "name": "Braxton Berrios",
+      "position": "WR",
+      "team": "NYG",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 0,
+        "halfPPR": 0,
+        "ppr": 0
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -5825,6 +5825,20 @@
       "injuryStatus": ""
     },
     {
+      "id": "player_187",
+      "name": "Jason Sanders",
+      "position": "K",
+      "team": "FA",
+      "estimatedValue": 1,
+      "projectedPoints": {
+        "standard": 0,
+        "halfPPR": 0,
+        "ppr": 0
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
       "id": "player_725",
       "name": "Younghoe Koo",
       "position": "K",
@@ -6105,20 +6119,6 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_739",
-      "name": "Ben Sauls",
-      "position": "K",
-      "team": "NYG",
-      "estimatedValue": 1,
-      "projectedPoints": {
-        "standard": 0,
-        "halfPPR": 0,
-        "ppr": 0
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_356",
       "name": "Caleb Douglas",
       "position": "WR",
@@ -6139,12 +6139,12 @@
       "team": "BAL",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 84.9,
-        "halfPPR": 103.7,
-        "ppr": 122.6
+        "standard": 85.5,
+        "halfPPR": 104.3,
+        "ppr": 123.2
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_300",
@@ -6153,9 +6153,9 @@
       "team": "SEA",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 64,
-        "halfPPR": 82.9,
-        "ppr": 101.9
+        "standard": 63.9,
+        "halfPPR": 82.8,
+        "ppr": 101.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6167,9 +6167,9 @@
       "team": "LV",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 196.2,
-        "halfPPR": 196.2,
-        "ppr": 196.2
+        "standard": 191.9,
+        "halfPPR": 191.9,
+        "ppr": 191.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6209,9 +6209,9 @@
       "team": "CIN",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 82.2,
-        "halfPPR": 91.6,
-        "ppr": 101
+        "standard": 82.3,
+        "halfPPR": 91.7,
+        "ppr": 101.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6280,7 +6280,7 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 37.4,
-        "halfPPR": 45.5,
+        "halfPPR": 45.6,
         "ppr": 53.7
       },
       "byeWeek": 0,
@@ -6335,9 +6335,9 @@
       "team": "BAL",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 56.1,
-        "halfPPR": 69,
-        "ppr": 81.9
+        "standard": 56.7,
+        "halfPPR": 69.6,
+        "ppr": 82.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6350,7 +6350,7 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 42.2,
-        "halfPPR": 53.6,
+        "halfPPR": 53.5,
         "ppr": 64.9
       },
       "byeWeek": 0,
@@ -6377,9 +6377,9 @@
       "team": "PIT",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 223.3,
-        "halfPPR": 223.3,
-        "ppr": 223.3
+        "standard": 223.7,
+        "halfPPR": 223.7,
+        "ppr": 223.7
       },
       "byeWeek": 5,
       "injuryStatus": ""
@@ -6391,23 +6391,9 @@
       "team": "CLE",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 118.2,
-        "halfPPR": 118.2,
-        "ppr": 118.2
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
-      "id": "player_398",
-      "name": "Olamide Zaccheaus",
-      "position": "WR",
-      "team": "ATL",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 46.8,
-        "halfPPR": 64.5,
-        "ppr": 82.2
+        "standard": 127.7,
+        "halfPPR": 127.7,
+        "ppr": 127.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6419,12 +6405,26 @@
       "team": "NYG",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 51.8,
-        "halfPPR": 66.1,
-        "ppr": 80.3
+        "standard": 56.6,
+        "halfPPR": 72.1,
+        "ppr": 87.5
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
+    },
+    {
+      "id": "player_229",
+      "name": "Dyami Brown",
+      "position": "WR",
+      "team": "WSH",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 55.7,
+        "halfPPR": 70.6,
+        "ppr": 85.6
+      },
+      "byeWeek": 8,
+      "injuryStatus": ""
     },
     {
       "id": "player_262",
@@ -6433,9 +6433,9 @@
       "team": "CIN",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 50.2,
+        "standard": 50.3,
         "halfPPR": 63.9,
-        "ppr": 77.5
+        "ppr": 77.6
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -6475,12 +6475,12 @@
       "team": "DAL",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 23.6,
-        "halfPPR": 25.7,
-        "ppr": 27.8
+        "standard": 38.5,
+        "halfPPR": 42.6,
+        "ppr": 46.8
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_277",
@@ -6497,15 +6497,15 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_399",
-      "name": "Van Jefferson",
+      "id": "player_431",
+      "name": "Tyquan Thornton",
       "position": "WR",
-      "team": "WSH",
+      "team": "KC",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 47.2,
-        "halfPPR": 61.2,
-        "ppr": 75.2
+        "standard": 53.2,
+        "halfPPR": 65,
+        "ppr": 76.9
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6519,7 +6519,7 @@
       "projectedPoints": {
         "standard": 66.9,
         "halfPPR": 87,
-        "ppr": 107.1
+        "ppr": 107
       },
       "byeWeek": 10,
       "injuryStatus": ""
@@ -6547,9 +6547,23 @@
       "projectedPoints": {
         "standard": 44.1,
         "halfPPR": 62.5,
-        "ppr": 81
+        "ppr": 80.9
       },
       "byeWeek": 8,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_399",
+      "name": "Van Jefferson",
+      "position": "WR",
+      "team": "WSH",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 47.2,
+        "halfPPR": 61.2,
+        "ppr": 75.2
+      },
+      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -6573,9 +6587,9 @@
       "team": "ATL",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 119.6,
-        "halfPPR": 119.6,
-        "ppr": 119.6
+        "standard": 118.5,
+        "halfPPR": 118.5,
+        "ppr": 118.5
       },
       "byeWeek": 12,
       "injuryStatus": ""
@@ -6587,9 +6601,9 @@
       "team": "CLE",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 107.7,
-        "halfPPR": 107.7,
-        "ppr": 107.7
+        "standard": 97.7,
+        "halfPPR": 97.7,
+        "ppr": 97.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6601,9 +6615,9 @@
       "team": "LV",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 43.5,
-        "halfPPR": 43.5,
-        "ppr": 43.5
+        "standard": 47.6,
+        "halfPPR": 47.6,
+        "ppr": 47.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6615,9 +6629,9 @@
       "team": "ATL",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 115.1,
-        "halfPPR": 115.1,
-        "ppr": 115.1
+        "standard": 116.2,
+        "halfPPR": 116.2,
+        "ppr": 116.2
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
@@ -6671,9 +6685,9 @@
       "team": "MIN",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 42.2,
-        "halfPPR": 42.2,
-        "ppr": 42.2
+        "standard": 40.5,
+        "halfPPR": 40.5,
+        "ppr": 40.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6741,9 +6755,9 @@
       "team": "NYG",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 31.6,
-        "halfPPR": 42.7,
-        "ppr": 53.8
+        "standard": 37,
+        "halfPPR": 50,
+        "ppr": 63
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6811,9 +6825,9 @@
       "team": "KC",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 34.4,
-        "halfPPR": 47.3,
-        "ppr": 60.3
+        "standard": 34.5,
+        "halfPPR": 47.5,
+        "ppr": 60.5
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6827,7 +6841,7 @@
       "projectedPoints": {
         "standard": 24,
         "halfPPR": 34.6,
-        "ppr": 45.2
+        "ppr": 45.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -6853,7 +6867,7 @@
       "team": "ARI",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 22.5,
+        "standard": 22.4,
         "halfPPR": 32.9,
         "ppr": 43.3
       },
@@ -6883,23 +6897,9 @@
       "projectedPoints": {
         "standard": 45.9,
         "halfPPR": 55,
-        "ppr": 64.1
+        "ppr": 64.2
       },
       "byeWeek": 10,
-      "injuryStatus": ""
-    },
-    {
-      "id": "player_431",
-      "name": "Tyquan Thornton",
-      "position": "WR",
-      "team": "KC",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 46,
-        "halfPPR": 56.4,
-        "ppr": 66.7
-      },
-      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -6917,6 +6917,20 @@
       "injuryStatus": ""
     },
     {
+      "id": "player_398",
+      "name": "Olamide Zaccheaus",
+      "position": "WR",
+      "team": "ATL",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 37.2,
+        "halfPPR": 51.4,
+        "ppr": 65.6
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
       "id": "player_156",
       "name": "DeMario Douglas",
       "position": "WR",
@@ -6924,8 +6938,8 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 39.5,
-        "halfPPR": 50.9,
-        "ppr": 62.3
+        "halfPPR": 50.8,
+        "ppr": 62.2
       },
       "byeWeek": 14,
       "injuryStatus": ""
@@ -6966,8 +6980,8 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 33,
-        "halfPPR": 43.4,
-        "ppr": 53.9
+        "halfPPR": 43.5,
+        "ppr": 54
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7008,8 +7022,22 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 31.6,
-        "halfPPR": 41,
-        "ppr": 50.4
+        "halfPPR": 40.9,
+        "ppr": 50.3
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_454",
+      "name": "Jalen Royals",
+      "position": "WR",
+      "team": "KC",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 28.8,
+        "halfPPR": 37.3,
+        "ppr": 45.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7043,20 +7071,6 @@
       "injuryStatus": "Q"
     },
     {
-      "id": "player_441",
-      "name": "Malachi Fields",
-      "position": "WR",
-      "team": "NYG",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 26.3,
-        "halfPPR": 34.5,
-        "ppr": 42.8
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_083",
       "name": "Erick All Jr.",
       "position": "TE",
@@ -7079,21 +7093,21 @@
       "projectedPoints": {
         "standard": 21.7,
         "halfPPR": 30,
-        "ppr": 38.4
+        "ppr": 38.3
       },
       "byeWeek": 0,
       "injuryStatus": "Q"
     },
     {
-      "id": "player_454",
-      "name": "Jalen Royals",
-      "position": "WR",
-      "team": "KC",
+      "id": "player_468",
+      "name": "Eli Raridon",
+      "position": "TE",
+      "team": "NE",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 22.9,
-        "halfPPR": 29.7,
-        "ppr": 36.5
+        "standard": 21.7,
+        "halfPPR": 29.5,
+        "ppr": 37.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7127,15 +7141,29 @@
       "injuryStatus": ""
     },
     {
+      "id": "player_441",
+      "name": "Malachi Fields",
+      "position": "WR",
+      "team": "NYG",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 21.2,
+        "halfPPR": 27.8,
+        "ppr": 34.3
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
       "id": "player_200",
       "name": "Skyler Bell",
       "position": "WR",
       "team": "BUF",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 22.4,
-        "halfPPR": 28.4,
-        "ppr": 34.5
+        "standard": 22.3,
+        "halfPPR": 28.3,
+        "ppr": 34.3
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7155,20 +7183,6 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_549",
-      "name": "Konata Mumpfield",
-      "position": "WR",
-      "team": "LAR",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 19.9,
-        "halfPPR": 24.8,
-        "ppr": 29.8
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_550",
       "name": "Tanner Hudson",
       "position": "TE",
@@ -7178,6 +7192,20 @@
         "standard": 16.4,
         "halfPPR": 23,
         "ppr": 29.5
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_549",
+      "name": "Konata Mumpfield",
+      "position": "WR",
+      "team": "LAR",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 19.9,
+        "halfPPR": 24.8,
+        "ppr": 29.8
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7267,29 +7295,15 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_577",
-      "name": "Calvin Austin III",
-      "position": "WR",
-      "team": "NYG",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 14.8,
-        "halfPPR": 19.4,
-        "ppr": 24
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_591",
       "name": "Kyle Williams",
       "position": "WR",
       "team": "NE",
       "estimatedValue": 0,
       "projectedPoints": {
-        "standard": 15.6,
-        "halfPPR": 18.8,
-        "ppr": 22
+        "standard": 16.2,
+        "halfPPR": 19.4,
+        "ppr": 22.6
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7302,8 +7316,8 @@
       "estimatedValue": 0,
       "projectedPoints": {
         "standard": 13.1,
-        "halfPPR": 17.6,
-        "ppr": 22.1
+        "halfPPR": 17.5,
+        "ppr": 22
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7318,6 +7332,20 @@
         "standard": 14.9,
         "halfPPR": 18.2,
         "ppr": 21.5
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_577",
+      "name": "Calvin Austin III",
+      "position": "WR",
+      "team": "NYG",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 12.7,
+        "halfPPR": 16.7,
+        "ppr": 20.7
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7435,20 +7463,6 @@
       "injuryStatus": ""
     },
     {
-      "id": "player_468",
-      "name": "Eli Raridon",
-      "position": "TE",
-      "team": "NE",
-      "estimatedValue": 0,
-      "projectedPoints": {
-        "standard": 5.5,
-        "halfPPR": 7.5,
-        "ppr": 9.4
-      },
-      "byeWeek": 0,
-      "injuryStatus": ""
-    },
-    {
       "id": "player_611",
       "name": "Tanner Koziol",
       "position": "TE",
@@ -7472,6 +7486,20 @@
         "standard": 5.2,
         "halfPPR": 7,
         "ppr": 8.8
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_106",
+      "name": "CJ Dippre",
+      "position": "TE",
+      "team": "NE",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 5.4,
+        "halfPPR": 7.2,
+        "ppr": 9.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
@@ -7556,6 +7584,20 @@
         "standard": 7.2,
         "halfPPR": 7.2,
         "ppr": 7.2
+      },
+      "byeWeek": 0,
+      "injuryStatus": ""
+    },
+    {
+      "id": "player_107",
+      "name": "JuJu Smith-Schuster",
+      "position": "WR",
+      "team": "NYG",
+      "estimatedValue": 0,
+      "projectedPoints": {
+        "standard": 1.9,
+        "halfPPR": 2.5,
+        "ppr": 3.1
       },
       "byeWeek": 0,
       "injuryStatus": ""
