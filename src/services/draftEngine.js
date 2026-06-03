@@ -74,18 +74,25 @@ export class DraftEngine {
         for (const p of top) p.estimatedValue *= topTilt
       }
 
-      // Stage 1 (inflate-only anchor): if the post-tilt top-(totalSpots)
-      // still sums to less than total budget, scale everyone up. Never
-      // deflates — small leagues whose pool already exceeds the budget
-      // keep their book values (Dart $5, Metcalf $3, etc.).
+      // Stage 1 (budget anchor): scale the pool so the top-(totalSpots) — the
+      // players that will actually be drafted — sums to the total auction
+      // budget. Bidirectional: large leagues that fall short are inflated,
+      // small leagues whose post-tilt top-N exceeds the budget are deflated.
+      // Anchoring BOTH ways keeps sum(book) ≈ budget so realized auction prices
+      // track estimatedValue on average. The previous inflate-only version left
+      // small leagues (e.g. 10-team) with total book ~14% above the money in
+      // the room, which forces systematic below-estimate sales — studs hold
+      // near book and the squeeze dumps onto the mid-tier, which then sells for
+      // $1 (the reported "Breece/Davante for $1" problem). The Math.max(1, …)
+      // floor below keeps $1 players at $1 after any deflation. The Stage-2
+      // tilt still shapes the curve (stars relatively pricier in small leagues);
+      // this only normalizes the absolute level to the budget.
       if (totalSpots > 0) {
         const topN = sorted.slice(0, Math.min(totalSpots, sorted.length))
         const currentTopNSum = topN.reduce((s, p) => s + p.estimatedValue, 0)
         if (currentTopNSum > 0) {
           const baseScale = totalAuctionBudget / currentTopNSum
-          if (baseScale > 1.0) {
-            for (const p of players) p.estimatedValue *= baseScale
-          }
+          for (const p of players) p.estimatedValue *= baseScale
         }
       }
 

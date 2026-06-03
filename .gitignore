@@ -5,6 +5,9 @@ dist/
 .DS_Store
 *:Zone.Identifier
 
+# Generated report from `npm run audit-bidding`
+scripts/bidding-audit.out.txt
+
 # Personal / scratch files not meant for the public repo
 reddit-post-draft.md
 roadmap.md
