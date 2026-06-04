@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { Taco } from '../../../src/strategies/TacoStrategy.js'
+import { Taco, NFL_TEAMS } from '../../../src/strategies/TacoStrategy.js'
 import { BaseStrategy } from '../../../src/strategies/BaseStrategy.js'
 import { Team } from '../../../src/models/Team.js'
 import { Player } from '../../../src/models/Player.js'
@@ -44,6 +44,12 @@ describe('Taco strategy', () => {
     it('picks a homeTeam at construction time (3-letter NFL code)', () => {
       const fresh = new Taco()
       expect(fresh.preferences.homeTeam).toMatch(/^[A-Z]{2,3}$/)
+    })
+
+    it('exports a sorted NFL_TEAMS list that excludes the free-agent code', () => {
+      expect(NFL_TEAMS.length).toBeGreaterThan(20)
+      expect(NFL_TEAMS).not.toContain('FA')
+      expect([...NFL_TEAMS]).toEqual([...NFL_TEAMS].sort())
     })
 
     it('overvalues K and DST relative to most strategies', () => {

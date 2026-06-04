@@ -124,7 +124,7 @@ export class DraftEngine {
     this.currentNominatorIndex = 0
     
     // Assign AI strategies to teams
-    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, players)
+    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, players, config.aiTeamHomeTeams)
     
     // Initialize auto-pilot for human team if enabled
     this.initializeAutoPilot(teams, config)

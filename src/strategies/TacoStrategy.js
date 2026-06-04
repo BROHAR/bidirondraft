@@ -2,7 +2,13 @@ import { BaseStrategy } from './BaseStrategy.js'
 import playersData from '../data/players.json'
 
 const PLAYER_LIST = Array.isArray(playersData) ? playersData : (playersData.players || [])
-const NFL_TEAMS = Array.from(new Set(PLAYER_LIST.map(p => p.team).filter(Boolean)))
+
+// Real NFL team codes present in the player pool, sorted. 'FA' (free agent) is
+// filtered out so it's never offered as a home team or picked at random.
+// Exported so the setup UI can populate its home-team picker from the same source.
+export const NFL_TEAMS = Array.from(new Set(PLAYER_LIST.map(p => p.team).filter(Boolean)))
+  .filter(team => team !== 'FA')
+  .sort()
 
 function pickRandomNflTeam() {
   return NFL_TEAMS[Math.floor(Math.random() * NFL_TEAMS.length)]
