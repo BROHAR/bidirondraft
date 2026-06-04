@@ -117,7 +117,8 @@ export class BaseStrategy {
     // Home-team affinity (Taco; no-op for strategies without preferences.homeTeam)
     const homeTeam = this.preferences?.homeTeam
     const homeMult = this.preferences?.homeTeamMultiplier ?? 1.0
-    if (homeTeam && player.team === homeTeam && homeMult !== 1.0) {
+    const isHomePlayer = !!(homeTeam && player.team === homeTeam && homeMult > 1.0)
+    if (isHomePlayer) {
       adjustments += (homeMult - 1.0) * baseValue
     }
 
@@ -126,6 +127,15 @@ export class BaseStrategy {
     if (topBoost !== 1.0) {
       adjustments += (topBoost - 1.0) * baseValue
     }
+
+    // Signature premium: a strategy's identity boosts (Taco's home-team and
+    // top-QB affinity) are allowed to push past the generic per-player max-bid
+    // clamp below — otherwise getMaxBidForPlayer's ~1.0-1.05x cap on studs
+    // silently erases the boost, and the homer never outbids the field for the
+    // very players that define it. Bounded: the absolute baseValue*1.35 ceiling
+    // further down is NOT expanded, so this can never run away. 1.0 (no-op) for
+    // strategies without these preferences.
+    const signatureBoost = Math.max(isHomePlayer ? homeMult : 1.0, topBoost)
 
     // Apply early draft aggression (smaller boost). Gated behind a coin-flip
     // so the boost doesn't fire for every team at once during the draft
@@ -179,8 +189,10 @@ export class BaseStrategy {
     finalValue *= combinedBoost
 
     // Apply bid ceiling, scaled by the same combined boost so a boosted bid
-    // can still reach its target rather than being undone by the cap.
-    const maxBid = this.getMaxBidForPlayer(player) * combinedBoost
+    // can still reach its target rather than being undone by the cap, and by
+    // signatureBoost so a strategy's identity premium (Taco home/top-QB) can
+    // actually clear the field on studs.
+    const maxBid = this.getMaxBidForPlayer(player) * combinedBoost * signatureBoost
     finalValue = Math.min(finalValue, maxBid)
 
     // End-of-draft forced spend: with few picks remaining AND surplus budget,

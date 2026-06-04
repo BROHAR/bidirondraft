@@ -19,7 +19,7 @@ export class AIManager {
     ]
   }
 
-  assignStrategies(teams, aiTeamStrategies = [], players = []) {
+  assignStrategies(teams, aiTeamStrategies = [], players = [], aiTeamHomeTeams = []) {
     const aiTeams = teams.filter(team => !team.isHuman)
     const strategyByName = new Map(this.strategies.map(S => [S.name, S]))
 
@@ -64,6 +64,15 @@ export class AIManager {
     aiTeams.forEach((team, index) => {
       const StrategyClass = assignments[index]
       const strategy = new StrategyClass()
+
+      // Honor a user-pinned home team for Taco bidders; otherwise the Taco
+      // constructor's random pick stands. No-op for strategies without one.
+      const position = parseInt(team.id.replace('team_', ''), 10)
+      const homeTeam = aiTeamHomeTeams[position - 1]
+      if (homeTeam && strategy.preferences && 'homeTeam' in strategy.preferences) {
+        strategy.preferences.homeTeam = homeTeam
+      }
+
       team.setStrategy(strategy)
 
       // Generate random do-not-draft list (3-6 players)

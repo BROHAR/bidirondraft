@@ -266,6 +266,43 @@ describe('AIManager.assignStrategies', () => {
     expect(tacoTeam.draftStrategy.preferences.homeTeam).toMatch(/^[A-Z]{2,3}$/)
   })
 
+  it('applies a user-pinned home team to a Taco bidder', () => {
+    const manager = new AIManager()
+    const teams = makeTeams(12)
+    const aiTeamStrategies = new Array(12).fill('Mixed')
+    aiTeamStrategies[1] = 'Taco'
+    const aiTeamHomeTeams = []
+    aiTeamHomeTeams[1] = 'DAL'
+    manager.assignStrategies(teams, aiTeamStrategies, [], aiTeamHomeTeams)
+    const tacoTeam = teams.find(t => t.id === 'team_2')
+    expect(tacoTeam.draftStrategy).toBeInstanceOf(Taco)
+    expect(tacoTeam.draftStrategy.preferences.homeTeam).toBe('DAL')
+  })
+
+  it('leaves the random home team in place when none is pinned', () => {
+    const manager = new AIManager()
+    const teams = makeTeams(12)
+    const aiTeamStrategies = new Array(12).fill('Mixed')
+    aiTeamStrategies[1] = 'Taco'
+    // aiTeamHomeTeams omitted entirely
+    manager.assignStrategies(teams, aiTeamStrategies)
+    const tacoTeam = teams.find(t => t.id === 'team_2')
+    expect(tacoTeam.draftStrategy.preferences.homeTeam).toMatch(/^[A-Z]{2,3}$/)
+  })
+
+  it('ignores a home team pinned on a non-Taco slot', () => {
+    const manager = new AIManager()
+    const teams = makeTeams(12)
+    const aiTeamStrategies = new Array(12).fill('Mixed')
+    aiTeamStrategies[1] = 'ZeroRB'
+    const aiTeamHomeTeams = []
+    aiTeamHomeTeams[1] = 'DAL'
+    manager.assignStrategies(teams, aiTeamStrategies, [], aiTeamHomeTeams)
+    const team = teams.find(t => t.id === 'team_2')
+    expect(team.draftStrategy).toBeInstanceOf(ZeroRB)
+    expect(team.draftStrategy.preferences.homeTeam).toBeUndefined()
+  })
+
   it('every non-S&S strategy is reachable from the Mixed pool across runs', () => {
     const manager = new AIManager()
     const expected = manager.strategies

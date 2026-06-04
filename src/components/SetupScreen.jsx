@@ -4,6 +4,7 @@ import { DraftConfig, DEFAULT_CONFIGS } from '../models/DraftConfig'
 import playersData from '../data/players.json'
 import PlayerValueModal from './PlayerValueModal'
 import PlayerCustomizationModal from './PlayerCustomizationModal'
+import { NFL_TEAMS } from '../strategies/TacoStrategy'
 import {
   loadOverrides,
   saveOverrides,
@@ -25,7 +26,8 @@ function SetupScreen() {
     rosterPositions: DEFAULT_CONFIGS.standard.rosterPositions,
     autoPilotEnabled: false,
     autoPilotStrategy: 'Balanced',
-    aiTeamStrategies: []
+    aiTeamStrategies: [],
+    aiTeamHomeTeams: []
   })
   
   const [playerValueAdjustments, setPlayerValueAdjustments] = useState(new Map())
@@ -70,7 +72,18 @@ function SetupScreen() {
     setConfig(prev => {
       const next = [...(prev.aiTeamStrategies || [])]
       next[positionIndex] = value
-      return { ...prev, aiTeamStrategies: next }
+      // A home team only applies to Taco; drop it if the slot moves off Taco.
+      const homeTeams = [...(prev.aiTeamHomeTeams || [])]
+      if (value !== 'Taco') homeTeams[positionIndex] = ''
+      return { ...prev, aiTeamStrategies: next, aiTeamHomeTeams: homeTeams }
+    })
+  }
+
+  const handleAiHomeTeamChange = (positionIndex, value) => {
+    setConfig(prev => {
+      const next = [...(prev.aiTeamHomeTeams || [])]
+      next[positionIndex] = value
+      return { ...prev, aiTeamHomeTeams: next }
     })
   }
 
@@ -106,6 +119,7 @@ function SetupScreen() {
     const configWithAutoPilot = {
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
+      aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
       playerValueAdjustments: playerValueAdjustments,
       playerOverrides
     }
@@ -131,6 +145,7 @@ function SetupScreen() {
     simulateDraft({
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
+      aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
       playerValueAdjustments,
       playerOverrides
     }, customizedPlayersData)
@@ -358,18 +373,35 @@ function SetupScreen() {
                   .map(p => (
                     <div key={p} className="advanced-config-row">
                       <label htmlFor={`ai-strategy-${p}`}>Team {p}</label>
-                      <select
-                        id={`ai-strategy-${p}`}
-                        value={config.aiTeamStrategies[p - 1] || 'Mixed'}
-                        onChange={(e) => handleAiStrategyChange(p - 1, e.target.value)}
-                      >
-                        <option value="Mixed">Mixed (default)</option>
-                        {strategies.map(strategy => (
-                          <option key={strategy.value} value={strategy.value}>
-                            {strategy.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="advanced-config-selects">
+                        <select
+                          id={`ai-strategy-${p}`}
+                          value={config.aiTeamStrategies[p - 1] || 'Mixed'}
+                          onChange={(e) => handleAiStrategyChange(p - 1, e.target.value)}
+                        >
+                          <option value="Mixed">Mixed (default)</option>
+                          {strategies.map(strategy => (
+                            <option key={strategy.value} value={strategy.value}>
+                              {strategy.label}
+                            </option>
+                          ))}
+                        </select>
+                        {config.aiTeamStrategies[p - 1] === 'Taco' && (
+                          <select
+                            id={`ai-hometeam-${p}`}
+                            className="ai-hometeam-select"
+                            aria-label={`Team ${p} home team`}
+                            title="Home team Taco overpays for"
+                            value={config.aiTeamHomeTeams[p - 1] || ''}
+                            onChange={(e) => handleAiHomeTeamChange(p - 1, e.target.value)}
+                          >
+                            <option value="">♥ Home team: Random</option>
+                            {NFL_TEAMS.map(team => (
+                              <option key={team} value={team}>♥ {team}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     </div>
                   ))}
               </div>

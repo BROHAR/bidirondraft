@@ -5,8 +5,9 @@ dist/
 .DS_Store
 *:Zone.Identifier
 
-# Generated report from `npm run audit-bidding`
+# Generated reports from the audit harnesses (`npm run audit-bidding` / `audit-taco`)
 scripts/bidding-audit.out.txt
+scripts/taco-audit.out.txt
 
 # Personal / scratch files not meant for the public repo
 reddit-post-draft.md
