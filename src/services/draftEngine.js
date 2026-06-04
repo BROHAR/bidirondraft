@@ -347,6 +347,11 @@ export class DraftEngine {
   startNominationPhase() {
     const state = this.store.getState()
 
+    // A stray AI-nomination/post-pick setTimeout (not tracked by clearTimers)
+    // can fire after simulateToEnd has already driven the draft to COMPLETE.
+    // Bail rather than restart nomination on a finished draft.
+    if (state.draftState === 'COMPLETE') return
+
     // Once the seeded nomination order is exhausted, round-robin among any
     // teams that can still bid — otherwise a team that mismanaged budget
     // would silently end the draft short of a full roster. Matches the
@@ -475,6 +480,10 @@ export class DraftEngine {
   }
 
   nominatePlayer(player, nominatorId) {
+    // Same guard as startNominationPhase: a stale AI-nomination setTimeout could
+    // call this after the draft has already completed via simulateToEnd.
+    if (this.store.getState().draftState === 'COMPLETE') return
+
     if (this.nominationTimer) {
       workerTimers.clearInterval(this.nominationTimer)
     }
@@ -884,8 +893,15 @@ export class DraftEngine {
   }
 
   simulateDraft() {
-    const totalBiddingTime = this.store.getState().config.biddingTimer * 1000
-    let nomIdx = 0
+    this.runSimulationLoop(0)
+    this.completeDraft()
+  }
+
+  // Synchronous (timer-free) nomination+bidding loop, starting from `startIdx`
+  // in the nomination order. simulateDraft drives a from-scratch draft with
+  // startIdx=0; simulateToEnd resumes a live draft from currentNominatorIndex.
+  runSimulationLoop(startIdx) {
+    let nomIdx = startIdx
 
     while (true) {
       const state = this.store.getState()
@@ -916,51 +932,95 @@ export class DraftEngine {
       )
       if (!player) continue
 
-      // Synchronous bidding — includeAllTeams=true so human team participates
-      let currentBid = 1
-      let currentBidder = nominatorId
-      let bidCount = 0
-      while (bidCount < 50) {
-        const { teams, availablePlayers } = this.store.getState()
-        const eligibleTeams = this.bidEligibleTeams(teams, player)
+      // Each fresh nomination opens at $1 with the nominator holding the bid.
+      this.resolveAuctionSync(player, 1, nominatorId, nominatorTeam)
+    }
+  }
 
-        const bid = this.aiManager.processAIBidding(
-          eligibleTeams, player, currentBid, availablePlayers, 0, totalBiddingTime, currentBidder, true
-        )
-        if (!bid || bid.amount <= currentBid) break
-        currentBid = bid.amount
-        currentBidder = bid.team.id
-        bidCount++
-      }
+  // Run one full synchronous auction for `player` (no timers/delays) starting
+  // from startBid/startBidder, then commit the result to the store using the
+  // same assignment semantics as completeBidding. includeAllTeams=true so the
+  // human team participates via its draftStrategy. Shared by the full-draft
+  // simulation loop and simulateToEnd's resolution of an in-flight auction.
+  resolveAuctionSync(player, startBid, startBidder, nominatorTeam) {
+    const totalBiddingTime = this.store.getState().config.biddingTimer * 1000
+    let currentBid = startBid
+    let currentBidder = startBidder
+    let bidCount = 0
+    while (bidCount < 50) {
+      const { teams, availablePlayers } = this.store.getState()
+      const eligibleTeams = this.bidEligibleTeams(teams, player)
 
-      // Assign player to winner (same mutation pattern as completeBidding)
-      const finalState = this.store.getState()
-      const winner = finalState.teams.find(t => t.id === currentBidder)
-        ?? finalState.teams.find(t => t.id === nominatorId)
-      const finalPrice = (winner && winner.id === currentBidder) ? currentBid : 1
-
-      if (winner) {
-        player.purchasePrice = finalPrice
-        winner.roster.push(player)
-        winner.remainingBudget -= finalPrice
-        this.updateTeamPsychology(finalState.teams, winner, player, finalPrice)
-      }
-
-      this.store.setState((draft) => {
-        draft.draftHistory.push({
-          player,
-          team: winner?.name ?? nominatorTeam.name,
-          nominator: nominatorTeam.name,
-          price: finalPrice,
-          timestamp: Date.now()
-        })
-        draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
-        draft.currentPlayer = null
-        draft.currentBid = 0
-        draft.currentBidder = null
-      })
+      const bid = this.aiManager.processAIBidding(
+        eligibleTeams, player, currentBid, availablePlayers, 0, totalBiddingTime, currentBidder, true
+      )
+      if (!bid || bid.amount <= currentBid) break
+      currentBid = bid.amount
+      currentBidder = bid.team.id
+      bidCount++
     }
 
+    // Assign player to winner (same mutation pattern as completeBidding).
+    // If no team holds the high bid, the nominator takes the player for $1.
+    const finalState = this.store.getState()
+    const winner = finalState.teams.find(t => t.id === currentBidder)
+      ?? finalState.teams.find(t => t.id === nominatorTeam.id)
+    const finalPrice = (winner && winner.id === currentBidder) ? currentBid : 1
+
+    if (winner) {
+      player.purchasePrice = finalPrice
+      winner.roster.push(player)
+      winner.remainingBudget -= finalPrice
+      this.updateTeamPsychology(finalState.teams, winner, player, finalPrice)
+    }
+
+    this.store.setState((draft) => {
+      draft.draftHistory.push({
+        player,
+        team: winner?.name ?? nominatorTeam.name,
+        nominator: nominatorTeam.name,
+        price: finalPrice,
+        timestamp: Date.now()
+      })
+      draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
+      draft.currentPlayer = null
+      draft.currentBid = 0
+      draft.currentBidder = null
+    })
+  }
+
+  // Instantly finish a live, in-progress draft from the current point: resolve
+  // any in-flight auction, then synchronously simulate the remaining picks and
+  // jump to COMPLETE. Triggered by the auto-pilot "Simulate to End" control.
+  simulateToEnd() {
+    const state = this.store.getState()
+    if (state.draftState === 'COMPLETE' || state.draftState === 'TITLE' || state.draftState === 'SETUP') {
+      return
+    }
+
+    // Stop live timers. (Pending AI-nomination setTimeouts aren't tracked here,
+    // but the COMPLETE guards in startNominationPhase/nominatePlayer neutralize
+    // any that fire after we finish.)
+    this.clearTimers()
+
+    // The synchronous bidding loop bids the human team via team.draftStrategy.
+    // Enabling auto-pilot mid-draft only sets isAutoPilot, so backfill a strategy
+    // the same way initializeAutoPilot does when it's missing.
+    const humanTeam = state.teams.find(t => t.isHuman)
+    if (humanTeam && !humanTeam.draftStrategy) {
+      const strategy = autoPilotService.initializeStrategy(humanTeam, state.autoPilotStrategy)
+      humanTeam.setStrategy(strategy)
+    }
+
+    // Resolve the auction already on the block, if any, then advance the
+    // nominator index exactly as completeBidding would after a pick.
+    if (state.draftState === 'BIDDING' && state.currentPlayer) {
+      const nominatorTeam = state.teams.find(t => t.id === state.currentNominator) ?? state.teams[0]
+      this.resolveAuctionSync(state.currentPlayer, state.currentBid || 1, state.currentBidder, nominatorTeam)
+      this.currentNominatorIndex++
+    }
+
+    this.runSimulationLoop(this.currentNominatorIndex)
     this.completeDraft()
   }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { produce } from 'immer'
 import { DraftEngine } from '../../../src/services/draftEngine.js'
 import { Player } from '../../../src/models/Player.js'
+import { autoPilotService } from '../../../src/services/autoPilotService.js'
 
 vi.mock('../../../src/services/audioService.js', () => ({
   audioService: {
@@ -879,6 +880,145 @@ describe('DraftEngine', () => {
       // The re-kick is scheduled 1-3s out; advance past the window.
       vi.advanceTimersByTime(3000)
       expect(engine.aiManager.processAIBidding).toHaveBeenCalled()
+    })
+  })
+
+  describe('simulateToEnd', () => {
+    // The auto-pilot "Simulate to End" control: from a live, in-progress draft,
+    // resolve any in-flight auction then synchronously run the rest to COMPLETE,
+    // preserving every pick already made.
+
+    beforeEach(() => {
+      // initializeStrategy is consulted to backfill the human team's strategy
+      // (mid-draft autopilot only sets isAutoPilot). Return a usable stub so
+      // setStrategy() — which calls strategy.setTeam(team) — doesn't throw.
+      autoPilotService.initializeStrategy.mockReturnValue({ setTeam: vi.fn() })
+      // Naive nominator: take the top of whatever viable pool it's handed. The
+      // real AI quality isn't under test here — the plumbing is.
+      engine.aiManager.getAINomination = vi.fn((team, pool) => pool[0])
+    })
+
+    // Real Player instances, not plain objects: immer deep-freezes plain
+    // objects in produced state, which would block the player.purchasePrice
+    // assignment — class instances are left untouched, matching the live store.
+    const mkPlayers = (n = 12) => makePlayers(n).map(p => new Player(p))
+
+    function liveDraft(overrides = {}) {
+      const teams = engine.createTeams(defaultConfig)
+      engine.nominationOrder = engine.generateNominationOrder(teams, defaultConfig.rosterPositions)
+      engine.currentNominatorIndex = 0
+      store.setState(draft => {
+        draft.teams = teams
+        draft.config = defaultConfig
+        draft.availablePlayers = mkPlayers(12)
+        draft.draftState = 'NOMINATING'
+        draft.autoPilotEnabled = true
+        Object.assign(draft, overrides)
+      })
+      return teams
+    }
+
+    it('drives a NOMINATING draft to COMPLETE and fills every roster', () => {
+      liveDraft()
+      // processAIBidding is mocked to null → each nominee goes to the nominator for $1.
+      engine.simulateToEnd()
+
+      const state = store.getState()
+      expect(state.draftState).toBe('COMPLETE')
+      expect(state.availablePlayers).toHaveLength(0)
+      // 4 teams × 3 spots = 12 picks all made.
+      expect(state.draftHistory).toHaveLength(12)
+      state.teams.forEach(t => expect(t.roster).toHaveLength(3))
+    })
+
+    it('preserves picks already made before the jump', () => {
+      const teams = liveDraft()
+      // Simulate two completed picks: team_1 owns p0, team_2 owns p1.
+      teams[0].roster = [mkPlayers(1)[0]]
+      const p1 = new Player({ id: 'p1', name: 'Player 1', position: 'RB', team: 'KC', estimatedValue: 29, byeWeek: 7, projectedPoints: 195 })
+      teams[1].roster = [p1]
+      store.setState(draft => {
+        draft.teams = teams
+        draft.availablePlayers = mkPlayers(12).filter(p => p.id !== 'p0' && p.id !== 'p1')
+        draft.draftHistory = [
+          { player: { id: 'p0' }, team: 'My Team', nominator: 'My Team', price: 3, timestamp: 1 },
+          { player: p1, team: 'Team 2', nominator: 'Team 2', price: 2, timestamp: 2 }
+        ]
+      })
+      engine.currentNominatorIndex = 2
+
+      engine.simulateToEnd()
+
+      const state = store.getState()
+      expect(state.draftState).toBe('COMPLETE')
+      // The two seeded history entries survive and sit at the front.
+      expect(state.draftHistory[0].player.id).toBe('p0')
+      expect(state.draftHistory[1].player.id).toBe('p1')
+      expect(state.draftHistory.length).toBeGreaterThan(2)
+    })
+
+    it('resolves an in-flight auction to the standing bidder before finishing', () => {
+      liveDraft()
+      const onBlock = mkPlayers(1)[0] // p0
+      // Only p0 is left, and team_2 holds a $5 standing bid mid-auction.
+      store.setState(draft => {
+        draft.availablePlayers = [onBlock]
+        draft.draftState = 'BIDDING'
+        draft.currentPlayer = onBlock
+        draft.currentBid = 5
+        draft.currentBidder = 'team_2'
+        draft.currentNominator = 'team_2'
+      })
+      engine.currentNominatorIndex = engine.nominationOrder.length // overflow → no fresh nominations
+
+      engine.simulateToEnd()
+
+      const state = store.getState()
+      const team2 = state.teams.find(t => t.id === 'team_2')
+      expect(state.draftState).toBe('COMPLETE')
+      expect(team2.roster.map(p => p.id)).toContain('p0')
+      expect(team2.remainingBudget).toBe(defaultConfig.budgetPerTeam - 5)
+      expect(state.draftHistory.at(-1).player.id).toBe('p0')
+      expect(state.draftHistory.at(-1).price).toBe(5)
+    })
+
+    it('is a no-op when the draft is already COMPLETE', () => {
+      liveDraft({ draftState: 'COMPLETE' })
+      const before = store.getState().draftHistory.length
+      engine.simulateToEnd()
+      expect(store.getState().draftHistory.length).toBe(before)
+    })
+  })
+
+  describe('COMPLETE-state guards', () => {
+    // A stray AI-nomination / post-pick setTimeout (untracked by clearTimers)
+    // can fire after simulateToEnd reaches COMPLETE. startNominationPhase and
+    // nominatePlayer must ignore it rather than reopen a finished draft.
+    it('startNominationPhase is a no-op once the draft is COMPLETE', () => {
+      const teams = engine.createTeams(defaultConfig)
+      engine.nominationOrder = teams.map(t => t.id)
+      engine.currentNominatorIndex = 0
+      store.setState(draft => {
+        draft.teams = teams
+        draft.config = defaultConfig
+        draft.draftState = 'COMPLETE'
+        draft.currentNominator = 'team_3'
+      })
+
+      engine.startNominationPhase()
+
+      expect(store.getState().draftState).toBe('COMPLETE')
+      expect(store.getState().currentNominator).toBe('team_3') // unchanged
+    })
+
+    it('nominatePlayer is a no-op once the draft is COMPLETE', () => {
+      store.setState(draft => { draft.draftState = 'COMPLETE' })
+      const player = new Player({ id: 'p1', name: 'Test', position: 'QB', team: 'KC', estimatedValue: 30, byeWeek: 5 })
+
+      engine.nominatePlayer(player, 'team_1')
+
+      expect(store.getState().draftState).toBe('COMPLETE')
+      expect(store.getState().currentPlayer).toBeNull()
     })
   })
 
