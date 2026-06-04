@@ -20,8 +20,12 @@ export class Taco extends BaseStrategy {
     this.preferences = {
       positionMultipliers: {
         QB: 1.20,
-        RB: 0.95,
-        WR: 0.95,
+        // RB/WR at par (not penalized): Taco's identity is overpaying QB/K/DST
+        // and his home team, not underpaying RB/WR. The old 0.95 made him
+        // underbid the two biggest-spend positions and routinely end the draft
+        // flush while the field spent out.
+        RB: 1.00,
+        WR: 1.00,
         TE: 1.05,
         K: 1.10,
         DST: 1.10

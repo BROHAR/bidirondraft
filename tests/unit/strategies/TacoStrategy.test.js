@@ -252,8 +252,24 @@ describe('Taco strategy', () => {
     })
   })
 
-  describe('1.35x ceiling still applies', () => {
-    it('never values a player above 1.35 * estimatedValue, even with all Taco bonuses stacked', () => {
+  describe('signature premium survives the per-player bid cap', () => {
+    // Regression for "Taco never wins his home/top-QB studs": getMaxBidForPlayer
+    // caps studs (value>=30) at ~1.0-1.05x book, which silently erased the home
+    // and top-QB boosts so Taco bid the same ~book as the field. signatureBoost
+    // now lets those identity premiums clear the field on studs — without the
+    // real maxBid mock used by the home-bias block above.
+    it('values a home-team stud well above book (beyond the generic ~1.05x stud cap)', () => {
+      const homeWR = makePlayer('WR', 40, 'home_wr', 'DAL') // not a QB → isolates home boost
+      const awayWR = makePlayer('WR', 40, 'away_wr', 'KC')
+      const pool = [homeWR, awayWR, ...makeQBPool(5)]
+      const homeVal = taco.getAdjustedPlayerValue(homeWR, pool)
+      const awayVal = taco.getAdjustedPlayerValue(awayWR, pool)
+      // Home stud clears the field's ~book ceiling; the away stud stays near it.
+      expect(homeVal).toBeGreaterThan(40 * 1.10)
+      expect(homeVal).toBeGreaterThan(awayVal)
+    })
+
+    it('still never exceeds the absolute 1.35x book ceiling, even stacked', () => {
       const homeTopQB = makePlayer('QB', 50, 'home_qb', 'DAL')
       const pool = [homeTopQB, ...makeQBPool(5)]
       const adjusted = taco.getAdjustedPlayerValue(homeTopQB, pool)
