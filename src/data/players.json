@@ -5828,7 +5828,7 @@
       "id": "player_187",
       "name": "Jason Sanders",
       "position": "K",
-      "team": "FA",
+      "team": "NYJ",
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 0,
@@ -5842,7 +5842,7 @@
       "id": "player_725",
       "name": "Younghoe Koo",
       "position": "K",
-      "team": "NYJ",
+      "team": "FA",
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 0,
@@ -6130,7 +6130,7 @@
         "ppr": 115.1
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_063",
@@ -6732,7 +6732,7 @@
         "ppr": 8.4
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_403",
