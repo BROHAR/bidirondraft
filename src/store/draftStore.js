@@ -160,6 +160,12 @@ export const useDraftStore = create(
         draftEngine.resumeDraft()
       }
     },
+
+    simulateToEnd: () => {
+      if (draftEngine) {
+        draftEngine.simulateToEnd()
+      }
+    },
     
     restartDraft: () => {
       if (draftEngine) {

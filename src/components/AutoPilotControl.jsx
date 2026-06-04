@@ -13,13 +13,23 @@ function AutoPilotControl() {
     draftState,
     currentNominator,
     toggleAutoPilot,
-    setAutoPilotStrategy
+    setAutoPilotStrategy,
+    simulateToEnd
   } = useDraftStore()
-  
+
   const humanTeam = teams.find(t => t.isHuman)
-  
+
   if (!humanTeam) {
     return null
+  }
+
+  const canSimulateToEnd = autoPilotEnabled &&
+    ['NOMINATING', 'BIDDING', 'PAUSED'].includes(draftState)
+
+  const handleSimulateToEnd = () => {
+    if (confirm('Simulate the rest of the draft and jump straight to the results? Picks so far are kept, but this cannot be undone.')) {
+      simulateToEnd()
+    }
   }
 
   const strategies = [
@@ -82,6 +92,17 @@ function AutoPilotControl() {
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {canSimulateToEnd && (
+          <div className="form-group">
+            <button
+              className="btn btn-primary simulate-to-end-btn"
+              onClick={handleSimulateToEnd}
+            >
+              Simulate to End
+            </button>
           </div>
         )}
       </div>
