@@ -36,6 +36,17 @@ const PRICE_TIERS = [
 
 // ---- InfoTip — small ⓘ glyph with a styled hover/focus tooltip ----------
 
+// Strategy label for a team. AI teams show their strategy name; the human team
+// shows "You", plus the auto-pilot strategy it drafted with when auto-pilot was
+// used (in a draft or sim) — so it reads like the other bidders.
+function teamStrategyLabel(team) {
+  if (!team.isHuman) return team.draftStrategy?.name || 'AI'
+  const autoStrat = team.isAutoPilot
+    ? (team.draftStrategy?.name || team.autoPilotStrategy)
+    : null
+  return autoStrat ? `You (${autoStrat})` : 'You'
+}
+
 function InfoTip({ text, label }) {
   return (
     <span
@@ -892,7 +903,7 @@ function FieldTab({ allTeams, rosterPositions, draftHistory, replacementLevels }
       teamVorp: getTeamVORP(team, replacementLevels),
       vc: getTotalValueCapture(team),
       budgetLeft: team.remainingBudget,
-      stratName: team.isHuman ? 'You' : (team.draftStrategy?.name || 'AI'),
+      stratName: teamStrategyLabel(team),
     }))
   }, [allTeams, rosterPositions, replacementLevels])
 
@@ -1059,7 +1070,7 @@ function TeamRosterModal({ team, rosterPositions, onClose }) {
   const rosterSlots = useMemo(() => buildRosterSlots(team, rosterPositions), [team, rosterPositions])
   const starterPts = calculateStarterPoints(team, rosterPositions)
   const totalPts = team.roster.reduce((s, p) => s + (p.projectedPoints || 0), 0)
-  const stratName = team.isHuman ? 'You' : (team.draftStrategy?.name || 'AI')
+  const stratName = teamStrategyLabel(team)
   const spent = team.budget - team.remainingBudget
 
   return (
@@ -1135,7 +1146,7 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
       const starterPts = calculateStarterPoints(team, rosterPositions)
       const totalPts = team.roster.reduce((s, p) => s + (p.projectedPoints || 0), 0)
       const benchPts = totalPts - starterPts
-      const stratName = team.isHuman ? 'You' : (team.draftStrategy?.name || 'AI')
+      const stratName = teamStrategyLabel(team)
 
       const picks = draftHistory
         .filter(p => p.team === team.name)
