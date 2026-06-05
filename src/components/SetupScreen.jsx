@@ -50,7 +50,11 @@ function SetupScreen() {
     [playerOverrides]
   )
   const overrideCount = countOverrides(playerOverrides)
-  
+
+  // The presence of a SUPERFLEX roster slot is what makes a league superflex —
+  // drives the active-preset highlight and the format badge below.
+  const isSuperflex = (config.rosterPositions.SUPERFLEX || 0) > 0
+
   const strategies = [
     { value: 'Balanced', label: 'Balanced - Even focus across all positions' },
     { value: 'ValueHunter', label: 'Value Hunter - Target undervalued players' },
@@ -155,16 +159,18 @@ function SetupScreen() {
     <div className="setup-screen">
       <div className="card">
         <h2>Draft Configuration</h2>
-        
+
         <div className="preset-buttons">
-          <button 
-            className="btn btn-secondary"
+          <button
+            className={`btn ${isSuperflex ? 'btn-secondary' : 'btn-primary'}`}
+            aria-pressed={!isSuperflex}
             onClick={() => loadPreset('standard')}
           >
             Standard League
           </button>
-          <button 
-            className="btn btn-secondary"
+          <button
+            className={`btn ${isSuperflex ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={isSuperflex}
             onClick={() => loadPreset('superflex')}
           >
             Superflex League
