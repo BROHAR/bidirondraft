@@ -5,6 +5,7 @@ import {
   clearPlayerOverride,
   countOverrides,
 } from '../utils/playerOverrides'
+import { scaleValueToBudget } from '../utils/budgetScaling'
 
 const SCORING_LABELS = {
   standard: 'Standard',
@@ -24,6 +25,7 @@ function PlayerCustomizationModal({
   basePlayers,
   overrides,
   scoringFormat,
+  budgetPerTeam,
   onChange,
   onClearAll,
 }) {
@@ -152,6 +154,9 @@ function PlayerCustomizationModal({
                   : null
                 const isModified = valueOverride !== null || pointsOverride !== null
                 const basePoints = player.projectedPoints?.[scoringFormat] ?? 0
+                // Base values are tuned for a $200 budget; show them scaled to
+                // the league's budget so users set custom values in context.
+                const scaledBaseValue = scaleValueToBudget(player.estimatedValue, budgetPerTeam)
 
                 return (
                   <div
@@ -165,7 +170,7 @@ function PlayerCustomizationModal({
 
                     <div className="player-position">{player.position}</div>
 
-                    <div className="base-value">${player.estimatedValue}</div>
+                    <div className="base-value">${scaledBaseValue}</div>
 
                     <div className="override-control">
                       <input
@@ -173,7 +178,7 @@ function PlayerCustomizationModal({
                         min="0"
                         step="1"
                         value={valueOverride !== null ? valueOverride : ''}
-                        placeholder={String(player.estimatedValue)}
+                        placeholder={String(scaledBaseValue)}
                         onChange={(e) => handleValueChange(player.id, e.target.value)}
                         className={`override-input ${valueOverride !== null ? 'modified' : ''}`}
                       />

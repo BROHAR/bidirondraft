@@ -1,3 +1,5 @@
+import { budgetScaleFor } from './budgetScaling'
+
 // Extracted from AllTeamsSummary.jsx so both components share identical lineup logic
 export function getStartingLineup(team, rosterPositions) {
   const rc = rosterPositions || {}
@@ -245,14 +247,18 @@ export function generateTakeaways(humanTeam, allTeams, draftHistory, rosterPosit
     }
   })
 
-  if (humanTeam.remainingBudget > 15) {
+  // Dollar thresholds below are tuned for a $200 budget; scale them so the
+  // takeaways stay meaningful at other league budgets.
+  const scale = budgetScaleFor(humanTeam.budget)
+
+  if (humanTeam.remainingBudget > 15 * scale) {
     takeaways.push(`You left $${humanTeam.remainingBudget} unspent. In a real auction, unspent budget is wasted — push harder on late-round targets.`)
   }
 
   const vc = getTotalValueCapture(humanTeam)
-  if (vc >= 25) {
+  if (vc >= 25 * scale) {
     takeaways.push(`You captured $${vc.toFixed(0)} in net value — excellent auction discipline.`)
-  } else if (vc <= -15) {
+  } else if (vc <= -15 * scale) {
     takeaways.push(`You overpaid by $${Math.abs(vc).toFixed(0)} overall. Practice walking away when prices exceed projected value.`)
   }
 

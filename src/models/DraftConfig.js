@@ -34,8 +34,8 @@ export class DraftConfig {
       errors.push('Number of teams must be between 8 and 14')
     }
     
-    if (this.budgetPerTeam < 100 || this.budgetPerTeam > 1000) {
-      errors.push('Budget per team must be between $100 and $1000')
+    if (this.budgetPerTeam < 100 || this.budgetPerTeam > 2000) {
+      errors.push('Budget per team must be between $100 and $2000')
     }
     
     if (this.humanDraftPosition < 1 || this.humanDraftPosition > this.numberOfTeams) {

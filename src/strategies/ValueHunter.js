@@ -32,14 +32,14 @@ export class ValueHunter extends BaseStrategy {
     // Even value hunters will jump up when severely undervalued
     const undervaluedAmount = adjustedValue - currentBid
     
-    if (undervaluedAmount >= 20) {
+    if (undervaluedAmount >= this.sd(20)) {
       // Jump $8-12 for severely undervalued players (more conservative than base)
-      return Math.floor(Math.random() * 5) + 8 // $8-12
+      return this.si(Math.floor(Math.random() * 5) + 8) // $8-12
     }
-    
-    if (undervaluedAmount >= 10) {
+
+    if (undervaluedAmount >= this.sd(10)) {
       // Jump $4-6 for significantly undervalued players
-      return Math.floor(Math.random() * 3) + 4 // $4-6
+      return this.si(Math.floor(Math.random() * 3) + 4) // $4-6
     }
     
     // Always conservative $1 increments otherwise
@@ -76,7 +76,7 @@ export class ValueHunter extends BaseStrategy {
     // 30% chance to price enforce someone expensive
     if (Math.random() < 0.75) {
       const expensivePlayers = [...availablePlayers]
-        .filter(p => p.estimatedValue >= 30)
+        .filter(p => p.estimatedValue >= this.sd(30))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensivePlayers.length > 0) {

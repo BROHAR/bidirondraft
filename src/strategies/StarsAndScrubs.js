@@ -19,13 +19,13 @@ export class StarsAndScrubs extends BaseStrategy {
     // Mid-tier ($8-15): bid based on adjustedValue but with reduced position
     // multipliers (handled by getPositionMultiplier). Removed the hard "dead
     // zone" since it created structural underspend in those tiers.
-    if (player.estimatedValue >= 8 && player.estimatedValue <= 15) {
+    if (player.estimatedValue >= this.sd(8) && player.estimatedValue <= this.sd(15)) {
       const randomFactor = 0.85 + Math.random() * 0.20
       return currentBid < adjustedValue * randomFactor && Math.random() < 0.7
     }
 
     // Very aggressive on elite players (value >= 30) - willing to pay market value
-    if (player.estimatedValue >= 30) {
+    if (player.estimatedValue >= this.sd(30)) {
       // 15% chance to completely drop out (reduced from 30% - more competitive)
       if (Math.random() < 0.15) return false
       
@@ -37,7 +37,7 @@ export class StarsAndScrubs extends BaseStrategy {
     }
     
     // Moderate on higher mid-tier players (value 16-29) - only above the blind spot
-    if (player.estimatedValue > 15) {
+    if (player.estimatedValue > this.sd(15)) {
       // 15% chance to skip these entirely (prefer stars or scrubs)
       if (Math.random() < 0.15) return false
       
@@ -48,7 +48,7 @@ export class StarsAndScrubs extends BaseStrategy {
     }
     
     // More aggressive on scrub-tier players (<$8) - need to fill roster cheaply
-    if (player.estimatedValue < 8) {
+    if (player.estimatedValue < this.sd(8)) {
       const randomFactor = 0.60 + Math.random() * 0.35 // 60% to 95%
       const bidThreshold = adjustedValue * randomFactor
       
@@ -60,14 +60,14 @@ export class StarsAndScrubs extends BaseStrategy {
 
   getBidIncrement(player, currentBid, adjustedValue) {
     // More aggressive increments on star players
-    if (player.estimatedValue >= 30) {
-      if (Math.random() < 0.4) return Math.floor(Math.random() * 5) + 3 // $3-7
-      if (Math.random() < 0.7) return 2
+    if (player.estimatedValue >= this.sd(30)) {
+      if (Math.random() < 0.4) return this.si(Math.floor(Math.random() * 5) + 3) // $3-7
+      if (Math.random() < 0.7) return this.si(2)
       return 1
     }
-    
+
     // Conservative increments on scrubs
-    if (player.estimatedValue < 15) {
+    if (player.estimatedValue < this.sd(15)) {
       return 1 // Always $1 increments
     }
     
@@ -83,7 +83,7 @@ export class StarsAndScrubs extends BaseStrategy {
     // 60% chance to nominate elite player for price enforcement
     if (Math.random() < 0.6) {
       const elitePlayers = [...availablePlayers]
-        .filter(p => p.estimatedValue >= 30)
+        .filter(p => p.estimatedValue >= this.sd(30))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (elitePlayers.length > 0) {

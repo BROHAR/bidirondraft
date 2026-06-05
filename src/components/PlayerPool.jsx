@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { getReplacementLevels, getPlayerVORP } from '../utils/draftAnalysis'
+import { budgetScaleFor } from '../utils/budgetScaling'
 
 function PlayerPool() {
   const {
@@ -55,9 +56,12 @@ function PlayerPool() {
     })
 
   const getValueColor = (player) => {
-    if (player.estimatedValue >= 30) return 'value-high'
-    if (player.estimatedValue >= 15) return 'value-medium'
-    if (player.estimatedValue >= 5) return 'value-low'
+    // Color tiers are tuned for a $200 budget; scale them to the league budget
+    // so the buckets track the (already scaled) player values on the board.
+    const scale = budgetScaleFor(config?.budgetPerTeam)
+    if (player.estimatedValue >= 30 * scale) return 'value-high'
+    if (player.estimatedValue >= 15 * scale) return 'value-medium'
+    if (player.estimatedValue >= 5 * scale) return 'value-low'
     return 'value-waiver'
   }
 

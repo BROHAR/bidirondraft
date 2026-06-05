@@ -68,13 +68,18 @@ describe('DraftConfig', () => {
     it('rejects budget below minimum', () => {
       const { isValid, errors } = new DraftConfig({ budgetPerTeam: 50 }).validate()
       expect(isValid).toBe(false)
-      expect(errors).toContain('Budget per team must be between $100 and $1000')
+      expect(errors).toContain('Budget per team must be between $100 and $2000')
     })
 
     it('rejects budget above maximum', () => {
-      const { isValid, errors } = new DraftConfig({ budgetPerTeam: 2000 }).validate()
+      const { isValid, errors } = new DraftConfig({ budgetPerTeam: 2500 }).validate()
       expect(isValid).toBe(false)
-      expect(errors).toContain('Budget per team must be between $100 and $1000')
+      expect(errors).toContain('Budget per team must be between $100 and $2000')
+    })
+
+    it('accepts a high budget within the expanded range', () => {
+      const { isValid } = new DraftConfig({ budgetPerTeam: 2000 }).validate()
+      expect(isValid).toBe(true)
     })
 
     it('rejects humanDraftPosition outside team range', () => {

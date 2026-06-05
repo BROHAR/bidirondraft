@@ -17,7 +17,7 @@ export class HeroRB extends BaseStrategy {
 
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {
     // Moderately aggressive on first elite RB (toned down significantly)
-    if (player.position === 'RB' && player.estimatedValue >= 35 && this.team.roster.filter(p => p.position === 'RB').length === 0) {
+    if (player.position === 'RB' && player.estimatedValue >= this.sd(35) && this.team.roster.filter(p => p.position === 'RB').length === 0) {
       const randomFactor = 0.98 + Math.random() * 0.17 // 98% to 115% (much more conservative)
       const bidThreshold = adjustedValue * randomFactor
       return currentBid < bidThreshold
@@ -36,9 +36,9 @@ export class HeroRB extends BaseStrategy {
 
   getBidIncrement(player, currentBid, adjustedValue) {
     // Aggressive increments on elite RBs when we have none
-    if (player.position === 'RB' && player.estimatedValue >= 30 && this.team.roster.filter(p => p.position === 'RB').length === 0) {
-      if (Math.random() < 0.6) return Math.floor(Math.random() * 6) + 3 // $3-8
-      return 2
+    if (player.position === 'RB' && player.estimatedValue >= this.sd(30) && this.team.roster.filter(p => p.position === 'RB').length === 0) {
+      if (Math.random() < 0.6) return this.si(Math.floor(Math.random() * 6) + 3) // $3-8
+      return this.si(2)
     }
     
     return super.getBidIncrement(player, currentBid, adjustedValue)
@@ -55,7 +55,7 @@ export class HeroRB extends BaseStrategy {
     
     if (!hasRB && Math.random() < 0.7) {
       const eliteRBs = [...availablePlayers]
-        .filter(p => p.position === 'RB' && p.estimatedValue >= 30)
+        .filter(p => p.position === 'RB' && p.estimatedValue >= this.sd(30))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (eliteRBs.length > 0) {

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { getReplacementLevels, getPlayerVORP } from '../utils/draftAnalysis'
 import { getBidAdvice } from '../utils/bidAdvisor'
+import { budgetScaleFor } from '../utils/budgetScaling'
 
 function AuctionBlock() {
   const [isSkipping, setIsSkipping] = useState(false)
@@ -41,6 +42,13 @@ function AuctionBlock() {
     const humanTeam = teams.find(t => t.isHuman)
     return humanTeam ? humanTeam.maxBid : 0
   }
+
+  // Quick-bid jumps scale with the league budget so they stay useful at high
+  // budgets (a +$1/+$5/+$10 set is tiny when player values are 10x scaled). The
+  // smallest button stays at the $1 minimum raise for fine-grained control.
+  const bidScale = budgetScaleFor(config?.budgetPerTeam)
+  const midStep = Math.max(2, Math.round(5 * bidScale))
+  const bigStep = Math.max(midStep + 1, Math.round(10 * bidScale))
 
   const handleSkipPlayer = useCallback(() => {
     if (isSkipping || draftState !== 'BIDDING') return
@@ -250,19 +258,19 @@ function AuctionBlock() {
           >
             +$1 (${currentBid + 1})
           </button>
-          <button 
+          <button
             className="btn btn-success"
-            onClick={() => handleBid(5)}
-            disabled={currentBid + 5 > getMaxBid()}
+            onClick={() => handleBid(midStep)}
+            disabled={currentBid + midStep > getMaxBid()}
           >
-            +$5 (${currentBid + 5})
+            +${midStep} (${currentBid + midStep})
           </button>
-          <button 
+          <button
             className="btn btn-success"
-            onClick={() => handleBid(10)}
-            disabled={currentBid + 10 > getMaxBid()}
+            onClick={() => handleBid(bigStep)}
+            disabled={currentBid + bigStep > getMaxBid()}
           >
-            +$10 (${currentBid + 10})
+            +${bigStep} (${currentBid + bigStep})
           </button>
           <button 
             className="btn btn-danger"

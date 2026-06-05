@@ -5,6 +5,7 @@ import { HeroRB } from '../strategies/HeroRB.js'
 import { ValueHunter } from '../strategies/ValueHunter.js'
 import { LateRoundQB } from '../strategies/LateRoundQB.js'
 import { Taco } from '../strategies/TacoStrategy.js'
+import { budgetScaleFor } from '../utils/budgetScaling.js'
 
 export class AIManager {
   constructor() {
@@ -174,7 +175,10 @@ export class AIManager {
     }
 
     const aggressiveWindow = Math.max(5000, totalBiddingTime * aggressiveWindowPercent) // Minimum 5 seconds
-    if (currentPlayer.estimatedValue >= 5 && timeElapsed <= aggressiveWindow && currentBid < currentPlayer.estimatedValue * 0.85) {
+    // $5 opener threshold is tuned for a $200 budget; scale it so it stays
+    // proportional under different budgets (the player pool is scaled too).
+    const openerScale = budgetScaleFor(aiTeams[0]?.budget)
+    if (currentPlayer.estimatedValue >= 5 * openerScale && timeElapsed <= aggressiveWindow && currentBid < currentPlayer.estimatedValue * 0.85) {
       let bestTeam = null
       let bestValue = currentBid
       for (const team of aiTeams) {

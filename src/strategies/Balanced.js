@@ -27,10 +27,10 @@ export class Balanced extends BaseStrategy {
   getBidIncrement(player, currentBid, adjustedValue) {
     // Consistent $1-2 increments most of the time
     if (Math.random() < 0.8) return 1
-    if (Math.random() < 0.9) return 2
-    
+    if (Math.random() < 0.9) return this.si(2)
+
     // Occasionally larger increment for value plays
-    return Math.floor(Math.random() * 3) + 3
+    return this.si(Math.floor(Math.random() * 3) + 3)
   }
 
   getSkipProbability() {
@@ -52,7 +52,7 @@ export class Balanced extends BaseStrategy {
     } else if (rand < 0.7) {
       // Price enforce
       const expensivePlayers = [...availablePlayers]
-        .filter(p => p.estimatedValue >= 20 && !this.shouldNominate(p))
+        .filter(p => p.estimatedValue >= this.sd(20) && !this.shouldNominate(p))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensivePlayers.length > 0) {

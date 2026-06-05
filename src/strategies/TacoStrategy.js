@@ -71,7 +71,7 @@ export class Taco extends BaseStrategy {
         const currentCount = this.team.roster.filter(p => p.position === player.position).length
         if (currentCount < tacoLimit) {
           const base = super.getAdjustedPlayerValue(player, availablePlayers)
-          const floor = 4
+          const floor = this.sd(4)
           return Math.min(this.team.maxBid, Math.max(base, floor))
         }
       }
