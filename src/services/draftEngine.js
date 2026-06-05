@@ -5,6 +5,7 @@ import { autoPilotService } from './autoPilotService.js'
 import { audioService } from './audioService.js'
 import { BidValidator } from './bidValidator.js'
 import { workerTimers } from './workerTimers.js'
+import { budgetScaleFor } from '../utils/budgetScaling.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
 // SUPERFLEX, and BENCH are intentionally excluded — they can be filled by
@@ -105,7 +106,7 @@ export class DraftEngine {
       // the worst on the board. projectedPoints does have meaningful spread
       // within position, so we use it to tier the top 3 of each so they land
       // at $2–3 in auction (matching real-draft pricing).
-      this.applyKDstTiering(players)
+      this.applyKDstTiering(players, budgetScaleFor(config.budgetPerTeam))
 
       // User-customized values are authoritative — snap back after calibration
       // so the auction displays exactly what the user typed.
@@ -143,15 +144,19 @@ export class DraftEngine {
   }
 
   // Tier K and DST estimatedValue by projectedPoints. Math.max so a league
-  // config that already values them higher is never deflated.
-  applyKDstTiering(players) {
+  // config that already values them higher is never deflated. The $3/$2 floors
+  // are tuned for a $200 budget and scaled so they stay proportional once the
+  // pool itself has been scaled to the league budget.
+  applyKDstTiering(players, budgetScale = 1) {
+    const top = Math.max(1, Math.round(3 * budgetScale))
+    const rest = Math.max(1, Math.round(2 * budgetScale))
     for (const pos of ['K', 'DST']) {
       const positional = players
         .filter(p => p.position === pos)
         .sort((a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0))
-      if (positional[0]) positional[0].estimatedValue = Math.max(positional[0].estimatedValue, 3)
-      if (positional[1]) positional[1].estimatedValue = Math.max(positional[1].estimatedValue, 2)
-      if (positional[2]) positional[2].estimatedValue = Math.max(positional[2].estimatedValue, 2)
+      if (positional[0]) positional[0].estimatedValue = Math.max(positional[0].estimatedValue, top)
+      if (positional[1]) positional[1].estimatedValue = Math.max(positional[1].estimatedValue, rest)
+      if (positional[2]) positional[2].estimatedValue = Math.max(positional[2].estimatedValue, rest)
     }
   }
 
@@ -725,23 +730,26 @@ export class DraftEngine {
 
   updateTeamPsychology(teams, winningTeam, player, finalPrice) {
     const valueVsPrice = player.estimatedValue - finalPrice
+    // "Great deal" / "overpaid" thresholds are dollar deltas tuned for a $200
+    // budget; scale them so they stay meaningful at other budgets.
+    const scale = budgetScaleFor(winningTeam.budget)
     const outcome = {
       won: true,
       value: valueVsPrice,
       price: finalPrice,
       player: player
     }
-    
+
     // Update winning team
     winningTeam.recentBidOutcomes.push(outcome)
     if (winningTeam.recentBidOutcomes.length > 5) {
       winningTeam.recentBidOutcomes.shift() // Keep only last 5
     }
-    
+
     // Update momentum for winning team
-    if (valueVsPrice >= 5) {
+    if (valueVsPrice >= 5 * scale) {
       winningTeam.momentum = 'winning' // Great deal
-    } else if (valueVsPrice <= -8) {
+    } else if (valueVsPrice <= -8 * scale) {
       winningTeam.momentum = 'losing' // Overpaid significantly
     } else {
       winningTeam.momentum = 'neutral'

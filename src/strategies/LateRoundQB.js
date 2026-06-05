@@ -17,26 +17,26 @@ export class LateRoundQB extends BaseStrategy {
 
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {
     // Complete blind spot - won't bid on ANY QB over $10 (lowered from $15)
-    if (player.position === 'QB' && player.estimatedValue > 10) {
+    if (player.position === 'QB' && player.estimatedValue > this.sd(10)) {
       return false
     }
 
     // Very aggressive on elite non-QBs (similar to Stars and Scrubs)
-    if (player.position !== 'QB' && player.estimatedValue >= 30) {
+    if (player.position !== 'QB' && player.estimatedValue >= this.sd(30)) {
       const randomFactor = 0.95 + Math.random() * 0.15 // 95% to 110%
       const bidThreshold = adjustedValue * randomFactor
       if (currentBid < bidThreshold) return true
     }
 
     // Aggressive on good value non-QBs
-    if (player.position !== 'QB' && player.estimatedValue >= 15) {
+    if (player.position !== 'QB' && player.estimatedValue >= this.sd(15)) {
       const randomFactor = 0.9 + Math.random() * 0.15 // 90% to 105%
       const bidThreshold = adjustedValue * randomFactor
       if (currentBid < bidThreshold) return true
     }
 
     // Conservative on cheaper players and QBs
-    if (player.estimatedValue < 15) {
+    if (player.estimatedValue < this.sd(15)) {
       const randomFactor = 0.7 + Math.random() * 0.2 // 70% to 90%
       const bidThreshold = adjustedValue * randomFactor
       if (currentBid < bidThreshold && Math.random() < 0.4) return true
@@ -48,13 +48,13 @@ export class LateRoundQB extends BaseStrategy {
   getBidIncrement(player, currentBid, adjustedValue) {
     // Conservative increments on QBs
     if (player.position === 'QB') {
-      return Math.random() < 0.8 ? 1 : 2
+      return Math.random() < 0.8 ? 1 : this.si(2)
     }
 
     // More aggressive increments on premium non-QBs
-    if (player.position !== 'QB' && player.estimatedValue >= 30) {
-      if (Math.random() < 0.4) return Math.floor(Math.random() * 5) + 3 // $3-7
-      if (Math.random() < 0.7) return 2
+    if (player.position !== 'QB' && player.estimatedValue >= this.sd(30)) {
+      if (Math.random() < 0.4) return this.si(Math.floor(Math.random() * 5) + 3) // $3-7
+      if (Math.random() < 0.7) return this.si(2)
       return 1
     }
 
@@ -77,7 +77,7 @@ export class LateRoundQB extends BaseStrategy {
     // Strategy 1: Nominate elite non-QB we want
     if (Math.random() < 0.5) {
       const eliteNonQBs = [...availablePlayers]
-        .filter(p => p.position !== 'QB' && p.estimatedValue >= 25 && this.shouldNominate(p))
+        .filter(p => p.position !== 'QB' && p.estimatedValue >= this.sd(25) && this.shouldNominate(p))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (eliteNonQBs.length > 0) {
@@ -88,7 +88,7 @@ export class LateRoundQB extends BaseStrategy {
     // Strategy 2: Price enforce expensive QBs
     if (Math.random() < 0.25) {
       const expensiveQBs = [...availablePlayers]
-        .filter(p => p.position === 'QB' && p.estimatedValue >= 20)
+        .filter(p => p.position === 'QB' && p.estimatedValue >= this.sd(20))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensiveQBs.length > 0) {
@@ -99,7 +99,7 @@ export class LateRoundQB extends BaseStrategy {
     // Strategy 3: Nominate good value non-QBs
     if (Math.random() < 0.8) {
       const valueNonQBs = [...availablePlayers]
-        .filter(p => p.position !== 'QB' && p.estimatedValue >= 15 && this.shouldNominate(p))
+        .filter(p => p.position !== 'QB' && p.estimatedValue >= this.sd(15) && this.shouldNominate(p))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (valueNonQBs.length > 0) {

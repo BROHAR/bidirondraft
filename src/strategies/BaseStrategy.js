@@ -1,5 +1,8 @@
+import { budgetScaleFor } from '../utils/budgetScaling.js'
+
 // Hard ceiling on what any AI strategy will value a kicker or defense at,
 // regardless of (possibly inflated) book value or auction-pressure boosts.
+// Expressed at the $200 reference budget; scaled per-team via this.sd().
 const KDST_VALUE_CAP = 5
 
 export class BaseStrategy {
@@ -11,6 +14,26 @@ export class BaseStrategy {
 
   setTeam(team) {
     this.team = team
+  }
+
+  // Player values and the dollar thresholds below are tuned for a $200 budget.
+  // budgetScale rescales those absolute amounts to the team's actual budget so
+  // they stay proportional (at $200 this is exactly 1.0, preserving behavior).
+  get budgetScale() {
+    return budgetScaleFor(this.team?.budget)
+  }
+
+  // Scale a $200-baseline dollar amount to the team's budget. Used for all
+  // absolute thresholds/caps; ratios and percentages are left unscaled.
+  sd(amount) {
+    return amount * this.budgetScale
+  }
+
+  // Scale a bid-increment amount to the team's budget, rounded and floored at
+  // $1 so increments grow with budget (keeping auctions a sane number of steps)
+  // but never drop below the minimum raise.
+  si(amount) {
+    return Math.max(1, Math.round(amount * this.budgetScale))
   }
 
   getPositionLimit(position) {
@@ -82,18 +105,18 @@ export class BaseStrategy {
     }
 
     // For very low value players (under $4), apply strict caps and skip most adjustments
-    if (baseValue < 4) {
+    if (baseValue < this.sd(4)) {
       // Add small random variance but keep it very low
-      const variance = (Math.random() - 0.5) * 0.5 // +/- $0.25
-      return Math.max(1, Math.min(3, Math.round(baseValue + variance)))
+      const variance = (Math.random() - 0.5) * this.sd(0.5) // +/- $0.25
+      return Math.max(1, Math.min(this.sd(3), Math.round(baseValue + variance)))
     }
-    
+
     // Only apply value adjustments to players with $4+ value and in top 150
-    const shouldApplyAdjustments = baseValue >= 4 && this.isInTop150Players(player, availablePlayers)
-    
+    const shouldApplyAdjustments = baseValue >= this.sd(4) && this.isInTop150Players(player, availablePlayers)
+
     if (!shouldApplyAdjustments) {
       // For players $4-5, add some variance but keep it reasonable
-      const variance = (Math.random() - 0.5) * 1.0 // +/- $0.50
+      const variance = (Math.random() - 0.5) * this.sd(1.0) // +/- $0.50
       return Math.max(1, Math.round(baseValue + variance))
     }
     
@@ -224,7 +247,7 @@ export class BaseStrategy {
     // Mevis-kicker-to-$34 bug). Sub-$4 K/DST already return at the low-value
     // branch above; this only bites when the data is wrong.
     if (player.position === 'K' || player.position === 'DST') {
-      finalValue = Math.min(finalValue, Math.max(1, Math.round(baseValue * 1.1)), KDST_VALUE_CAP)
+      finalValue = Math.min(finalValue, Math.max(1, Math.round(baseValue * 1.1)), this.sd(KDST_VALUE_CAP))
     }
 
     return Math.max(1, Math.round(finalValue))
@@ -260,21 +283,21 @@ export class BaseStrategy {
     // expensive overspend, mid-tier sells for $1" pattern). Mid/low tiers keep
     // wide variance — overpay drama on sleepers is intentional.
     let multiplier
-    if (player.estimatedValue >= 50) {
+    if (player.estimatedValue >= this.sd(50)) {
       // Elite: ~book value (0-5% over).
       multiplier = 1.00 + Math.random() * 0.05
-    } else if (player.estimatedValue >= 30) {
+    } else if (player.estimatedValue >= this.sd(30)) {
       // High: ~book value (0-5% over).
       multiplier = 1.00 + Math.random() * 0.05
-    } else if (player.estimatedValue >= 15) {
+    } else if (player.estimatedValue >= this.sd(15)) {
       // Mid: increased variance (0-25% over)
       multiplier = 1.00 + Math.random() * 0.25
-    } else if (player.estimatedValue >= 5) {
+    } else if (player.estimatedValue >= this.sd(5)) {
       // Low-mid: moderate variance (0-20% over)
       multiplier = 1.00 + Math.random() * 0.20
     } else {
       // Very low value players: still cap at $3 but with some variance
-      return Math.min(3 + Math.random(), player.estimatedValue * (1.15 + Math.random() * 0.25))
+      return Math.min(this.sd(3) + Math.random() * this.budgetScale, player.estimatedValue * (1.15 + Math.random() * 0.25))
     }
     
     return player.estimatedValue * multiplier
@@ -415,19 +438,19 @@ export class BaseStrategy {
     
     // More competitive bidding on high-value players
     let randomFactor
-    if (player.estimatedValue >= 50) {
+    if (player.estimatedValue >= this.sd(50)) {
       // Elite players: Competitive range (85% to 115% of adjusted value)
       randomFactor = 0.85 + Math.random() * 0.30
       if (isEmotionalBidding) randomFactor *= 1.20 // More emotional impact on elite players
-    } else if (player.estimatedValue >= 30) {
+    } else if (player.estimatedValue >= this.sd(30)) {
       // High-value players: Competitive range (85% to 110% of adjusted value)
       randomFactor = 0.85 + Math.random() * 0.25
       if (isEmotionalBidding) randomFactor *= 1.15 // Increased emotional impact
-    } else if (player.estimatedValue >= 15) {
+    } else if (player.estimatedValue >= this.sd(15)) {
       // Mid-value players: More varied range (70% to 110% of adjusted value)
       randomFactor = 0.70 + Math.random() * 0.40
       if (isEmotionalBidding) randomFactor *= 1.10 // Some emotional impact
-    } else if (player.estimatedValue >= 5) {
+    } else if (player.estimatedValue >= this.sd(5)) {
       // Low-mid players: Moderate range (75% to 105% of adjusted value)
       randomFactor = 0.75 + Math.random() * 0.30
       if (isEmotionalBidding) randomFactor *= 1.05 // Minimal emotional impact
@@ -440,10 +463,10 @@ export class BaseStrategy {
     const bidThreshold = adjustedValue * randomFactor
     
     // Additional safety check: never bid high amounts on very low value players
-    if (player.estimatedValue < 4 && currentBid >= 4) {
+    if (player.estimatedValue < this.sd(4) && currentBid >= this.sd(4)) {
       return false // Don't bid more than $4 on players worth less than $4
     }
-    if (player.estimatedValue < 8 && currentBid >= player.estimatedValue * 2) {
+    if (player.estimatedValue < this.sd(8) && currentBid >= player.estimatedValue * 2) {
       return false // Don't bid more than 2x value on low-value players
     }
     
@@ -456,11 +479,11 @@ export class BaseStrategy {
     // Reduce "bargain hunting" behavior - be more competitive on expensive players
     // Remove automatic skip on elite players - let them compete
     
-    if (player.estimatedValue >= 60) {
+    if (player.estimatedValue >= this.sd(60)) {
       skipProb += 0.01 // Only 1% more likely to skip on truly elite players
-    } else if (player.estimatedValue >= 40) {
+    } else if (player.estimatedValue >= this.sd(40)) {
       skipProb += 0.015 // 1.5% more likely to skip on very expensive players
-    } else if (player.estimatedValue >= 25) {
+    } else if (player.estimatedValue >= this.sd(25)) {
       skipProb += 0.02 // 2% more likely to skip on expensive players
     }
     
@@ -498,8 +521,8 @@ export class BaseStrategy {
     let bidAmount = Math.min(maxReasonableBid, currentBid + increment)
 
     // Final safety check: prevent extreme overbids on low-value players
-    if (player.estimatedValue <= 4) {
-      bidAmount = Math.min(bidAmount, 3) // Never bid more than $3 for $1-4 players
+    if (player.estimatedValue <= this.sd(4)) {
+      bidAmount = Math.min(bidAmount, this.sd(3)) // Never bid more than $3 for $1-4 players
     }
 
     if (bidAmount > player.estimatedValue * 1.4) {
@@ -524,42 +547,42 @@ export class BaseStrategy {
 
   getBidIncrement(player, currentBid, adjustedValue) {
     // Safety check: prevent massive bid increments on low-value players
-    if (player.estimatedValue <= 4) {
+    if (player.estimatedValue <= this.sd(4)) {
       // For very low value players, only allow $1 increments
       return 1
     }
 
     // Check if player is significantly undervalued to speed up auction
     const undervaluedAmount = adjustedValue - currentBid
-    
+
     // Large jumps for severely undervalued players (speeds up auction)
-    if (undervaluedAmount >= 25) {
+    if (undervaluedAmount >= this.sd(25)) {
       // Jump $15-20 for severely undervalued players
-      return Math.floor(Math.random() * 6) + 15 // $15-20
+      return this.si(Math.floor(Math.random() * 6) + 15) // $15-20
     }
-    
-    if (undervaluedAmount >= 15) {
+
+    if (undervaluedAmount >= this.sd(15)) {
       // Jump $10-15 for significantly undervalued players
-      return Math.floor(Math.random() * 6) + 10 // $10-15
+      return this.si(Math.floor(Math.random() * 6) + 10) // $10-15
     }
-    
-    if (undervaluedAmount >= 8) {
+
+    if (undervaluedAmount >= this.sd(8)) {
       // Jump $5-10 for moderately undervalued players
-      return Math.floor(Math.random() * 6) + 5 // $5-10
+      return this.si(Math.floor(Math.random() * 6) + 5) // $5-10
     }
-    
+
     // Standard bidding for fairly priced players
-    if (Math.random() < 0.7) return 1
-    
+    if (Math.random() < 0.7) return this.si(1)
+
     // Occasionally bid $2-5 to show aggression
-    if (Math.random() < 0.8) return Math.floor(Math.random() * 4) + 2
-    
+    if (Math.random() < 0.8) return this.si(Math.floor(Math.random() * 4) + 2)
+
     // Rarely make larger jumps for high-value players
-    if (player.estimatedValue >= 30 && Math.random() < 0.1) {
-      return Math.floor(Math.random() * 8) + 5
+    if (player.estimatedValue >= this.sd(30) && Math.random() < 0.1) {
+      return this.si(Math.floor(Math.random() * 8) + 5)
     }
-    
-    return 1
+
+    return this.si(1)
   }
 
   isRiskyNomination(player) {
@@ -569,7 +592,7 @@ export class BaseStrategy {
     // need or that our strategy multiplies up to >1.0 are *not* risky;
     // we're happy to win them.
     if (!this.team) return false
-    const RISK_VALUE_CEILING = 2
+    const RISK_VALUE_CEILING = this.sd(2)
     if (player.estimatedValue > RISK_VALUE_CEILING) return false
     if (this.team.getPositionNeed(player.position) > 0) return false
     const mult = this.preferences?.positionMultipliers?.[player.position] ?? 1.0
@@ -632,7 +655,7 @@ export class BaseStrategy {
       // Strategy 2: Price enforce high-value player we don't want from top 150 (30% chance)
       if (Math.random() < 0.5) {
         const expensivePlayers = top150Players
-          .filter(p => p.estimatedValue >= 25 && !this.shouldNominate(p, availablePlayers))
+          .filter(p => p.estimatedValue >= this.sd(25) && !this.shouldNominate(p, availablePlayers))
         
         if (expensivePlayers.length > 0) {
           return expensivePlayers[Math.floor(Math.random() * Math.min(3, expensivePlayers.length))]

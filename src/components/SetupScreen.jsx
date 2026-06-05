@@ -191,7 +191,7 @@ function SetupScreen() {
               value={config.budgetPerTeam}
               onChange={(e) => handleConfigChange('budgetPerTeam', parseInt(e.target.value))}
               min="100"
-              max="1000"
+              max="2000"
             />
           </div>
 
@@ -453,6 +453,7 @@ function SetupScreen() {
         basePlayers={playersData.players}
         overrides={playerOverrides}
         scoringFormat={config.scoringFormat}
+        budgetPerTeam={config.budgetPerTeam}
         onChange={setPlayerOverrides}
         onClearAll={() => setPlayerOverrides({})}
       />

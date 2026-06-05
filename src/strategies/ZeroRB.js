@@ -17,16 +17,16 @@ export class ZeroRB extends BaseStrategy {
 
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {
     // Strategy identity: never bid on premium RBs.
-    if (player.position === 'RB' && player.estimatedValue > 20) {
+    if (player.position === 'RB' && player.estimatedValue > this.sd(20)) {
       return false
     }
 
-    if (player.position === 'WR' && player.estimatedValue >= 25) {
+    if (player.position === 'WR' && player.estimatedValue >= this.sd(25)) {
       const randomFactor = 0.95 + Math.random() * 0.15
       return currentBid < adjustedValue * randomFactor
     }
 
-    if (player.position === 'TE' && player.estimatedValue >= 15) {
+    if (player.position === 'TE' && player.estimatedValue >= this.sd(15)) {
       const randomFactor = 0.98 + Math.random() * 0.12
       return currentBid < adjustedValue * randomFactor
     }
@@ -44,8 +44,8 @@ export class ZeroRB extends BaseStrategy {
 
   getBidIncrement(player, currentBid, adjustedValue) {
     // Aggressive increments on premium WR/TE
-    if ((player.position === 'WR' || player.position === 'TE') && player.estimatedValue >= 20) {
-      if (Math.random() < 0.5) return Math.floor(Math.random() * 4) + 2 // $2-5
+    if ((player.position === 'WR' || player.position === 'TE') && player.estimatedValue >= this.sd(20)) {
+      if (Math.random() < 0.5) return this.si(Math.floor(Math.random() * 4) + 2) // $2-5
       return 1
     }
     
@@ -61,7 +61,7 @@ export class ZeroRB extends BaseStrategy {
     // 50% chance to nominate expensive RB for price enforcement
     if (Math.random() < 0.5) {
       const expensiveRBs = [...availablePlayers]
-        .filter(p => p.position === 'RB' && p.estimatedValue >= 25)
+        .filter(p => p.position === 'RB' && p.estimatedValue >= this.sd(25))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensiveRBs.length > 0) {
@@ -72,7 +72,7 @@ export class ZeroRB extends BaseStrategy {
     // 30% chance to nominate premium WR we want
     if (Math.random() < 0.6) {
       const premiumWRs = [...availablePlayers]
-        .filter(p => p.position === 'WR' && p.estimatedValue >= 20)
+        .filter(p => p.position === 'WR' && p.estimatedValue >= this.sd(20))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (premiumWRs.length > 0) {
