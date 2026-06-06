@@ -485,9 +485,12 @@ export class DraftEngine {
   }
 
   nominatePlayer(player, nominatorId) {
-    // Same guard as startNominationPhase: a stale AI-nomination setTimeout could
-    // call this after the draft has already completed via simulateToEnd.
-    if (this.store.getState().draftState === 'COMPLETE') return
+    // Only the current nominator may nominate, and only during NOMINATING.
+    // Rejects stale AI/auto-pilot setTimeouts (including after the draft
+    // completes via simulateToEnd, where draftState is COMPLETE) and human
+    // clicks that land in the post-sale gap before the next nominator is set.
+    const state = this.store.getState()
+    if (state.draftState !== 'NOMINATING' || nominatorId !== state.currentNominator) return
 
     if (this.nominationTimer) {
       workerTimers.clearInterval(this.nominationTimer)
@@ -667,6 +670,10 @@ export class DraftEngine {
           draft.currentPlayer = null
           draft.currentBid = 0
           draft.currentBidder = null
+          // Clear the nominator until startNominationPhase picks the next one
+          // (2s away) — otherwise the previous nominator's Nominate buttons
+          // re-enable during the gap and a quick click steals the next turn.
+          draft.currentNominator = null
           draft.draftState = 'NOMINATING'
         })
       } else {
@@ -696,6 +703,7 @@ export class DraftEngine {
             draft.currentPlayer = null
             draft.currentBid = 0
             draft.currentBidder = null
+            draft.currentNominator = null
             draft.draftState = 'NOMINATING'
           })
         } else {
@@ -714,6 +722,7 @@ export class DraftEngine {
             draft.currentPlayer = null
             draft.currentBid = 0
             draft.currentBidder = null
+            draft.currentNominator = null
             draft.draftState = 'NOMINATING'
           })
         }

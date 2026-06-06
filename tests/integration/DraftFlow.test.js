@@ -184,6 +184,46 @@ describe('Draft Flow Integration', () => {
       expect(nominator.remainingBudget).toBe(199) // 200 - 1
       expect(state.draftHistory[0].price).toBe(1)
     })
+
+    it('completeBidding clears currentNominator until the next phase starts', () => {
+      store.setState(draft => {
+        draft.currentNominator = 'team_1'
+      })
+      engine.placeBid('team_1', 25)
+      engine.completeBidding()
+      // The next nominator is only set when the delayed startNominationPhase
+      // fires; in the meantime nobody should appear to be on the clock.
+      expect(store.getState().currentNominator).toBeNull()
+    })
+
+    it('rejects a nomination from a team that is not the current nominator', () => {
+      store.setState(draft => {
+        draft.currentNominator = 'team_1'
+      })
+      engine.placeBid('team_1', 25)
+      engine.completeBidding()
+
+      // Simulate the race: a click landing in the post-sale gap, before the
+      // next nominator is assigned.
+      const player = store.getState().availablePlayers[0]
+      engine.nominatePlayer(player, 'team_1')
+
+      expect(store.getState().draftState).toBe('NOMINATING')
+      expect(store.getState().currentPlayer).toBeNull()
+    })
+
+    it('accepts a nomination from the current nominator', () => {
+      store.setState(draft => {
+        draft.currentNominator = 'team_2'
+        draft.draftState = 'NOMINATING'
+        draft.currentPlayer = null
+      })
+      const player = store.getState().availablePlayers[0]
+      engine.nominatePlayer(player, 'team_2')
+
+      expect(store.getState().draftState).toBe('BIDDING')
+      expect(store.getState().currentPlayer?.id).toBe(player.id)
+    })
   })
 
   describe('nomination timeout', () => {
