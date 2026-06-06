@@ -543,6 +543,9 @@ describe('DraftEngine', () => {
           draft.config = slackConfig
           // A pricey WR would win a naive "highest estimatedValue" pick.
           draft.availablePlayers = [mkPlayer('wr-rich', 'WR', 99), mkPlayer('k-need', 'K', 1)]
+          // nominatePlayer only accepts the on-the-clock nominator
+          draft.draftState = 'NOMINATING'
+          draft.currentNominator = team.id
         })
 
         engine.handleNominationTimeout(team.id)
@@ -556,6 +559,9 @@ describe('DraftEngine', () => {
           draft.teams = teams
           draft.config = slackConfig
           draft.availablePlayers = [mkPlayer('wr-rich', 'WR', 99), mkPlayer('k-cheap', 'K', 1)]
+          // nominatePlayer only accepts the on-the-clock nominator
+          draft.draftState = 'NOMINATING'
+          draft.currentNominator = teams[0].id
         })
 
         engine.handleNominationTimeout(teams[0].id)
