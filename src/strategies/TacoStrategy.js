@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { BaseStrategy } from './BaseStrategy.js'
 import playersData from '../data/players.json'
 
@@ -11,7 +12,7 @@ export const NFL_TEAMS = Array.from(new Set(PLAYER_LIST.map(p => p.team).filter(
   .sort()
 
 function pickRandomNflTeam() {
-  return NFL_TEAMS[Math.floor(Math.random() * NFL_TEAMS.length)]
+  return NFL_TEAMS[Math.floor(random() * NFL_TEAMS.length)]
 }
 
 export class Taco extends BaseStrategy {
@@ -94,7 +95,7 @@ export class Taco extends BaseStrategy {
   selectNomination(availablePlayers) {
     availablePlayers = this.filterNominationPool(availablePlayers)
     const homeTeam = this.preferences.homeTeam
-    const roll = Math.random()
+    const roll = random()
 
     if (roll < 0.30 && homeTeam) {
       const homies = availablePlayers
@@ -109,14 +110,14 @@ export class Taco extends BaseStrategy {
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
         .slice(0, this.preferences.topQBCount)
       if (topQBs.length > 0) {
-        return topQBs[Math.floor(Math.random() * topQBs.length)]
+        return topQBs[Math.floor(random() * topQBs.length)]
       }
     }
 
     // Boring-stack branch: occasionally pull a cheap K/DST/TE onto the block
     // when Taco's starter at that position is already filled but his enlarged
     // limit still has room. Drives the visible hoarding behavior.
-    if (Math.random() < 0.10) {
+    if (random() < 0.10) {
       const stackPositions = ['K', 'DST', 'TE'].filter(pos => {
         const count = this.team.roster.filter(p => p.position === pos).length
         return (
@@ -125,13 +126,13 @@ export class Taco extends BaseStrategy {
         )
       })
       if (stackPositions.length > 0) {
-        const pos = stackPositions[Math.floor(Math.random() * stackPositions.length)]
+        const pos = stackPositions[Math.floor(random() * stackPositions.length)]
         const candidates = availablePlayers
           .filter(p => p.position === pos)
           .sort((a, b) => a.estimatedValue - b.estimatedValue)
           .slice(0, 5)
         if (candidates.length > 0) {
-          return candidates[Math.floor(Math.random() * candidates.length)]
+          return candidates[Math.floor(random() * candidates.length)]
         }
       }
     }

@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { BaseStrategy } from './BaseStrategy.js'
 
 export class LateRoundQB extends BaseStrategy {
@@ -23,23 +24,23 @@ export class LateRoundQB extends BaseStrategy {
 
     // Very aggressive on elite non-QBs (similar to Stars and Scrubs)
     if (player.position !== 'QB' && player.estimatedValue >= this.sd(30)) {
-      const randomFactor = 0.95 + Math.random() * 0.15 // 95% to 110%
+      const randomFactor = 0.95 + random() * 0.15 // 95% to 110%
       const bidThreshold = adjustedValue * randomFactor
       if (currentBid < bidThreshold) return true
     }
 
     // Aggressive on good value non-QBs
     if (player.position !== 'QB' && player.estimatedValue >= this.sd(15)) {
-      const randomFactor = 0.9 + Math.random() * 0.15 // 90% to 105%
+      const randomFactor = 0.9 + random() * 0.15 // 90% to 105%
       const bidThreshold = adjustedValue * randomFactor
       if (currentBid < bidThreshold) return true
     }
 
     // Conservative on cheaper players and QBs
     if (player.estimatedValue < this.sd(15)) {
-      const randomFactor = 0.7 + Math.random() * 0.2 // 70% to 90%
+      const randomFactor = 0.7 + random() * 0.2 // 70% to 90%
       const bidThreshold = adjustedValue * randomFactor
-      if (currentBid < bidThreshold && Math.random() < 0.4) return true
+      if (currentBid < bidThreshold && random() < 0.4) return true
     }
 
     return false
@@ -48,13 +49,13 @@ export class LateRoundQB extends BaseStrategy {
   getBidIncrement(player, currentBid, adjustedValue) {
     // Conservative increments on QBs
     if (player.position === 'QB') {
-      return Math.random() < 0.8 ? 1 : this.si(2)
+      return random() < 0.8 ? 1 : this.si(2)
     }
 
     // More aggressive increments on premium non-QBs
     if (player.position !== 'QB' && player.estimatedValue >= this.sd(30)) {
-      if (Math.random() < 0.4) return this.si(Math.floor(Math.random() * 5) + 3) // $3-7
-      if (Math.random() < 0.7) return this.si(2)
+      if (random() < 0.4) return this.si(Math.floor(random() * 5) + 3) // $3-7
+      if (random() < 0.7) return this.si(2)
       return 1
     }
 
@@ -75,7 +76,7 @@ export class LateRoundQB extends BaseStrategy {
     // 4. Fallback (10% chance)
 
     // Strategy 1: Nominate elite non-QB we want
-    if (Math.random() < 0.5) {
+    if (random() < 0.5) {
       const eliteNonQBs = [...availablePlayers]
         .filter(p => p.position !== 'QB' && p.estimatedValue >= this.sd(25) && this.shouldNominate(p))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
@@ -86,7 +87,7 @@ export class LateRoundQB extends BaseStrategy {
     }
 
     // Strategy 2: Price enforce expensive QBs
-    if (Math.random() < 0.25) {
+    if (random() < 0.25) {
       const expensiveQBs = [...availablePlayers]
         .filter(p => p.position === 'QB' && p.estimatedValue >= this.sd(20))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
@@ -97,13 +98,13 @@ export class LateRoundQB extends BaseStrategy {
     }
 
     // Strategy 3: Nominate good value non-QBs
-    if (Math.random() < 0.8) {
+    if (random() < 0.8) {
       const valueNonQBs = [...availablePlayers]
         .filter(p => p.position !== 'QB' && p.estimatedValue >= this.sd(15) && this.shouldNominate(p))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (valueNonQBs.length > 0) {
-        return valueNonQBs[Math.floor(Math.random() * Math.min(3, valueNonQBs.length))]
+        return valueNonQBs[Math.floor(random() * Math.min(3, valueNonQBs.length))]
       }
     }
 

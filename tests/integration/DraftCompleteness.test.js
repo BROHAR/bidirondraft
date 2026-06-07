@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { produce } from 'immer'
 import { DraftEngine } from '../../src/services/draftEngine.js'
+import { setSeed, resetRng } from '../../src/utils/rng.js'
 import playersData from '../../src/data/players.json'
 
 // timerWorker is unavailable under jsdom, so workerTimers falls back to native
@@ -75,27 +76,29 @@ function expectAllTeamsComplete(teams) {
 
 describe('Draft completeness — every team fills required starting positions', () => {
   beforeEach(() => { vi.useRealTimers() })
-  afterEach(() => { vi.restoreAllMocks() })
+  afterEach(() => { vi.restoreAllMocks(); resetRng() })
 
   it('fills all required positions across a mixed-strategy league (multiple runs)', () => {
     for (let i = 0; i < 12; i++) {
+      setSeed(1000 + i) // deterministic: the sim RNG is seeded per run
       const teams = runSimulatedDraft(baseConfig())
       expectAllTeamsComplete(teams)
     }
-  })
+  }, 60000) // 12 full simulated drafts; endgame spend-down bidding outgrows the 5s default
 
   it('fills QB and TE even when every team runs Hero RB (the reported failure)', () => {
     const heroRBForAll = Array.from({ length: 12 }, () => 'HeroRB')
     for (let i = 0; i < 8; i++) {
+      setSeed(2000 + i)
       const teams = runSimulatedDraft(baseConfig({ aiTeamStrategies: heroRBForAll }))
       expectAllTeamsComplete(teams)
     }
-  })
+  }, 60000)
 })
 
 describe('Draft completeness — real-time (timer-driven) path', () => {
   beforeEach(() => { vi.useFakeTimers() })
-  afterEach(() => { vi.useRealTimers() })
+  afterEach(() => { vi.useRealTimers(); resetRng() })
 
   // Drives the live nomination/bidding loop to completion. A *passive* human
   // (never clicks → every nomination times out) used to end the draft missing a
@@ -116,6 +119,7 @@ describe('Draft completeness — real-time (timer-driven) path', () => {
   it('a passive human in a Hero RB league still fills every required position', async () => {
     const heroRBForAll = Array.from({ length: 12 }, () => 'HeroRB')
     for (let i = 0; i < 3; i++) {
+      setSeed(3000 + i)
       const teams = await runLiveDraft(baseConfig({
         humanDraftPosition: 1, // a real, passive human whose nominations time out
         biddingTimer: 5,

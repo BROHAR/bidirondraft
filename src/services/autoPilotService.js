@@ -96,7 +96,7 @@ export class AutoPilotService {
     const adjustedValue = this.currentStrategy.getAdjustedPlayerValue(player, availablePlayers)
     
     // Use the strategy to calculate the bid amount
-    const bidAmount = this.currentStrategy.calculateBidAmount(player, currentBid, adjustedValue)
+    const bidAmount = this.currentStrategy.calculateBidAmount(player, currentBid, adjustedValue, availablePlayers)
     
     // Ensure the bid doesn't exceed the team's max bid
     return Math.min(bidAmount, humanTeam.maxBid)
