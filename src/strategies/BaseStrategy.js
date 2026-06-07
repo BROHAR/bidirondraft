@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 
 // Hard ceiling on what any AI strategy will value a kicker or defense at,
@@ -73,8 +74,38 @@ export class BaseStrategy {
       return false
     }
 
+    // Flush slot-preservation: a team holding surplus must not spend roster
+    // spots on scrubs while real players remain on the board — every cheap
+    // win burns a slot it needs to absorb that surplus later (fast-filling
+    // teams used to end the draft roster-full with $250+ stranded). The same
+    // protection covers the last 2 burnable slots regardless of pacing: a
+    // team at pacing 1.16 dumped $29 on a $1.3 scrub at pick 66 because its
+    // final flexible slot wasn't guarded. Skip the auction entirely unless
+    // the scrub fills a still-open required starter slot. The
+    // nominator-takes-it-for-$1 fallback keeps scrub auctions resolving
+    // league-wide.
+    if (this.getPacingRatio() > 1.2 || this.getBurnableSpotsRemaining() <= 2) {
+      const bestBook = this.bestUsableBook(availablePlayers)
+      // Only a DIRECT unfilled starter slot (QB:1, RB:2, …) exempts a scrub —
+      // hasOpenStartingSlot counts FLEX, which keeps every RB/WR/TE "open"
+      // and let the slot-eating wins through anyway. Genuine positional needs
+      // still pass; FLEX/bench filling can wait for the scraps phase.
+      const rcPos = this.team.config?.rosterPositions || {}
+      const directNeed =
+        this.team.roster.filter(p => p.position === player.position).length <
+        (rcPos[player.position] || 0)
+      if (bestBook > this.sd(5) && player.estimatedValue < bestBook * 0.25 && !directNeed) {
+        return false
+      }
+    }
+
     // Get adjusted player value based on team preferences
     const adjustedValue = this.getAdjustedPlayerValue(player, availablePlayers)
+
+    // Endgame floor is authoritative: while the bid is below the fair-share
+    // spend floor, stay in the auction — strategy-personality dropouts in
+    // evaluateBid must not let a flush team exit and strand its budget.
+    if (this.getEndgameSpendFloor(player, availablePlayers) > currentBid) return true
 
     // Flush bypass: when severely over pace late in the draft, bypass strategy
     // dropouts and bid as long as currentBid is below adjustedValue. Position
@@ -104,11 +135,15 @@ export class BaseStrategy {
       return Math.max(1, Math.min(pinned, this.team.maxBid))
     }
 
-    // For very low value players (under $4), apply strict caps and skip most adjustments
+    // For very low value players (under $4), apply strict caps and skip most
+    // adjustments. The endgame floor still applies: these are exactly the
+    // players left on the board late, and without it a flush team could never
+    // bid more than ~$3 no matter how much surplus it had to burn.
     if (baseValue < this.sd(4)) {
       // Add small random variance but keep it very low
-      const variance = (Math.random() - 0.5) * this.sd(0.5) // +/- $0.25
-      return Math.max(1, Math.min(this.sd(3), Math.round(baseValue + variance)))
+      const variance = (random() - 0.5) * this.sd(0.5) // +/- $0.25
+      const capped = Math.max(1, Math.min(this.sd(3), Math.round(baseValue + variance)))
+      return Math.max(capped, Math.round(this.getEndgameSpendFloor(player, availablePlayers)))
     }
 
     // Only apply value adjustments to players with $4+ value and in top 150
@@ -116,8 +151,9 @@ export class BaseStrategy {
 
     if (!shouldApplyAdjustments) {
       // For players $4-5, add some variance but keep it reasonable
-      const variance = (Math.random() - 0.5) * this.sd(1.0) // +/- $0.50
-      return Math.max(1, Math.round(baseValue + variance))
+      const variance = (random() - 0.5) * this.sd(1.0) // +/- $0.50
+      const base = Math.max(1, Math.round(baseValue + variance))
+      return Math.max(base, Math.round(this.getEndgameSpendFloor(player, availablePlayers)))
     }
     
     // Use additive modifiers instead of pure multiplicative to prevent stacking
@@ -166,7 +202,7 @@ export class BaseStrategy {
     // bid up the first wave of nominations and drained budgets before the
     // mid-tier came up. ~50% application halves that league-wide inflation
     // while still letting some teams come out swinging on a given auction.
-    if (this.team.roster.length < 4 && Math.random() < 0.5) {
+    if (this.team.roster.length < 4 && random() < 0.5) {
       const earlyBoost = this.getEarlyDraftMultiplier() - 1.0
       adjustments += earlyBoost * baseValue
     }
@@ -184,9 +220,11 @@ export class BaseStrategy {
     // Pacing boost: scales adjustedValue (and the cap) so over-pace teams can
     // outbid normal teams and burn down their surplus. Gated behind
     // draft-progress so star-targeting strategies win intended targets early.
-    // Cap at 1.20 with a half-slope on the ratio — flush teams still bid up,
-    // but only modestly. The previous 2.5x cap produced routine $20+ overpays
-    // on elite players.
+    // Full slope on the ratio, capped at 1.50 — flush teams push prices up hard
+    // enough that surpluses drain mid-draft instead of stranding (the absolute
+    // baseValue*1.35 ceiling below still bounds the realized bid). The original
+    // 2.5x cap produced routine $20+ overpays on elite players; the later 1.20
+    // half-slope cap left 20-40% of budgets unspent in money-rich leagues.
     const rcAll = this.team.config?.rosterPositions || {}
     const totalSpotsAll = Object.values(rcAll).reduce((s, c) => s + c, 0)
     const draftProgress = this.team.roster.length / Math.max(1, totalSpotsAll)
@@ -194,7 +232,7 @@ export class BaseStrategy {
     let pacingBoost = 1.0
     if (draftProgress >= 0.3) {
       if (pacingRatio > 1.0) {
-        pacingBoost = Math.min(1.20, 1.0 + (pacingRatio - 1.0) * 0.4)
+        pacingBoost = Math.min(1.50, pacingRatio)
       } else if (pacingRatio < 0.7) {
         pacingBoost = 0.92
       }
@@ -218,26 +256,11 @@ export class BaseStrategy {
     const maxBid = this.getMaxBidForPlayer(player) * combinedBoost * signatureBoost
     finalValue = Math.min(finalValue, maxBid)
 
-    // End-of-draft forced spend: with few picks remaining AND surplus budget,
-    // floor adjustedValue at fair-share remaining (capped by team.maxBid). This
-    // makes teams overpay for cheap last picks rather than leaving money on
-    // the table. Bounded by team.maxBid so they never bid beyond what they
-    // can actually afford.
-    const spotsLeftLocal = this.team.getRosterSpotsRemaining()
-    if (spotsLeftLocal > 0 && spotsLeftLocal <= 4) {
-      const expected = this.team.budget / Math.max(1, totalSpotsAll)
-      const fairShare = this.team.remainingBudget / spotsLeftLocal
-      if (fairShare > expected * 1.1) {
-        finalValue = Math.max(finalValue, Math.min(this.team.maxBid, fairShare))
-      }
-    }
-
     // Defensive ceiling. Nothing in the AI strategy stack should value a
-    // player above 1.35× book — the outer edge of the legitimate envelope of
-    // tier-cap × combinedBoost (the widest tier cap, mid at 1.25, × the 1.20
-    // boost cap = 1.50, clamped here; top tiers sit far lower at 1.05 × 1.20 =
-    // 1.26). Catches hidden escape paths. User hard-pins return earlier and
-    // aren't affected.
+    // player above 1.35× book — bids inside the normal envelope of tier-cap ×
+    // pacing/urgency boosts clamp here, catching hidden escape paths. User
+    // hard-pins return earlier and aren't affected. The endgame spend floor
+    // below is the one sanctioned exception (bounded by team.maxBid).
     finalValue = Math.min(finalValue, baseValue * 1.35)
 
     // Position-aware ceiling for K/DST. Kickers and defenses are worth a
@@ -250,7 +273,107 @@ export class BaseStrategy {
       finalValue = Math.min(finalValue, Math.max(1, Math.round(baseValue * 1.1)), this.sd(KDST_VALUE_CAP))
     }
 
+    // End-of-draft forced spend, applied AFTER the defensive ceilings — the
+    // 1.35× book cap used to erase this floor, which is exactly why flush
+    // teams finished drafts with money stranded: late-board players are cheap,
+    // so capping at 1.35× a $2 book value made surplus unspendable.
+    finalValue = Math.max(finalValue, this.getEndgameSpendFloor(player, availablePlayers))
+
     return Math.max(1, Math.round(finalValue))
+  }
+
+  // Fair-share spend floor for the late draft: with few picks remaining, a
+  // team should bid up to its per-pick share of remaining budget on whoever
+  // fills a slot rather than leave money on the table — late-board players
+  // only fetch $1-3 on book value, so without this floor any budget beyond
+  // ~$3/pick is unspendable. Returns 0 when inactive. Never applies to K/DST
+  // (their hard value cap wins — burning surplus on a kicker is unrealistic
+  // and guarded against elsewhere); instead a couple scaled dollars are
+  // reserved for each K/DST slot still owed and the rest spreads across the
+  // other remaining picks, so the budget is gone before the K/DST closes.
+  // Always bounded by team.maxBid so future $1 slots stay funded.
+  getEndgameSpendFloor(player, availablePlayers = []) {
+    if (player.position === 'K' || player.position === 'DST') return 0
+    const spotsLeft = this.team.getRosterSpotsRemaining()
+    if (spotsLeft <= 0 || spotsLeft > 10) return 0
+    const rc = this.team.config?.rosterPositions || {}
+    const owned = { K: 0, DST: 0 }
+    for (const p of this.team.roster) {
+      if (p.position === 'K' || p.position === 'DST') owned[p.position]++
+    }
+    const owedKdst = Math.max(0, (rc.K || 0) - owned.K) + Math.max(0, (rc.DST || 0) - owned.DST)
+    const burnSpots = spotsLeft - owedKdst
+    if (burnSpots <= 0) return 0
+    const fairShare = (this.team.remainingBudget - owedKdst * this.sd(2)) / burnSpots
+
+    // The user's team (auto-pilot drives the human team through this same
+    // stack) never burns fair-share on scrubs — paying $11 for a $1 player
+    // with the user's money is the sim's choice, not theirs. Instead its
+    // surplus chases value: overpay is tied to book — ~2x for $1-2 players,
+    // decaying fast as book rises (sd(2)/book premium), so leftover budget
+    // flows to the best remaining players rather than the cheapest. Only
+    // active while the team actually holds surplus (fairShare above its
+    // expected per-pick spend); any money it still strands is the user's.
+    if (this.team.isHuman) {
+      const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
+      const expected = this.team.budget / Math.max(1, totalSpots)
+      if (fairShare <= expected) return 0
+      const base = Math.max(1, player.estimatedValue)
+      const premium = Math.min(2.0, 1 + this.sd(2) / base)
+      return Math.min(this.team.maxBid, base * premium)
+    }
+
+    // Aim the burn at quality, not at whatever happens to be nominated. A
+    // team that fills fast hit its "last picks" mid-draft and dumped full
+    // fair-share ($27 on a $1 nominee at pick ~60); a pure "wait for scraps"
+    // gate stranded money the other way. So the cap tracks how the nominee
+    // ranks against the best player THIS team can still roster (position
+    // limits respected — a $40 QB it can't use is no reason to wait): true
+    // scrubs (<25% of best-usable) stay capped at 2x book, mid players (<60%)
+    // at 4x, near-best take the full fair share — paying up for the best
+    // player left IS the sensible drain. The 4x tier and below release on the
+    // last 2 burnable spots (drain of last resort), safe because scrub
+    // auctions are already blocked by slot-preservation in shouldBid by then.
+    let bookCap = Infinity
+    if (burnSpots > 2) {
+      const bestBook = this.bestUsableBook(availablePlayers)
+      if (bestBook > this.sd(5)) {
+        const ratio = player.estimatedValue / bestBook
+        if (ratio < 0.25) {
+          bookCap = Math.max(1, player.estimatedValue) * 2
+        } else if (ratio < 0.6) {
+          bookCap = Math.max(1, player.estimatedValue) * 4
+        }
+        // ratio >= 0.6: nominee is among the best left — uncapped fair share.
+      }
+    }
+
+    return Math.max(0, Math.min(this.team.maxBid, fairShare, bookCap))
+  }
+
+  // Roster spots remaining that can actually absorb surplus budget — K/DST
+  // slots are excluded since their bids are hard-capped at a few dollars.
+  getBurnableSpotsRemaining() {
+    const rc = this.team.config?.rosterPositions || {}
+    const owned = { K: 0, DST: 0 }
+    for (const p of this.team.roster) {
+      if (p.position === 'K' || p.position === 'DST') owned[p.position]++
+    }
+    const owedKdst = Math.max(0, (rc.K || 0) - owned.K) + Math.max(0, (rc.DST || 0) - owned.DST)
+    return this.team.getRosterSpotsRemaining() - owedKdst
+  }
+
+  // Highest book value among available players this team could actually add
+  // (position limits respected). The board's absolute best overstates a
+  // team's opportunity once it hits positional caps.
+  bestUsableBook(availablePlayers) {
+    let best = 0
+    for (const p of availablePlayers) {
+      if (p.estimatedValue > best && !this.shouldApplyPositionLimits(p)) {
+        best = p.estimatedValue
+      }
+    }
+    return best
   }
 
   getTopTierBoost(_player, _availablePlayers) {
@@ -285,19 +408,19 @@ export class BaseStrategy {
     let multiplier
     if (player.estimatedValue >= this.sd(50)) {
       // Elite: ~book value (0-5% over).
-      multiplier = 1.00 + Math.random() * 0.05
+      multiplier = 1.00 + random() * 0.05
     } else if (player.estimatedValue >= this.sd(30)) {
       // High: ~book value (0-5% over).
-      multiplier = 1.00 + Math.random() * 0.05
+      multiplier = 1.00 + random() * 0.05
     } else if (player.estimatedValue >= this.sd(15)) {
       // Mid: increased variance (0-25% over)
-      multiplier = 1.00 + Math.random() * 0.25
+      multiplier = 1.00 + random() * 0.25
     } else if (player.estimatedValue >= this.sd(5)) {
       // Low-mid: moderate variance (0-20% over)
-      multiplier = 1.00 + Math.random() * 0.20
+      multiplier = 1.00 + random() * 0.20
     } else {
       // Very low value players: still cap at $3 but with some variance
-      return Math.min(this.sd(3) + Math.random() * this.budgetScale, player.estimatedValue * (1.15 + Math.random() * 0.25))
+      return Math.min(this.sd(3) + random() * this.budgetScale, player.estimatedValue * (1.15 + random() * 0.25))
     }
     
     return player.estimatedValue * multiplier
@@ -377,7 +500,7 @@ export class BaseStrategy {
       const rc = this.team.config?.rosterPositions || {}
       const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
       const draftProgress = this.team.roster.length / Math.max(1, totalSpots)
-      if (draftProgress > 0.25 && draftProgress < 0.7 && Math.random() < 0.08) {
+      if (draftProgress > 0.25 && draftProgress < 0.7 && random() < 0.08) {
         return Math.max(base, 1.0)
       }
     }
@@ -385,7 +508,7 @@ export class BaseStrategy {
   }
 
   getEarlyDraftMultiplier() {
-    return 1.0 + Math.random() * 0.10 // 1.0x to 1.1x (lowered to curb early-draft inflation)
+    return 1.0 + random() * 0.10 // 1.0x to 1.1x (lowered to curb early-draft inflation)
   }
 
   getPositionNeedMultiplier(position) {
@@ -419,44 +542,44 @@ export class BaseStrategy {
     // 15% chance team "zones out" and doesn't bid (analysis paralysis/distraction)
     // Increases with draft fatigue
     const zoneOutChance = 0.15 + (draftProgress * 0.10)
-    if (Math.random() < zoneOutChance) return false
+    if (random() < zoneOutChance) return false
     
     // Add "bidding emotion" - teams occasionally get caught up regardless of value
-    let isEmotionalBidding = Math.random() < 0.08 // 8% base chance
+    let isEmotionalBidding = random() < 0.08 // 8% base chance
     
     // Momentum affects emotional bidding
-    if (this.team.momentum === 'losing' && Math.random() < 0.12) {
+    if (this.team.momentum === 'losing' && random() < 0.12) {
       isEmotionalBidding = true // Desperation bidding
-    } else if (this.team.momentum === 'winning' && Math.random() < 0.06) {
+    } else if (this.team.momentum === 'winning' && random() < 0.06) {
       isEmotionalBidding = true // Confidence bidding
     }
     
     // Budget panic - teams with lots of money late in draft might overspend
     if (draftProgress > 0.6 && this.team.remainingBudget > this.team.budget * 0.4) {
-      isEmotionalBidding = isEmotionalBidding || Math.random() < 0.15
+      isEmotionalBidding = isEmotionalBidding || random() < 0.15
     }
     
     // More competitive bidding on high-value players
     let randomFactor
     if (player.estimatedValue >= this.sd(50)) {
       // Elite players: Competitive range (85% to 115% of adjusted value)
-      randomFactor = 0.85 + Math.random() * 0.30
+      randomFactor = 0.85 + random() * 0.30
       if (isEmotionalBidding) randomFactor *= 1.20 // More emotional impact on elite players
     } else if (player.estimatedValue >= this.sd(30)) {
       // High-value players: Competitive range (85% to 110% of adjusted value)
-      randomFactor = 0.85 + Math.random() * 0.25
+      randomFactor = 0.85 + random() * 0.25
       if (isEmotionalBidding) randomFactor *= 1.15 // Increased emotional impact
     } else if (player.estimatedValue >= this.sd(15)) {
       // Mid-value players: More varied range (70% to 110% of adjusted value)
-      randomFactor = 0.70 + Math.random() * 0.40
+      randomFactor = 0.70 + random() * 0.40
       if (isEmotionalBidding) randomFactor *= 1.10 // Some emotional impact
     } else if (player.estimatedValue >= this.sd(5)) {
       // Low-mid players: Moderate range (75% to 105% of adjusted value)
-      randomFactor = 0.75 + Math.random() * 0.30
+      randomFactor = 0.75 + random() * 0.30
       if (isEmotionalBidding) randomFactor *= 1.05 // Minimal emotional impact
     } else {
       // Very low value players: Strict range to prevent overbidding (80% to 95% of adjusted value)
-      randomFactor = 0.80 + Math.random() * 0.15
+      randomFactor = 0.80 + random() * 0.15
       // No emotional bidding multiplier for very low value players
     }
     
@@ -488,7 +611,7 @@ export class BaseStrategy {
     }
     
     // Apply skip probability
-    if (Math.random() < Math.min(0.45, skipProb)) return false
+    if (random() < Math.min(0.45, skipProb)) return false
     
     return true
   }
@@ -506,10 +629,10 @@ export class BaseStrategy {
     return Math.min(0.25, baseSkip + fatigueBonus)
   }
 
-  calculateBidAmount(player, currentBid, adjustedValue) {
+  calculateBidAmount(player, currentBid, adjustedValue, availablePlayers = []) {
     // 10% chance of "budget miscalculation" - team thinks they have less money
     let effectiveMaxBid = this.team.maxBid
-    if (Math.random() < 0.10) {
+    if (random() < 0.10) {
       effectiveMaxBid = Math.max(1, Math.floor(this.team.maxBid * 0.8)) // Think they have 20% less
     }
     
@@ -520,12 +643,24 @@ export class BaseStrategy {
     
     let bidAmount = Math.min(maxReasonableBid, currentBid + increment)
 
-    // Final safety check: prevent extreme overbids on low-value players
-    if (player.estimatedValue <= this.sd(4)) {
-      bidAmount = Math.min(bidAmount, this.sd(3)) // Never bid more than $3 for $1-4 players
+    // Endgame surplus burn: jump straight to the fair-share floor instead of
+    // creeping by increments. In an English auction the winner only pays the
+    // runner-up's ceiling, so a flush team that wins cheap strands its budget;
+    // jump-bidding converts its endgame purchases to first-price and actually
+    // drains the money. Bounded by maxReasonableBid (maxBid + adjustedValue).
+    const endgameFloor = Math.round(this.getEndgameSpendFloor(player, availablePlayers))
+    if (endgameFloor > currentBid) {
+      bidAmount = Math.min(maxReasonableBid, Math.max(bidAmount, endgameFloor))
     }
 
-    if (bidAmount > player.estimatedValue * 1.4) {
+    // Final safety check: prevent extreme overbids on low-value players — the
+    // sanctioned endgame floor is the one exception, or it could never lift a
+    // late-board $1-4 player above $3 and surplus would strand.
+    if (player.estimatedValue <= this.sd(4)) {
+      bidAmount = Math.min(bidAmount, Math.max(this.sd(3), endgameFloor))
+    }
+
+    if (bidAmount > player.estimatedValue * 1.4 && bidAmount > endgameFloor) {
       // eslint-disable-next-line no-console
       console.warn('[adraft] over-cap bid', {
         team: this.team?.name,
@@ -558,28 +693,28 @@ export class BaseStrategy {
     // Large jumps for severely undervalued players (speeds up auction)
     if (undervaluedAmount >= this.sd(25)) {
       // Jump $15-20 for severely undervalued players
-      return this.si(Math.floor(Math.random() * 6) + 15) // $15-20
+      return this.si(Math.floor(random() * 6) + 15) // $15-20
     }
 
     if (undervaluedAmount >= this.sd(15)) {
       // Jump $10-15 for significantly undervalued players
-      return this.si(Math.floor(Math.random() * 6) + 10) // $10-15
+      return this.si(Math.floor(random() * 6) + 10) // $10-15
     }
 
     if (undervaluedAmount >= this.sd(8)) {
       // Jump $5-10 for moderately undervalued players
-      return this.si(Math.floor(Math.random() * 6) + 5) // $5-10
+      return this.si(Math.floor(random() * 6) + 5) // $5-10
     }
 
     // Standard bidding for fairly priced players
-    if (Math.random() < 0.7) return this.si(1)
+    if (random() < 0.7) return this.si(1)
 
     // Occasionally bid $2-5 to show aggression
-    if (Math.random() < 0.8) return this.si(Math.floor(Math.random() * 4) + 2)
+    if (random() < 0.8) return this.si(Math.floor(random() * 4) + 2)
 
     // Rarely make larger jumps for high-value players
-    if (player.estimatedValue >= this.sd(30) && Math.random() < 0.1) {
-      return this.si(Math.floor(Math.random() * 8) + 5)
+    if (player.estimatedValue >= this.sd(30) && random() < 0.1) {
+      return this.si(Math.floor(random() * 8) + 5)
     }
 
     return this.si(1)
@@ -635,7 +770,7 @@ export class BaseStrategy {
       if (pacingRatio > 1.3 && draftProgress > 0.3 && sortedPlayers.length > 0) {
         // Pick from top-3 remaining players for variety (not always #1)
         const top = sortedPlayers.slice(0, 3)
-        return top[Math.floor(Math.random() * top.length)]
+        return top[Math.floor(random() * top.length)]
       }
     }
 
@@ -645,20 +780,20 @@ export class BaseStrategy {
     // If we have top 150 players available, use normal nomination logic with them
     if (top150Players.length > 0) {
       // Strategy 1: Nominate player we want from top 150 (40% chance)
-      if (Math.random() < 0.4) {
+      if (random() < 0.4) {
         const wantedPlayers = top150Players.filter(p => this.shouldNominate(p, availablePlayers))
         if (wantedPlayers.length > 0) {
-          return wantedPlayers[Math.floor(Math.random() * wantedPlayers.length)]
+          return wantedPlayers[Math.floor(random() * wantedPlayers.length)]
         }
       }
       
       // Strategy 2: Price enforce high-value player we don't want from top 150 (30% chance)
-      if (Math.random() < 0.5) {
+      if (random() < 0.5) {
         const expensivePlayers = top150Players
           .filter(p => p.estimatedValue >= this.sd(25) && !this.shouldNominate(p, availablePlayers))
         
         if (expensivePlayers.length > 0) {
-          return expensivePlayers[Math.floor(Math.random() * Math.min(3, expensivePlayers.length))]
+          return expensivePlayers[Math.floor(random() * Math.min(3, expensivePlayers.length))]
         }
       }
       
@@ -667,17 +802,17 @@ export class BaseStrategy {
         .filter(pos => this.team.getPositionNeed(pos) > 0)
       
       if (neededPositions.length > 0) {
-        const randomPosition = neededPositions[Math.floor(Math.random() * neededPositions.length)]
+        const randomPosition = neededPositions[Math.floor(random() * neededPositions.length)]
         const positionPlayers = top150Players
           .filter(p => p.position === randomPosition)
         
         if (positionPlayers.length > 0) {
-          return positionPlayers[Math.floor(Math.random() * Math.min(5, positionPlayers.length))]
+          return positionPlayers[Math.floor(random() * Math.min(5, positionPlayers.length))]
         }
       }
       
       // Fallback: Nominate from top 150
-      return top150Players[Math.floor(Math.random() * Math.min(10, top150Players.length))]
+      return top150Players[Math.floor(random() * Math.min(10, top150Players.length))]
     }
     
     // All top 150 are taken, focus on top 25 remaining players
@@ -689,8 +824,8 @@ export class BaseStrategy {
         .filter(pos => this.team.getPositionNeed(pos) > 0)
       
       // 60% chance to nominate a position of need from top 25
-      if (neededPositions.length > 0 && Math.random() < 0.6) {
-        const randomPosition = neededPositions[Math.floor(Math.random() * neededPositions.length)]
+      if (neededPositions.length > 0 && random() < 0.6) {
+        const randomPosition = neededPositions[Math.floor(random() * neededPositions.length)]
         const positionPlayers = top25Remaining.filter(p => p.position === randomPosition)
         
         if (positionPlayers.length > 0) {

@@ -13,15 +13,9 @@ Fantasy football auction draft simulator (React 19 + Vite + Zustand 5). Tests vi
 
 Flat config in `eslint.config.js` (ESLint 9). **Pinned to 9, not 10**: `eslint-plugin-react`'s latest release peer-caps at eslint `^9.7`, so 10 would need `--legacy-peer-deps` and run the React plugin against an unsupported major — revisit once the plugin supports 10. Lint scope is `.js`/`.jsx` only; `scripts/**/*.mjs` is intentionally excluded (it has never been linted). The bar is **0 errors**; warnings are non-blocking by design (the codebase predates linting). The react-hooks 7 React-Compiler rules (`set-state-in-effect`, `preserve-manual-memoization`) are set to `warn` rather than error for the same reason.
 
-### Flaky test
+### Simulation RNG (seedable)
 
-`tests/integration/DraftCompleteness.test.js` is stochastic — the AI draft simulation uses unseeded `Math.random()` (in `aiManager.js`), so it fails at a low rate even on correct code. A single failure on a full-suite run is almost certainly flakiness, not a regression: re-run it in isolation to confirm —
-
-```
-npx vitest --run tests/integration/DraftCompleteness.test.js
-```
-
-Making the simulation RNG seedable would fix this for good (see the K/DST and roster-completeness invariants it guards).
+All draft-simulation randomness (AI bidding, strategies, engine jitter) flows through `src/utils/rng.js` — unseeded it delegates to `Math.random()` (app behavior unchanged); tests call `setSeed(n)` to make full simulated drafts deterministic. `tests/integration/DraftCompleteness.test.js` and `tests/integration/BudgetSpendDown.test.js` are seeded this way, so failures there are real regressions, not flakiness. When adding new randomness to AI/engine code, import `random()` from `src/utils/rng.js` rather than calling `Math.random()` directly, or seeded tests lose determinism.
 
 ## "update players" — refresh the player pool
 

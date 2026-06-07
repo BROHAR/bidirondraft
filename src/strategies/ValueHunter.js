@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { BaseStrategy } from './BaseStrategy.js'
 
 export class ValueHunter extends BaseStrategy {
@@ -22,10 +23,10 @@ export class ValueHunter extends BaseStrategy {
     if (currentBid >= adjustedValue * 1.10) return false
 
     const valueDiscount = (adjustedValue - currentBid) / adjustedValue
-    if (valueDiscount < 0) return Math.random() < 0.70   // overpay slightly
-    if (valueDiscount < 0.10) return Math.random() < 0.92
-    if (valueDiscount < 0.20) return Math.random() < 0.97
-    return Math.random() < 0.99
+    if (valueDiscount < 0) return random() < 0.70   // overpay slightly
+    if (valueDiscount < 0.10) return random() < 0.92
+    if (valueDiscount < 0.20) return random() < 0.97
+    return random() < 0.99
   }
 
   getBidIncrement(player, currentBid, adjustedValue) {
@@ -34,12 +35,12 @@ export class ValueHunter extends BaseStrategy {
     
     if (undervaluedAmount >= this.sd(20)) {
       // Jump $8-12 for severely undervalued players (more conservative than base)
-      return this.si(Math.floor(Math.random() * 5) + 8) // $8-12
+      return this.si(Math.floor(random() * 5) + 8) // $8-12
     }
 
     if (undervaluedAmount >= this.sd(10)) {
       // Jump $4-6 for significantly undervalued players
-      return this.si(Math.floor(Math.random() * 3) + 4) // $4-6
+      return this.si(Math.floor(random() * 3) + 4) // $4-6
     }
     
     // Always conservative $1 increments otherwise
@@ -59,7 +60,7 @@ export class ValueHunter extends BaseStrategy {
   selectNomination(availablePlayers) {
     availablePlayers = this.filterNominationPool(availablePlayers)
     // 60% chance to nominate undervalued player we want
-    if (Math.random() < 0.6) {
+    if (random() < 0.6) {
       const undervaluedPlayers = [...availablePlayers]
         .filter(p => this.shouldNominate(p, availablePlayers))
         .sort((a, b) => {
@@ -74,13 +75,13 @@ export class ValueHunter extends BaseStrategy {
     }
     
     // 30% chance to price enforce someone expensive
-    if (Math.random() < 0.75) {
+    if (random() < 0.75) {
       const expensivePlayers = [...availablePlayers]
         .filter(p => p.estimatedValue >= this.sd(30))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensivePlayers.length > 0) {
-        return expensivePlayers[Math.floor(Math.random() * Math.min(2, expensivePlayers.length))]
+        return expensivePlayers[Math.floor(random() * Math.min(2, expensivePlayers.length))]
       }
     }
     
@@ -89,6 +90,6 @@ export class ValueHunter extends BaseStrategy {
 
   getEarlyDraftMultiplier() {
     // Less aggressive early in draft - wait for value
-    return 1.0 + Math.random() * 0.2 // 100% to 120%
+    return 1.0 + random() * 0.2 // 100% to 120%
   }
 }

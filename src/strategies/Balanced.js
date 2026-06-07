@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { BaseStrategy } from './BaseStrategy.js'
 
 export class Balanced extends BaseStrategy {
@@ -20,17 +21,17 @@ export class Balanced extends BaseStrategy {
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {
     // Pacing is now baked into adjustedValue by BaseStrategy. Just bid
     // anywhere within a 90-110% randomized threshold of that value.
-    const randomFactor = 0.9 + Math.random() * 0.2
+    const randomFactor = 0.9 + random() * 0.2
     return currentBid < adjustedValue * randomFactor
   }
 
   getBidIncrement(player, currentBid, adjustedValue) {
     // Consistent $1-2 increments most of the time
-    if (Math.random() < 0.8) return 1
-    if (Math.random() < 0.9) return this.si(2)
+    if (random() < 0.8) return 1
+    if (random() < 0.9) return this.si(2)
 
     // Occasionally larger increment for value plays
-    return this.si(Math.floor(Math.random() * 3) + 3)
+    return this.si(Math.floor(random() * 3) + 3)
   }
 
   getSkipProbability() {
@@ -41,13 +42,13 @@ export class Balanced extends BaseStrategy {
     availablePlayers = this.filterNominationPool(availablePlayers)
     // Balanced approach to nominations
     // 35% want, 35% price enforce, 30% position need
-    const rand = Math.random()
+    const rand = random()
     
     if (rand < 0.35) {
       // Nominate someone we want
       const wantedPlayers = availablePlayers.filter(p => this.shouldNominate(p))
       if (wantedPlayers.length > 0) {
-        return wantedPlayers[Math.floor(Math.random() * wantedPlayers.length)]
+        return wantedPlayers[Math.floor(random() * wantedPlayers.length)]
       }
     } else if (rand < 0.7) {
       // Price enforce
@@ -56,7 +57,7 @@ export class Balanced extends BaseStrategy {
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (expensivePlayers.length > 0) {
-        return expensivePlayers[Math.floor(Math.random() * Math.min(5, expensivePlayers.length))]
+        return expensivePlayers[Math.floor(random() * Math.min(5, expensivePlayers.length))]
       }
     }
     

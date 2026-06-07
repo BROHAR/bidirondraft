@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { BaseStrategy } from './BaseStrategy.js'
 
 export class StarsAndScrubs extends BaseStrategy {
@@ -20,17 +21,17 @@ export class StarsAndScrubs extends BaseStrategy {
     // multipliers (handled by getPositionMultiplier). Removed the hard "dead
     // zone" since it created structural underspend in those tiers.
     if (player.estimatedValue >= this.sd(8) && player.estimatedValue <= this.sd(15)) {
-      const randomFactor = 0.85 + Math.random() * 0.20
-      return currentBid < adjustedValue * randomFactor && Math.random() < 0.7
+      const randomFactor = 0.85 + random() * 0.20
+      return currentBid < adjustedValue * randomFactor && random() < 0.7
     }
 
     // Very aggressive on elite players (value >= 30) - willing to pay market value
     if (player.estimatedValue >= this.sd(30)) {
       // 15% chance to completely drop out (reduced from 30% - more competitive)
-      if (Math.random() < 0.15) return false
+      if (random() < 0.15) return false
       
       // Otherwise, bid very aggressively (90% to 120% of adjusted value, no hard cap)
-      const randomFactor = 0.90 + Math.random() * 0.30
+      const randomFactor = 0.90 + random() * 0.30
       const bidThreshold = adjustedValue * randomFactor // Removed artificial cap
       
       if (currentBid < bidThreshold) return true
@@ -39,9 +40,9 @@ export class StarsAndScrubs extends BaseStrategy {
     // Moderate on higher mid-tier players (value 16-29) - only above the blind spot
     if (player.estimatedValue > this.sd(15)) {
       // 15% chance to skip these entirely (prefer stars or scrubs)
-      if (Math.random() < 0.15) return false
+      if (random() < 0.15) return false
       
-      const randomFactor = 0.85 + Math.random() * 0.20 // 85% to 105%
+      const randomFactor = 0.85 + random() * 0.20 // 85% to 105%
       const bidThreshold = adjustedValue * randomFactor
       
       if (currentBid < bidThreshold) return true
@@ -49,10 +50,10 @@ export class StarsAndScrubs extends BaseStrategy {
     
     // More aggressive on scrub-tier players (<$8) - need to fill roster cheaply
     if (player.estimatedValue < this.sd(8)) {
-      const randomFactor = 0.60 + Math.random() * 0.35 // 60% to 95%
+      const randomFactor = 0.60 + random() * 0.35 // 60% to 95%
       const bidThreshold = adjustedValue * randomFactor
       
-      if (currentBid < bidThreshold && Math.random() < 0.6) return true
+      if (currentBid < bidThreshold && random() < 0.6) return true
     }
     
     return false
@@ -61,8 +62,8 @@ export class StarsAndScrubs extends BaseStrategy {
   getBidIncrement(player, currentBid, adjustedValue) {
     // More aggressive increments on star players
     if (player.estimatedValue >= this.sd(30)) {
-      if (Math.random() < 0.4) return this.si(Math.floor(Math.random() * 5) + 3) // $3-7
-      if (Math.random() < 0.7) return this.si(2)
+      if (random() < 0.4) return this.si(Math.floor(random() * 5) + 3) // $3-7
+      if (random() < 0.7) return this.si(2)
       return 1
     }
 
@@ -81,13 +82,13 @@ export class StarsAndScrubs extends BaseStrategy {
   selectNomination(availablePlayers) {
     availablePlayers = this.filterNominationPool(availablePlayers)
     // 60% chance to nominate elite player for price enforcement
-    if (Math.random() < 0.6) {
+    if (random() < 0.6) {
       const elitePlayers = [...availablePlayers]
         .filter(p => p.estimatedValue >= this.sd(30))
         .sort((a, b) => b.estimatedValue - a.estimatedValue)
       
       if (elitePlayers.length > 0) {
-        return elitePlayers[Math.floor(Math.random() * Math.min(3, elitePlayers.length))]
+        return elitePlayers[Math.floor(random() * Math.min(3, elitePlayers.length))]
       }
     }
     

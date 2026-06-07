@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { Team } from '../models/Team.js'
 import { Player } from '../models/Player.js'
 import { AIManager } from './aiManager.js'
@@ -423,7 +424,7 @@ export class DraftEngine {
           this.currentNominatorIndex++
           this.startNominationPhase()
         }
-      }, 1000 + Math.random() * 2000) // 1-3 second delay for auto-pilot
+      }, 1000 + random() * 2000) // 1-3 second delay for auto-pilot
     } else {
       // Manual human nomination - start timer
       this.startNominationTimer(nominatorId)
@@ -520,7 +521,7 @@ export class DraftEngine {
     // Start AI bidding after small delay
     workerTimers.setTimeout(() => {
       this.processAIBids(player)
-    }, 1000 + Math.random() * 2000) // 1-3 second delay
+    }, 1000 + random() * 2000) // 1-3 second delay
   }
 
   startBiddingTimer() {
@@ -579,7 +580,7 @@ export class DraftEngine {
           // Schedule next potential bid
           workerTimers.setTimeout(() => {
             this.processAIBids(player)
-          }, 1000 + Math.random() * 2000) // 1-3 second delay for auto-pilot
+          }, 1000 + random() * 2000) // 1-3 second delay for auto-pilot
           return
         }
       }
@@ -843,7 +844,7 @@ export class DraftEngine {
       this.biddingStartTime = Date.now() - (totalBiddingTime - this.biddingTimeRemaining * 1000)
       workerTimers.setTimeout(() => {
         this.processAIBids(currentPlayer)
-      }, 1000 + Math.random() * 2000) // 1-3 second delay, matching startBiddingPhase
+      }, 1000 + random() * 2000) // 1-3 second delay, matching startBiddingPhase
     } else {
       this.startNominationPhase()
     }

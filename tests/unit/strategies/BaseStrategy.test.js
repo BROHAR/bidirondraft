@@ -252,7 +252,7 @@ describe('BaseStrategy', () => {
   })
 
   describe('getAdjustedPlayerValue boost ceilings', () => {
-    it('caps pacing boost at 1.20x even when pacingRatio is extreme', () => {
+    it('caps pacing boost at 1.50x even when pacingRatio is extreme', () => {
       vi.spyOn(strategy, 'getPacingRatio').mockReturnValue(5.0)
       vi.spyOn(strategy, 'getStarterUrgencyBoost').mockReturnValue(1.0)
       // Push draftProgress past 0.3 so the pacing branch is reachable
@@ -262,17 +262,19 @@ describe('BaseStrategy', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0)
 
       const adj = strategy.getAdjustedPlayerValue(player, [player])
-      // pacingBoost = min(1.20, 1 + (5-1)*0.4) = 1.20
-      // urgencyBoost = 1.0 (stubbed). combinedBoost = 1.20.
-      // baseValue × combinedBoost = 50 × 1.20 = 60 (boost applied)
-      // maxBid = 52.5 × 1.20 = 63
-      // Old uncapped logic would multiply by 5.0 → 262.5+
-      expect(adj).toBeLessThanOrEqual(63)
+      // pacingBoost = min(1.50, 5.0) = 1.50; urgencyBoost = 1.0 (stubbed).
+      // baseValue × 1.50 = 75, clamped by the defensive ceiling to
+      // 50 × 1.35 = 67.5 → 68. Old uncapped logic would multiply by 5.0 → 250+.
+      expect(adj).toBeLessThanOrEqual(68)
       expect(adj).toBeGreaterThanOrEqual(55) // confirms boost is actually applied
     })
 
     it('combines pacing and urgency via max(), not product', () => {
-      vi.spyOn(strategy, 'getPacingRatio').mockReturnValue(5.0)
+      // Ratio 1.25 keeps the combined result below the 1.35x defensive
+      // ceiling so the max-vs-product distinction stays observable:
+      // max(1.25, 1.12) = 1.25 → 50 × 1.25 ≈ 63, while a product
+      // (1.25 × 1.12 = 1.40) would be clamped at 50 × 1.35 = 67.5 → 68.
+      vi.spyOn(strategy, 'getPacingRatio').mockReturnValue(1.25)
       for (let i = 0; i < 6; i++) team.roster.push(makePlayer('K', 1, `k${i}`))
 
       // QB slot open + tier drop > 30% triggers urgency 1.12
@@ -281,8 +283,6 @@ describe('BaseStrategy', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0)
 
       const adj = strategy.getAdjustedPlayerValue(player, [player, ...others])
-      // combinedBoost = max(1.20, 1.12) = 1.20  (NOT 1.20 × 1.12 = 1.344)
-      // maxBid = 50 × 1.05 × 1.20 = 63          (NOT 50 × 1.05 × 1.344 = 70.6)
       expect(adj).toBeLessThanOrEqual(63)
     })
 
@@ -310,6 +310,83 @@ describe('BaseStrategy', () => {
       const adj = strategy.getAdjustedPlayerValue(player, [player])
       // No boosts. Hard cap from getMaxBidForPlayer: 1.12 × 50 = 56.
       expect(adj).toBeLessThanOrEqual(56)
+    })
+  })
+
+  describe('getEndgameSpendFloor', () => {
+    // Standard config: 15 total spots. Pushing 6 RBs leaves 9 spots — inside
+    // the 10-spot endgame window. owed K/DST = 2 → burnSpots = 7,
+    // fairShare = (200 - 2×$2) / 7 = $28.
+    function fillToEndgame(t) {
+      for (let i = 0; i < 6; i++) t.roster.push(makePlayer('RB', 1, `rb${i}`))
+    }
+
+    it('returns 0 outside the endgame window (fresh roster)', () => {
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 2, 'cheap'))).toBe(0)
+    })
+
+    it('returns 0 for K/DST regardless of surplus', () => {
+      fillToEndgame(team)
+      expect(strategy.getEndgameSpendFloor(makePlayer('K', 2, 'k1'))).toBe(0)
+      expect(strategy.getEndgameSpendFloor(makePlayer('DST', 2, 'd1'))).toBe(0)
+    })
+
+    // fairShare with 9 spots left = (200 - 2×$2) / 7 = $28.
+
+    it('AI team: capped at 2x book while quality remains on the board', () => {
+      fillToEndgame(team) // 9 spots left
+      const board = [makePlayer('WR', 15, 'stud')] // best book > sd(10)
+      // A $2 book player caps at $4 — mid-draft cheap nominations must not
+      // get bid to double digits while real players are still available.
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 2, 'cheap'), board)).toBeCloseTo(4, 1)
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 20, 'mid'), board)).toBeCloseTo(28, 1) // 2×20=40 > fairShare
+    })
+
+    it('AI team: cap loosens to 4x book when the board is thinning', () => {
+      fillToEndgame(team)
+      const board = [makePlayer('WR', 7, 'okay')] // best book between sd(5) and sd(10)
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 2, 'cheap'), board)).toBeCloseTo(8, 1)
+    })
+
+    it('AI team: full fair share once only scraps remain', () => {
+      fillToEndgame(team)
+      const board = [makePlayer('WR', 3, 'scrap')] // best book below sd(5)
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 2, 'cheap'), board)).toBeCloseTo(28, 1)
+    })
+
+    it('AI team: caps on cheap nominees lift only once down to 2 burnable spots', () => {
+      // 9 of 15 filled, no K/DST owned → 4 burnable spots (owedKdst 2).
+      // Quality remains, so a $2 nominee at <25% of best-usable caps at 2x.
+      for (let i = 0; i < 9; i++) team.roster.push(makePlayer('RB', 1, `rb${i}`))
+      const board = [makePlayer('WR', 15, 'stud')]
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 2, 'cheap'), board)).toBeCloseTo(4, 1)
+      // Two more wins → 2 burnable spots: caps release (drain of last resort,
+      // safe because scrub auctions are blocked in shouldBid by then).
+      team.roster.push(makePlayer('WR', 1, 'rb9'))
+      team.roster.push(makePlayer('WR', 1, 'rb10'))
+      // 11 filled, no K/DST → 4 spots left, owedKdst 2 → burnSpots 2,
+      // fairShare = (200 - 2×$2) / 2 = $98.
+      expect(strategy.getEndgameSpendFloor(makePlayer('RB', 2, 'cheap'), board)).toBeCloseTo(98, 1)
+    })
+
+    it('human team: overpay ties to book value, ~2x for $1-2 players', () => {
+      const human = makeTeam({ isHuman: true })
+      human.setStrategy(strategy)
+      fillToEndgame(human)
+      // Flush: fairShare $28 > expected $200/15 ≈ $13.3 → active.
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 1, 'w1'))).toBeCloseTo(2, 1) // capped 2x
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 2, 'w2'))).toBeCloseTo(4, 1) // 2x
+      // Premium decays fast as book rises: 1 + 2/book.
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 10, 'w3'))).toBeCloseTo(12, 1) // 1.2x
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 20, 'w4'))).toBeCloseTo(22, 1) // 1.1x
+    })
+
+    it('human team: inactive without surplus (never overpays when at or under pace)', () => {
+      const human = makeTeam({ isHuman: true, remainingBudget: 50 })
+      human.setStrategy(strategy)
+      fillToEndgame(human)
+      // fairShare = (50 - 4) / 7 ≈ $6.6 < expected $13.3 → no floor.
+      expect(strategy.getEndgameSpendFloor(makePlayer('WR', 2, 'w1'))).toBe(0)
     })
   })
 

@@ -1,3 +1,4 @@
+import { random } from '../utils/rng.js'
 import { StarsAndScrubs } from '../strategies/StarsAndScrubs.js'
 import { Balanced } from '../strategies/Balanced.js'
 import { ZeroRB } from '../strategies/ZeroRB.js'
@@ -49,14 +50,14 @@ export class AIManager {
       const otherStrategies = this.strategies.filter(s => s !== StarsAndScrubs)
       const shuffledOthers = [...otherStrategies]
       for (let i = shuffledOthers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
+        const j = Math.floor(random() * (i + 1))
         ;[shuffledOthers[i], shuffledOthers[j]] = [shuffledOthers[j], shuffledOthers[i]]
       }
       const remainingSlots = unfilledIndices.length - numStarsAndScrubs
       for (let i = 0; i < remainingSlots; i++) {
         fillerPool.push(shuffledOthers[i % shuffledOthers.length])
       }
-      const shuffled = fillerPool.sort(() => Math.random() - 0.5)
+      const shuffled = fillerPool.sort(() => random() - 0.5)
       unfilledIndices.forEach((idx, i) => {
         assignments[idx] = shuffled[i]
       })
@@ -91,11 +92,11 @@ export class AIManager {
     }
     const sorted = [...players].sort((a, b) => b.estimatedValue - a.estimatedValue)
     const pool = Math.min(100, sorted.length)
-    const numPlayers = 1 + Math.floor(Math.random() * 5)
+    const numPlayers = 1 + Math.floor(random() * 5)
     const list = new Set()
     let attempts = 50
     while (list.size < numPlayers && attempts-- > 0) {
-      list.add(sorted[Math.floor(Math.random() * pool)].id)
+      list.add(sorted[Math.floor(random() * pool)].id)
     }
     team.doNotDraftList = list
   }
@@ -112,7 +113,7 @@ export class AIManager {
     const sampleId = (maxRank) => {
       const pool = Math.min(maxRank, total)
       for (let i = 0; i < 20; i++) {
-        const id = sorted[Math.floor(Math.random() * pool)].id
+        const id = sorted[Math.floor(random() * pool)].id
         if (!valueModifiers.has(id)) return id
       }
       return null
@@ -122,21 +123,21 @@ export class AIManager {
     // weighted random per slot. Magnitudes are intentionally mild (±5-25%)
     // so AI variance is felt without producing whiplash bids. The DND list
     // already covers the "won't draft" case, so no zero-value tier here.
-    const numModifiers = 1 + Math.floor(Math.random() * 6)
+    const numModifiers = 1 + Math.floor(random() * 6)
     for (let i = 0; i < numModifiers; i++) {
-      const r = Math.random()
+      const r = random()
       if (r < 0.4) {
         // Favorite (top 50 by value): +5% to +15%
         const id = sampleId(50)
-        if (id) valueModifiers.set(id, 1.05 + Math.random() * 0.10)
+        if (id) valueModifiers.set(id, 1.05 + random() * 0.10)
       } else if (r < 0.7) {
         // High-value dislike (top 75 by value): -5% to -15%
         const id = sampleId(75)
-        if (id) valueModifiers.set(id, 0.85 + Math.random() * 0.10)
+        if (id) valueModifiers.set(id, 0.85 + random() * 0.10)
       } else {
         // Low-value undervalue (full pool): -10% to -25%
         const id = sampleId(total)
-        if (id) valueModifiers.set(id, 0.75 + Math.random() * 0.15)
+        if (id) valueModifiers.set(id, 0.75 + random() * 0.15)
       }
     }
 
@@ -200,7 +201,7 @@ export class AIManager {
           maxBidPercent = 0.85
         }
 
-        const targetBid = Math.floor(currentPlayer.estimatedValue * (minBidPercent + Math.random() * (maxBidPercent - minBidPercent)))
+        const targetBid = Math.floor(currentPlayer.estimatedValue * (minBidPercent + random() * (maxBidPercent - minBidPercent)))
         // Cap the opener at the picked team's own adjustedValue so we never
         // force them to bid above what their strategy thinks the player's worth.
         const cappedTarget = Math.min(targetBid, Math.floor(bestValue))
@@ -239,7 +240,7 @@ export class AIManager {
     // human's hard-pinned ceiling) were still willing to escalate.
     while (remaining.length > 0) {
       const totalWeight = remainingWeights.reduce((s, w) => s + w, 0)
-      let r = Math.random() * totalWeight
+      let r = random() * totalWeight
       let pickedIdx = 0
       for (let i = 0; i < remaining.length; i++) {
         r -= remainingWeights[i]
@@ -247,7 +248,7 @@ export class AIManager {
       }
       const biddingTeam = remaining[pickedIdx]
       const adjustedValue = biddingTeam.draftStrategy.getAdjustedPlayerValue(currentPlayer, availablePlayers)
-      const bidAmount = biddingTeam.draftStrategy.calculateBidAmount(currentPlayer, currentBid, adjustedValue)
+      const bidAmount = biddingTeam.draftStrategy.calculateBidAmount(currentPlayer, currentBid, adjustedValue, availablePlayers)
       if (bidAmount > currentBid) {
         return { team: biddingTeam, amount: bidAmount }
       }
@@ -264,7 +265,35 @@ export class AIManager {
       return [...availablePlayers].sort((a, b) => b.estimatedValue - a.estimatedValue)[0]
     }
 
-    return team.draftStrategy.selectNomination(availablePlayers)
+    // Endgame surplus targeting (takes precedence over every strategy's own
+    // nomination script): a team down to its last burnable slots with budget
+    // still to spend shouldn't wait passively for someone else to nominate a
+    // player worth buying — slot-preservation keeps it out of scrub auctions,
+    // so if no target ever comes to market its money strands. Bring the best
+    // player it can still roster to market itself; its own fair-share floor
+    // (uncapped on near-best nominees) then drains the surplus on quality.
+    const strategy = team.draftStrategy
+    const burnSpots = strategy.getBurnableSpotsRemaining?.()
+    if (burnSpots > 0 && burnSpots <= 2) {
+      // Surplus is judged per BURNABLE slot (raw pacing dilutes across K/DST
+      // slots whose bids are capped at a few dollars — a Taco that hoarded
+      // kickers read as "under-paced" while sitting on real money).
+      const rc = team.config?.rosterPositions || {}
+      const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
+      const expected = team.budget / Math.max(1, totalSpots)
+      const owedKdst = team.getRosterSpotsRemaining() - burnSpots
+      const burnShare = (team.remainingBudget - owedKdst * strategy.sd(2)) / burnSpots
+      if (burnShare > expected) {
+        let best = null
+        for (const p of availablePlayers) {
+          if (strategy.shouldApplyPositionLimits?.(p)) continue
+          if (!best || p.estimatedValue > best.estimatedValue) best = p
+        }
+        if (best && best.estimatedValue > strategy.sd(5)) return best
+      }
+    }
+
+    return strategy.selectNomination(availablePlayers)
   }
 
   getBiddingDelay(totalBiddingTime = 20000) {
@@ -282,7 +311,7 @@ export class AIManager {
     
     // Realistic AI bidding delays (1-8 seconds, weighted toward 2-4), then scaled
     const delays = [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 7, 8]
-    const baseDelay = delays[Math.floor(Math.random() * delays.length)]
+    const baseDelay = delays[Math.floor(random() * delays.length)]
     const scaledDelay = Math.max(500, baseDelay * scalingFactor * 1000) // Minimum 0.5 seconds
     
     return scaledDelay
@@ -290,6 +319,6 @@ export class AIManager {
 
   shouldSnipeBid() {
     // 10% chance for AI to wait until last 5 seconds
-    return Math.random() < 0.1
+    return random() < 0.1
   }
 }
