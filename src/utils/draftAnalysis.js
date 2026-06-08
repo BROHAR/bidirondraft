@@ -410,3 +410,168 @@ export function getTeamVORP(team, replacementLevels) {
   if (!team?.roster) return 0
   return team.roster.reduce((sum, p) => sum + getPlayerVORP(p, replacementLevels), 0)
 }
+
+// ---- Positional Strengths radar ----------------------------------------
+
+const SLOT_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST']
+const FLEX_ELIGIBLE = { FLEX: ['RB', 'WR', 'TE'], SUPERFLEX: ['QB', 'RB', 'WR', 'TE'] }
+
+// Assign every rostered player to exactly one starting slot (optimal lineup,
+// best-by-projectedPoints) or the bench. Returns slot occupants grouped by
+// slot type plus the leftover bench. Single source of truth for the optimal
+// lineup; buildRosterSlots (PostDraftAnalysis) renders from this.
+export function getLineupSlots(team, rosterPositions) {
+  const rc = rosterPositions || {}
+  const roster = team?.roster || []
+  const sort = (a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0)
+  const byPos = {
+    QB:  roster.filter(p => p.position === 'QB').sort(sort),
+    RB:  roster.filter(p => p.position === 'RB').sort(sort),
+    WR:  roster.filter(p => p.position === 'WR').sort(sort),
+    TE:  roster.filter(p => p.position === 'TE').sort(sort),
+    K:   roster.filter(p => p.position === 'K').sort(sort),
+    DST: roster.filter(p => p.position === 'DST').sort(sort),
+  }
+  const used = { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 }
+  const slots = { QB: [], RB: [], WR: [], TE: [], FLEX: [], SUPERFLEX: [], K: [], DST: [] }
+
+  for (const slotType of SLOT_ORDER) {
+    const count = rc[slotType] || 0
+    if (!count) continue
+    if (slotType === 'FLEX' || slotType === 'SUPERFLEX') {
+      const pool = FLEX_ELIGIBLE[slotType]
+        .flatMap(pos => byPos[pos].slice(used[pos]))
+        .sort(sort)
+      for (let i = 0; i < count && i < pool.length; i++) {
+        const p = pool[i]
+        slots[slotType].push(p)
+        used[p.position] += 1
+      }
+    } else {
+      for (let i = 0; i < count && used[slotType] < byPos[slotType].length; i++) {
+        slots[slotType].push(byPos[slotType][used[slotType]])
+        used[slotType] += 1
+      }
+    }
+  }
+
+  const starterIds = new Set()
+  for (const k of Object.keys(slots)) for (const p of slots[k]) starterIds.add(p.id)
+  const bench = roster.filter(p => !starterIds.has(p.id))
+  return { slots, bench, starterIds }
+}
+
+// Map of playerId -> rank score within its real position across the pool.
+// Best player at a position scores `total` (count at that position), worst
+// scores 1 — i.e. max(0, total - rank + 1). Higher = stronger, so it sums and
+// normalizes like points/VORP.
+export function getPositionalRankScores(allPlayers) {
+  const byPos = {}
+  for (const p of allPlayers || []) {
+    if (!p) continue
+    ;(byPos[p.position] ||= []).push(p)
+  }
+  const scores = new Map()
+  for (const pos of Object.keys(byPos)) {
+    const sorted = byPos[pos].sort((a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0))
+    const total = sorted.length
+    sorted.forEach((p, idx) => scores.set(p.id, total - idx)) // idx 0 (best) -> total
+  }
+  return scores
+}
+
+// Players feeding one radar axis for one team, per the filter.
+function axisPlayers(team, axis, filter, rosterPositions, lineup) {
+  const rc = rosterPositions || {}
+  if (axis === 'FLEX' || axis === 'SUPERFLEX') {
+    // Starters: the optimal slot occupant(s). All/Bench: the best bench
+    // flex-eligible player(s) not already starting (count = # of those slots).
+    if (filter === 'starters') return lineup.slots[axis] || []
+    const eligible = FLEX_ELIGIBLE[axis]
+    return (team.roster || [])
+      .filter(p => eligible.includes(p.position) && !lineup.starterIds.has(p.id))
+      .sort((a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0))
+      .slice(0, rc[axis] || 0)
+  }
+  // Base position: Starters = base-slot occupants (FLEX/SF occupants belong to
+  // their own axis). All = every rostered player at the position. Bench =
+  // players at the position not in any starting slot.
+  if (filter === 'starters') return lineup.slots[axis] || []
+  const atPos = (team.roster || []).filter(p => p.position === axis)
+  if (filter === 'all') return atPos
+  return atPos.filter(p => !lineup.starterIds.has(p.id))
+}
+
+function axisMetric(players, stat, replacementLevels, rankScores) {
+  if (stat === 'vorp') return players.reduce((s, p) => s + getPlayerVORP(p, replacementLevels), 0)
+  if (stat === 'rank') return players.reduce((s, p) => s + (rankScores?.get(p.id) || 0), 0)
+  return players.reduce((s, p) => s + (p.projectedPoints || 0), 0) // points
+}
+
+// Per-axis radar data for every team: raw values, field-normalized radii
+// (0..1 where 1 = league best at that axis), per-axis league rank, and the
+// field-average shape. axes follow the configured starting slots.
+export function buildPositionalRadar(teams, rosterPositions, options = {}) {
+  const { stat = 'points', filter = 'starters', replacementLevels = {}, rankScores = new Map() } = options
+  const rc = rosterPositions || {}
+  const axes = SLOT_ORDER.filter(a => (rc[a] || 0) > 0)
+  const list = teams || []
+
+  const byTeamId = {}
+  for (const team of list) {
+    const lineup = getLineupSlots(team, rosterPositions)
+    const values = {}
+    for (const axis of axes) {
+      values[axis] = axisMetric(axisPlayers(team, axis, filter, rosterPositions, lineup), stat, replacementLevels, rankScores)
+    }
+    byTeamId[team.id] = { values, normalized: {}, ranks: {} }
+  }
+
+  const fieldMax = {}, fieldAvg = {}, fieldAvgNormalized = {}
+  for (const axis of axes) {
+    const vals = list.map(t => byTeamId[t.id].values[axis])
+    const max = vals.length ? Math.max(0, ...vals) : 0
+    const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0
+    fieldMax[axis] = max
+    fieldAvg[axis] = avg
+    fieldAvgNormalized[axis] = max > 0 ? avg / max : 0
+
+    for (const team of list) {
+      byTeamId[team.id].normalized[axis] = max > 0 ? byTeamId[team.id].values[axis] / max : 0
+    }
+
+    // Rank desc; ties share a rank.
+    const sorted = [...list].sort((a, b) => byTeamId[b.id].values[axis] - byTeamId[a.id].values[axis])
+    let lastVal = null, lastRank = 0
+    sorted.forEach((t, idx) => {
+      const v = byTeamId[t.id].values[axis]
+      const rank = v === lastVal ? lastRank : idx + 1
+      lastVal = v
+      lastRank = rank
+      byTeamId[t.id].ranks[axis] = { rank, of: list.length }
+    })
+  }
+
+  return { axes, byTeamId, fieldMax, fieldAvg, fieldAvgNormalized }
+}
+
+// Power ranking from a radar result: average each team's per-axis league rank
+// (lower = better) and order teams by that average. Ties share a power rank.
+// Returns [{ teamId, avgRank, rank }] best-first.
+export function getPowerRankings(radar) {
+  const { axes = [], byTeamId = {} } = radar || {}
+  const rows = Object.keys(byTeamId).map(teamId => {
+    const ranks = byTeamId[teamId].ranks || {}
+    const vals = axes.map(a => ranks[a]?.rank).filter(r => r != null)
+    const avgRank = vals.length ? vals.reduce((s, r) => s + r, 0) / vals.length : 0
+    return { teamId, avgRank }
+  })
+  rows.sort((a, b) => a.avgRank - b.avgRank)
+  let lastAvg = null, lastRank = 0
+  rows.forEach((row, idx) => {
+    row.rank = row.avgRank === lastAvg ? lastRank : idx + 1
+    lastAvg = row.avgRank
+    lastRank = row.rank
+  })
+  return rows
+}

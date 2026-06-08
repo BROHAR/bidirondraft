@@ -1470,3 +1470,255 @@
   .va-table th,
   .va-table td { padding: var(--space-1) var(--space-2); }
 }
+
+/* ---- Positional Strengths (radar) ------------------------------------ */
+
+.radar-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.radar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+.radar-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.radar-control-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+.radar-toggle {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.radar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.radar-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.radar-svg {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.radar-ring {
+  fill: none;
+  stroke: var(--gray-800);
+  stroke-width: 1;
+}
+
+.radar-spoke {
+  stroke: var(--gray-800);
+  stroke-width: 1;
+}
+
+.radar-axis-label {
+  fill: var(--fg2);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+.radar-avg {
+  fill: none;
+  stroke: var(--gray-500);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.7;
+}
+
+.radar-team {
+  fill: var(--accent-team);
+  fill-opacity: 0.22;
+  stroke: var(--accent-team);
+  stroke-width: 2;
+}
+
+.radar-dot {
+  fill: var(--accent-team);
+}
+
+.radar-empty {
+  color: var(--fg3);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.radar-legend {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--fs-xs);
+  color: var(--fg2);
+}
+
+.radar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.radar-swatch {
+  width: 14px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.radar-swatch.team { color: var(--accent-team); }
+.radar-swatch.avg  { color: var(--gray-500); border-top-style: dashed; }
+
+.radar-rank-panel {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--gray-800);
+  border-radius: 6px;
+  padding: var(--space-3);
+}
+
+.radar-rank-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.radar-rank-sub {
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+
+.radar-rank-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.radar-rank-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  text-align: right;
+}
+
+.radar-rank-value.value   { color: var(--accent-positive); }
+.radar-rank-value.overpay { color: var(--accent-negative); }
+.radar-rank-value.neutral { color: var(--fg2); }
+
+.radar-rank-of {
+  color: var(--fg3);
+  font-size: var(--fs-xs);
+}
+
+.radar-rank-stat {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+  color: var(--fg3);
+}
+
+@media (max-width: 720px) {
+  .radar-layout { grid-template-columns: 1fr; }
+}
+
+/* ---- Power Rankings (Strengths tab) ---------------------------------- */
+
+.radar-power {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--gray-800);
+  border-radius: 6px;
+  padding: var(--space-3);
+}
+
+.radar-power-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.radar-power-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.radar-power-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--gray-900);
+}
+
+.radar-power-row:last-child { border-bottom: none; }
+
+.radar-power-row.selected {
+  background: var(--bg-hud);
+  border-radius: 4px;
+}
+
+.radar-power-rank {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  color: var(--fg2);
+  min-width: 1.5em;
+  text-align: right;
+}
+
+.radar-power-row.human .radar-power-name { color: var(--accent-team); }
+
+.radar-power-name {
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+}
+
+.radar-power-strat {
+  color: var(--fg3);
+  font-size: var(--fs-xs);
+}
+
+.radar-power-avg {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+  color: var(--fg3);
+}
