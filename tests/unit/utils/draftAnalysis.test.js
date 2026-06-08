@@ -27,6 +27,7 @@ import {
   getPositionalRankScores,
   buildPositionalRadar,
   getPowerRankings,
+  buildDreamTeam,
 } from '../../../src/utils/draftAnalysis.js'
 
 function makePlayer(overrides = {}) {
@@ -873,5 +874,67 @@ describe('getPowerRankings', () => {
     // A: QB 1st, RB 2nd → 1.5; B: QB 2nd, RB 1st → 1.5 → tie at rank 1
     expect(out.every(r => r.avgRank === 1.5)).toBe(true)
     expect(out.every(r => r.rank === 1)).toBe(true)
+  })
+})
+
+// ─── buildDreamTeam ─────────────────────────────────────────────────────────
+
+describe('buildDreamTeam', () => {
+  const rc = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DST: 1 }
+
+  function fullTeam(id, scale) {
+    // scale multiplies points so different teams own different-strength players
+    return makeTeam({
+      id,
+      name: id,
+      roster: [
+        makePlayer({ id: `${id}-qb`, position: 'QB', projectedPoints: 300 * scale, purchasePrice: 30 }),
+        makePlayer({ id: `${id}-rb1`, position: 'RB', projectedPoints: 250 * scale, purchasePrice: 40 }),
+        makePlayer({ id: `${id}-rb2`, position: 'RB', projectedPoints: 200 * scale, purchasePrice: 20 }),
+        makePlayer({ id: `${id}-rb3`, position: 'RB', projectedPoints: 150 * scale, purchasePrice: 5 }),
+        makePlayer({ id: `${id}-wr1`, position: 'WR', projectedPoints: 220 * scale, purchasePrice: 35 }),
+        makePlayer({ id: `${id}-wr2`, position: 'WR', projectedPoints: 180 * scale, purchasePrice: 15 }),
+        makePlayer({ id: `${id}-te`, position: 'TE', projectedPoints: 120 * scale, purchasePrice: 10 }),
+        makePlayer({ id: `${id}-k`, position: 'K', projectedPoints: 130 * scale, purchasePrice: 1 }),
+        makePlayer({ id: `${id}-dst`, position: 'DST', projectedPoints: 110 * scale, purchasePrice: 2 }),
+      ],
+    })
+  }
+
+  it('picks the single best player at each slot across all teams', () => {
+    const strong = fullTeam('Strong', 1) // owns the best at every position
+    const weak = fullTeam('Weak', 0.5)
+    const { rows } = buildDreamTeam([strong, weak], [], rc)
+    const byLabel = {}
+    rows.forEach(r => { (byLabel[r.slotLabel] ||= []).push(r.player) })
+    expect(byLabel.QB[0].id).toBe('Strong-qb')
+    expect(byLabel.RB.map(p => p.id)).toEqual(['Strong-rb1', 'Strong-rb2']) // top 2 RBs
+    expect(byLabel.FLEX[0].id).toBe('Strong-rb3') // best leftover flex-eligible (150 > weak's)
+  })
+
+  it('includes free agents priced at estimatedValue', () => {
+    const team = fullTeam('A', 0.3) // weak roster
+    const fa = makePlayer({ id: 'fa-qb', position: 'QB', projectedPoints: 999, estimatedValue: 50 })
+    const { rows, meta } = buildDreamTeam([team], [fa], rc)
+    const qbRow = rows.find(r => r.slotLabel === 'QB')
+    expect(qbRow.player.id).toBe('fa-qb') // 999 beats everyone
+    expect(meta.get('fa-qb')).toMatchObject({ owner: 'FA', cost: 50, drafted: false })
+  })
+
+  it('reports total points and total cost of the dream lineup', () => {
+    const team = fullTeam('A', 1)
+    const { rows, totalPoints, totalCost, meta } = buildDreamTeam([team], [], rc)
+    const expectedPts = rows.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
+    const expectedCost = rows.reduce((s, r) => s + (meta.get(r.player.id)?.cost || 0), 0)
+    expect(totalPoints).toBe(expectedPts)
+    expect(totalCost).toBe(expectedCost)
+  })
+
+  it('does not double-count a player listed both rostered and available', () => {
+    const p = makePlayer({ id: 'dup-qb', position: 'QB', projectedPoints: 400, purchasePrice: 25 })
+    const team = makeTeam({ id: 'A', name: 'A', roster: [p] })
+    const { meta } = buildDreamTeam([team], [p], { QB: 1 })
+    // drafted entry wins; FA dup ignored
+    expect(meta.get('dup-qb')).toMatchObject({ owner: 'A', drafted: true, cost: 25 })
   })
 })

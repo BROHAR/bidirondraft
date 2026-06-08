@@ -25,10 +25,11 @@ import {
   getPositionalRankScores,
   buildPositionalRadar,
   getPowerRankings,
+  buildDreamTeam,
 } from '../utils/draftAnalysis.js'
 import '../styles/components/postDraftAnalysis.css'
 
-const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Draft Board']
+const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Dream Team', 'Draft Board']
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 const PRICE_TIERS = [
   { label: '$1–10', min: 1, max: 10 },
@@ -1478,6 +1479,117 @@ function PositionalStrengthsTab({ allTeams, rosterPositions, replacementLevels, 
   )
 }
 
+// ---- Tab: Dream Team ---------------------------------------------------
+
+function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }) {
+  const [selectedTeamId, setSelectedTeamId] = useState(humanTeam?.id || allTeams[0]?.id)
+
+  const dream = useMemo(
+    () => buildDreamTeam(allTeams, availablePlayers, rosterPositions),
+    [allTeams, availablePlayers, rosterPositions]
+  )
+
+  const team = allTeams.find(t => t.id === selectedTeamId) || allTeams[0]
+  const yourStarters = useMemo(
+    () => buildRosterSlots(team, rosterPositions).filter(s => s.isStarter),
+    [team, rosterPositions]
+  )
+
+  const yourPoints = yourStarters.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
+  const yourCost = yourStarters.reduce((s, r) => s + (r.player?.purchasePrice || 0), 0)
+  const ptsGap = dream.totalPoints - yourPoints
+  const ownedDreamSlots = dream.rows.reduce((n, r, i) => {
+    const mine = yourStarters[i]?.player
+    return n + (r.player && mine && r.player.id === mine.id ? 1 : 0)
+  }, 0)
+
+  return (
+    <div className="dream-tab">
+      <div className="radar-controls">
+        <div className="radar-control">
+          <label className="radar-control-label">Compare against</label>
+          <select
+            className="va-team-select"
+            value={selectedTeamId}
+            onChange={(e) => setSelectedTeamId(e.target.value)}
+          >
+            {allTeams.map(t => (
+              <option key={t.id} value={t.id}>{teamStrategyLabel(t)} — {t.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="dream-summary">
+        <div className="dream-stat">
+          <div className="dream-stat-label">Dream Team pts</div>
+          <div className="dream-stat-value">{dream.totalPoints.toFixed(0)}</div>
+          <div className="dream-stat-sub">would cost ${dream.totalCost}</div>
+        </div>
+        <div className="dream-stat">
+          <div className="dream-stat-label">{team.name} pts</div>
+          <div className="dream-stat-value">{yourPoints.toFixed(0)}</div>
+          <div className="dream-stat-sub">starters cost ${yourCost}</div>
+        </div>
+        <div className="dream-stat">
+          <div className="dream-stat-label">Points behind</div>
+          <div className="dream-stat-value" style={{ color: ptsGap > 0 ? 'var(--accent-negative)' : 'var(--accent-positive)' }}>
+            {ptsGap > 0 ? '-' : ''}{Math.abs(ptsGap).toFixed(0)}
+          </div>
+          <div className="dream-stat-sub">{ownedDreamSlots} of {dream.rows.length} dream slots owned</div>
+        </div>
+      </div>
+
+      <div className="dream-table">
+        <div className="dream-row dream-head">
+          <span className="dream-slot">Slot</span>
+          <span className="dream-cell-head">Dream Team</span>
+          <span className="dream-cell-head">{team.name}</span>
+          <span className="dream-delta-head">Δ pts</span>
+        </div>
+        {dream.rows.map((r, i) => {
+          const dreamP = r.player
+          const meta = dreamP ? dream.meta.get(dreamP.id) : null
+          const mine = yourStarters[i]?.player || null
+          const owned = dreamP && mine && dreamP.id === mine.id
+          const delta = (dreamP?.projectedPoints || 0) - (mine?.projectedPoints || 0)
+          return (
+            <div key={`${r.slotLabel}-${i}`} className={`dream-row${owned ? ' owned' : ''}`}>
+              <span className={`pos-badge ${r.slotLabel === 'SF' ? 'QB' : r.slotLabel}`}>{r.slotLabel}</span>
+              <span className="dream-cell">
+                {dreamP ? (
+                  <>
+                    <span className="dream-pname">{dreamP.name}</span>
+                    <span className="dream-pmeta">
+                      <span className={`pos-badge ${dreamP.position}`}>{dreamP.position}</span>
+                      {(dreamP.projectedPoints || 0).toFixed(0)} pts · ${meta?.cost ?? 0}
+                      <span className="dream-owner">{meta?.drafted ? meta.owner : 'FA'}</span>
+                    </span>
+                  </>
+                ) : <span className="dream-empty">—</span>}
+              </span>
+              <span className="dream-cell">
+                {mine ? (
+                  <>
+                    <span className="dream-pname">{mine.name}</span>
+                    <span className="dream-pmeta">
+                      <span className={`pos-badge ${mine.position}`}>{mine.position}</span>
+                      {(mine.projectedPoints || 0).toFixed(0)} pts · ${mine.purchasePrice ?? 0}
+                    </span>
+                  </>
+                ) : <span className="dream-empty">(unfilled)</span>}
+              </span>
+              <span className={`dream-delta${owned ? ' owned' : delta > 0 ? ' behind' : ''}`}>
+                {owned ? '★' : delta > 0 ? `-${delta.toFixed(0)}` : '0'}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ---- Main component ----------------------------------------------------
 
 export default function PostDraftAnalysis({ onViewDraft }) {
@@ -1636,6 +1748,14 @@ export default function PostDraftAnalysis({ onViewDraft }) {
           />
         )}
         {activeTab === 6 && (
+          <DreamTeamTab
+            allTeams={teams}
+            rosterPositions={rp}
+            availablePlayers={availablePlayers}
+            humanTeam={humanTeam}
+          />
+        )}
+        {activeTab === 7 && (
           <DraftBoardTab
             draftHistory={draftHistory}
             allTeams={teams}

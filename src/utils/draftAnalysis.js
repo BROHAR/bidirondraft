@@ -575,3 +575,42 @@ export function getPowerRankings(radar) {
   })
   return rows
 }
+
+// ---- Dream Team --------------------------------------------------------
+
+// The single best legal starting lineup money could buy from the whole pool
+// (every drafted player + still-available free agents), chosen by projected
+// points, ignoring any budget cap. Returns ordered starter rows
+// ({ slotLabel, player }, in lineup order with nulls for unfillable slots),
+// a meta map (playerId -> { owner, cost, drafted }), and lineup totals. Cost
+// is the drafted purchase price, or estimatedValue for free agents.
+export function buildDreamTeam(allTeams, availablePlayers, rosterPositions) {
+  const rc = rosterPositions || {}
+  const meta = new Map()
+  const pool = []
+  for (const t of allTeams || []) {
+    for (const p of t.roster || []) {
+      pool.push(p)
+      meta.set(p.id, { owner: t.name, cost: p.purchasePrice ?? 0, drafted: true })
+    }
+  }
+  for (const p of availablePlayers || []) {
+    if (meta.has(p.id)) continue
+    pool.push(p)
+    meta.set(p.id, { owner: 'FA', cost: p.estimatedValue ?? 0, drafted: false })
+  }
+
+  const { slots } = getLineupSlots({ roster: pool }, rc)
+  const rows = []
+  for (const slotType of SLOT_ORDER) {
+    const count = rc[slotType] || 0
+    if (!count) continue
+    const label = slotType === 'SUPERFLEX' ? 'SF' : slotType
+    const filled = slots[slotType] || []
+    for (let i = 0; i < count; i++) rows.push({ slotLabel: label, player: filled[i] || null })
+  }
+
+  const totalPoints = rows.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
+  const totalCost = rows.reduce((s, r) => s + (r.player ? meta.get(r.player.id)?.cost || 0 : 0), 0)
+  return { rows, meta, totalPoints, totalCost }
+}
