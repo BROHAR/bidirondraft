@@ -578,13 +578,164 @@ export function getPowerRankings(radar) {
 
 // ---- Dream Team --------------------------------------------------------
 
-// The single best legal starting lineup money could buy from the whole pool
-// (every drafted player + still-available free agents), chosen by projected
-// points, ignoring any budget cap. Returns ordered starter rows
-// ({ slotLabel, player }, in lineup order with nulls for unfillable slots),
-// a meta map (playerId -> { owner, cost, drafted }), and lineup totals. Cost
-// is the drafted purchase price, or estimatedValue for free agents.
-export function buildDreamTeam(allTeams, availablePlayers, rosterPositions) {
+const FLEX_ELIGIBLE_DREAM = { FLEX: ['RB', 'WR', 'TE'], SUPERFLEX: ['QB', 'RB', 'WR', 'TE'] }
+
+// All compositions of `total` into `bins` non-negative integers.
+function compositions(total, bins) {
+  if (bins <= 1) return [[total]]
+  const out = []
+  for (let i = 0; i <= total; i++) {
+    for (const rest of compositions(total - i, bins - 1)) out.push([i, ...rest])
+  }
+  return out
+}
+
+// Max total points choosing EXACTLY k of these items (each { cost, pts })
+// with summed cost <= budget. Bounded 0/1 knapsack with backtrack. Returns
+// { pts, cost, chosen: items[] } or null if infeasible.
+function bestKWithinBudget(items, k, budget) {
+  if (k === 0) return { pts: 0, cost: 0, chosen: [] }
+  if (items.length < k) return null
+  const NEG = -Infinity
+  const dp = Array.from({ length: k + 1 }, () => new Float64Array(budget + 1).fill(NEG))
+  const pick = Array.from({ length: k + 1 }, () => new Int32Array(budget + 1).fill(-1))
+  for (let c = 0; c <= budget; c++) dp[0][c] = 0
+  items.forEach((it, idx) => {
+    const w = it.cost
+    if (w > budget) return
+    for (let j = k; j >= 1; j--) {
+      for (let c = budget; c >= w; c--) {
+        const cand = dp[j - 1][c - w]
+        if (cand !== NEG && cand + it.pts > dp[j][c]) {
+          dp[j][c] = cand + it.pts
+          pick[j][c] = idx
+        }
+      }
+    }
+  })
+  let bestC = -1, bestPts = NEG
+  for (let c = 0; c <= budget; c++) {
+    if (dp[k][c] > bestPts) { bestPts = dp[k][c]; bestC = c }
+  }
+  if (bestPts === NEG) return null
+  // Backtrack: peel off the chosen items by re-deducting their cost.
+  const chosen = []
+  let j = k, c = bestC
+  while (j > 0 && c >= 0) {
+    const idx = pick[j][c]
+    if (idx < 0) break
+    chosen.push(items[idx].ref)
+    c -= items[idx].cost
+    j--
+  }
+  return { pts: bestPts, cost: bestC, chosen }
+}
+
+// Highest-points legal lineup whose players' summed cost <= budget. Enumerates
+// how FLEX/SUPERFLEX slots split across eligible positions, solves each
+// position as an exact-k budget knapsack, and convolves the positions over the
+// shared budget. Returns the chosen player array, or null if no legal lineup
+// fits. Each position's candidate list is pruned to the strongest + cheapest
+// players (the only ones an optimum can use), keeping the DP small and exact
+// in practice.
+function optimizeAffordableLineup(byPosItems, rc, budget) {
+  const fEduc = compositions(rc.FLEX || 0, FLEX_ELIGIBLE_DREAM.FLEX.length)
+  const sEduc = compositions(rc.SUPERFLEX || 0, FLEX_ELIGIBLE_DREAM.SUPERFLEX.length)
+  let best = null
+
+  for (const fd of fEduc) {
+    for (const sd of sEduc) {
+      const need = {
+        QB: (rc.QB || 0) + sd[0],
+        RB: (rc.RB || 0) + fd[0] + sd[1],
+        WR: (rc.WR || 0) + fd[1] + sd[2],
+        TE: (rc.TE || 0) + fd[2] + sd[3],
+        K: rc.K || 0,
+        DST: rc.DST || 0,
+      }
+      const positions = Object.keys(need).filter(p => need[p] > 0)
+      // Per-position arr[c] = max pts choosing exactly need[p] with cost <= c.
+      const arrs = []
+      let feasible = true
+      for (const pos of positions) {
+        const items = byPosItems[pos] || []
+        if (items.length < need[pos]) { feasible = false; break }
+        const arr = bestKCurve(items, need[pos], budget)
+        if (arr[budget] === -Infinity) { feasible = false; break } // can't fit even at full budget
+        arrs.push({ pos, need: need[pos], arr })
+      }
+      if (!feasible || arrs.length === 0) continue
+
+      // Convolve positions over the budget, tracking each position's allotment.
+      let comb = arrs[0].arr
+      const splits = []
+      for (let i = 1; i < arrs.length; i++) {
+        const next = arrs[i].arr
+        const nc = new Float64Array(budget + 1).fill(-Infinity)
+        const argx = new Int32Array(budget + 1).fill(0)
+        for (let c = 0; c <= budget; c++) {
+          let bp = -Infinity, bx = 0
+          for (let x = 0; x <= c; x++) {
+            const a = comb[c - x], b = next[x]
+            if (a !== -Infinity && b !== -Infinity && a + b > bp) { bp = a + b; bx = x }
+          }
+          nc[c] = bp
+          argx[c] = bx
+        }
+        comb = nc
+        splits.push(argx)
+      }
+
+      const totalPts = comb[budget]
+      if (totalPts === -Infinity) continue
+      if (!best || totalPts > best.pts) {
+        // Backtrack per-position budget allotments.
+        const alloc = new Array(arrs.length).fill(0)
+        let c = budget
+        for (let i = arrs.length - 1; i >= 1; i--) {
+          const x = splits[i - 1][c]
+          alloc[i] = x
+          c -= x
+        }
+        alloc[0] = c
+        const chosen = []
+        for (let i = 0; i < arrs.length; i++) {
+          const r = bestKWithinBudget(byPosItems[arrs[i].pos], arrs[i].need, alloc[i])
+          if (r) chosen.push(...r.chosen)
+        }
+        best = { pts: totalPts, chosen }
+      }
+    }
+  }
+  return best ? best.chosen : null
+}
+
+// Full dp[k] curve: row[c] = max pts choosing exactly k with cost <= c.
+function bestKCurve(items, k, budget) {
+  const NEG = -Infinity
+  const dp = Array.from({ length: k + 1 }, () => new Float64Array(budget + 1).fill(NEG))
+  for (let c = 0; c <= budget; c++) dp[0][c] = 0
+  for (const it of items) {
+    const w = it.cost
+    if (w > budget) continue
+    for (let j = k; j >= 1; j--) {
+      for (let c = budget; c >= w; c--) {
+        const cand = dp[j - 1][c - w]
+        if (cand !== NEG && cand + it.pts > dp[j][c]) dp[j][c] = cand + it.pts
+      }
+    }
+  }
+  return dp[k]
+}
+
+// The best legal starting lineup from the whole pool (every drafted player +
+// still-available free agents), chosen by projected points. With a finite
+// `budget`, returns the highest-points lineup whose players' summed cost fits
+// that budget ("the best starters you could have bought for $budget at cost");
+// unbounded otherwise. Returns ordered starter rows ({ slotLabel, player }), a
+// meta map (playerId -> { owner, cost, drafted }), and lineup totals. Cost is
+// the drafted purchase price, or estimatedValue for free agents (floored $1).
+export function buildDreamTeam(allTeams, availablePlayers, rosterPositions, budget = Infinity) {
   const rc = rosterPositions || {}
   const meta = new Map()
   const pool = []
@@ -600,17 +751,50 @@ export function buildDreamTeam(allTeams, availablePlayers, rosterPositions) {
     meta.set(p.id, { owner: 'FA', cost: p.estimatedValue ?? 0, drafted: false })
   }
 
-  const { slots } = getLineupSlots({ roster: pool }, rc)
-  const rows = []
-  for (const slotType of SLOT_ORDER) {
-    const count = rc[slotType] || 0
-    if (!count) continue
-    const label = slotType === 'SUPERFLEX' ? 'SF' : slotType
-    const filled = slots[slotType] || []
-    for (let i = 0; i < count; i++) rows.push({ slotLabel: label, player: filled[i] || null })
+  const costOf = (p) => Math.max(1, Math.round(meta.get(p.id)?.cost || 0))
+  const rowsFromPlayers = (players) => {
+    const { slots } = getLineupSlots({ roster: players }, rc)
+    const rows = []
+    for (const slotType of SLOT_ORDER) {
+      const count = rc[slotType] || 0
+      if (!count) continue
+      const label = slotType === 'SUPERFLEX' ? 'SF' : slotType
+      const filled = slots[slotType] || []
+      for (let i = 0; i < count; i++) rows.push({ slotLabel: label, player: filled[i] || null })
+    }
+    return rows
+  }
+
+  // Unconstrained optimum (best player per slot). If it already fits the
+  // budget — or there's no budget — we're done.
+  const dreamSlots = getStartingLineup({ roster: pool }, rc)
+  const dreamCost = dreamSlots.reduce((s, p) => s + costOf(p), 0)
+
+  let rows
+  if (!Number.isFinite(budget) || dreamCost <= budget) {
+    rows = rowsFromPlayers(pool)
+  } else {
+    // Budget-constrained: prune each position to its strongest + cheapest
+    // candidates, then solve the knapsack.
+    const byPosItems = {}
+    for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DST']) {
+      const players = pool.filter(p => p.position === pos)
+      const byPts = [...players].sort((a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0)).slice(0, 24)
+      const byCost = [...players].sort((a, b) => costOf(a) - costOf(b)).slice(0, 10)
+      const seen = new Set()
+      const items = []
+      for (const p of [...byPts, ...byCost]) {
+        if (seen.has(p.id)) continue
+        seen.add(p.id)
+        items.push({ ref: p, cost: costOf(p), pts: p.projectedPoints || 0 })
+      }
+      byPosItems[pos] = items
+    }
+    const chosen = optimizeAffordableLineup(byPosItems, rc, Math.floor(budget))
+    rows = chosen ? rowsFromPlayers(chosen) : rowsFromPlayers(pool)
   }
 
   const totalPoints = rows.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
-  const totalCost = rows.reduce((s, r) => s + (r.player ? meta.get(r.player.id)?.cost || 0 : 0), 0)
-  return { rows, meta, totalPoints, totalCost }
+  const totalCost = rows.reduce((s, r) => s + (r.player ? costOf(r.player) : 0), 0)
+  return { rows, meta, totalPoints, totalCost, budget, overBudget: Number.isFinite(budget) && totalCost > budget }
 }

@@ -1484,12 +1484,15 @@ function PositionalStrengthsTab({ allTeams, rosterPositions, replacementLevels, 
 function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }) {
   const [selectedTeamId, setSelectedTeamId] = useState(humanTeam?.id || allTeams[0]?.id)
 
+  const team = allTeams.find(t => t.id === selectedTeamId) || allTeams[0]
+  const budget = team?.budget ?? 200
+
+  // Best starting lineup buyable for this team's budget at cost.
   const dream = useMemo(
-    () => buildDreamTeam(allTeams, availablePlayers, rosterPositions),
-    [allTeams, availablePlayers, rosterPositions]
+    () => buildDreamTeam(allTeams, availablePlayers, rosterPositions, budget),
+    [allTeams, availablePlayers, rosterPositions, budget]
   )
 
-  const team = allTeams.find(t => t.id === selectedTeamId) || allTeams[0]
   const yourStarters = useMemo(
     () => buildRosterSlots(team, rosterPositions).filter(s => s.isStarter),
     [team, rosterPositions]
@@ -1522,9 +1525,9 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
 
       <div className="dream-summary">
         <div className="dream-stat">
-          <div className="dream-stat-label">Dream Team pts</div>
+          <div className="dream-stat-label">Best lineup pts</div>
           <div className="dream-stat-value">{dream.totalPoints.toFixed(0)}</div>
-          <div className="dream-stat-sub">would cost ${dream.totalCost}</div>
+          <div className="dream-stat-sub">${dream.totalCost} of ${budget} budget</div>
         </div>
         <div className="dream-stat">
           <div className="dream-stat-label">{team.name} pts</div>

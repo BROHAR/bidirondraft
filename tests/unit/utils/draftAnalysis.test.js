@@ -938,3 +938,44 @@ describe('buildDreamTeam', () => {
     expect(meta.get('dup-qb')).toMatchObject({ owner: 'A', drafted: true, cost: 25 })
   })
 })
+
+describe('buildDreamTeam (budget-constrained)', () => {
+  // 2-slot lineup, no flex, to make the knapsack hand-checkable.
+  const rc = { QB: 1, RB: 1 }
+  const team = makeTeam({
+    id: 'A', name: 'A', roster: [
+      makePlayer({ id: 'qbA', position: 'QB', projectedPoints: 300, purchasePrice: 9 }),
+      makePlayer({ id: 'qbB', position: 'QB', projectedPoints: 250, purchasePrice: 3 }),
+      makePlayer({ id: 'rbA', position: 'RB', projectedPoints: 200, purchasePrice: 9 }),
+      makePlayer({ id: 'rbB', position: 'RB', projectedPoints: 150, purchasePrice: 3 }),
+    ],
+  })
+
+  it('returns the unconstrained best when the budget is ample', () => {
+    const res = buildDreamTeam([team], [], rc, 1000)
+    expect(res.totalPoints).toBe(500) // qbA + rbA
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbA', 'rbA'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('picks the best legal lineup within budget at cost', () => {
+    // Unconstrained best (qbA+rbA = 500) costs 18 > 10. The studs can't be
+    // paired with anything affordable, so the optimum is qbB+rbB = 400 @ $6.
+    const res = buildDreamTeam([team], [], rc, 10)
+    expect(res.totalCost).toBeLessThanOrEqual(10)
+    expect(res.totalPoints).toBe(400)
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbB', 'rbB'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('flags overBudget when even the cheapest legal lineup does not fit', () => {
+    // Cheapest lineup is qbB+rbB = $6; budget 4 cannot afford two slots.
+    const res = buildDreamTeam([team], [], rc, 4)
+    expect(res.overBudget).toBe(true)
+  })
+
+  it('defaults to unconstrained when no budget is passed', () => {
+    const res = buildDreamTeam([team], [], rc)
+    expect(res.totalPoints).toBe(500)
+  })
+})
