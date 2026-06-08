@@ -23,6 +23,10 @@ import {
   getReplacementLevels,
   getPlayerVORP,
   getTeamVORP,
+  getLineupSlots,
+  getPositionalRankScores,
+  buildPositionalRadar,
+  getPowerRankings,
 } from '../../../src/utils/draftAnalysis.js'
 
 function makePlayer(overrides = {}) {
@@ -674,5 +678,200 @@ describe('getTeamVORP', () => {
 
   it('returns 0 for an empty roster', () => {
     expect(getTeamVORP(makeTeam({ roster: [] }), { WR: 200 })).toBe(0)
+  })
+})
+
+// ─── getLineupSlots ─────────────────────────────────────────────────────────
+
+describe('getLineupSlots', () => {
+  const rc = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DST: 1, BENCH: 6 }
+
+  it('fills base slots, then FLEX with the best leftover RB/WR/TE', () => {
+    const roster = [
+      makePlayer({ id: 'qb', position: 'QB', projectedPoints: 300 }),
+      makePlayer({ id: 'rb1', position: 'RB', projectedPoints: 250 }),
+      makePlayer({ id: 'rb2', position: 'RB', projectedPoints: 200 }),
+      makePlayer({ id: 'rb3', position: 'RB', projectedPoints: 190 }), // best leftover → FLEX
+      makePlayer({ id: 'wr1', position: 'WR', projectedPoints: 180 }),
+      makePlayer({ id: 'wr2', position: 'WR', projectedPoints: 170 }),
+      makePlayer({ id: 'te', position: 'TE', projectedPoints: 120 }),
+      makePlayer({ id: 'k', position: 'K', projectedPoints: 130 }),
+      makePlayer({ id: 'dst', position: 'DST', projectedPoints: 110 }),
+      makePlayer({ id: 'wr3', position: 'WR', projectedPoints: 90 }), // bench
+    ]
+    const { slots, bench, starterIds } = getLineupSlots(makeTeam({ roster }), rc)
+    expect(slots.RB.map(p => p.id)).toEqual(['rb1', 'rb2'])
+    expect(slots.FLEX.map(p => p.id)).toEqual(['rb3']) // 190 beats wr3 90
+    expect(slots.QB.map(p => p.id)).toEqual(['qb'])
+    expect(bench.map(p => p.id)).toEqual(['wr3'])
+    expect(starterIds.has('rb3')).toBe(true)
+    expect(starterIds.has('wr3')).toBe(false)
+  })
+
+  it('fills SUPERFLEX with the best leftover incl QB', () => {
+    const sf = { QB: 1, RB: 1, WR: 1, TE: 1, SUPERFLEX: 1, K: 1, DST: 1, BENCH: 2 }
+    const roster = [
+      makePlayer({ id: 'qb1', position: 'QB', projectedPoints: 320 }),
+      makePlayer({ id: 'qb2', position: 'QB', projectedPoints: 300 }), // leftover QB → SF
+      makePlayer({ id: 'rb1', position: 'RB', projectedPoints: 200 }),
+      makePlayer({ id: 'wr1', position: 'WR', projectedPoints: 180 }),
+      makePlayer({ id: 'te1', position: 'TE', projectedPoints: 120 }),
+    ]
+    const { slots } = getLineupSlots(makeTeam({ roster }), sf)
+    expect(slots.SUPERFLEX.map(p => p.id)).toEqual(['qb2'])
+  })
+
+  it('handles an empty roster without throwing', () => {
+    const { slots, bench } = getLineupSlots(makeTeam({ roster: [] }), rc)
+    expect(bench).toEqual([])
+    expect(slots.QB).toEqual([])
+  })
+})
+
+// ─── getPositionalRankScores ────────────────────────────────────────────────
+
+describe('getPositionalRankScores', () => {
+  it('scores the best player at a position highest (total) down to 1', () => {
+    const pool = [
+      makePlayer({ id: 'wr1', position: 'WR', projectedPoints: 300 }),
+      makePlayer({ id: 'wr2', position: 'WR', projectedPoints: 200 }),
+      makePlayer({ id: 'wr3', position: 'WR', projectedPoints: 100 }),
+      makePlayer({ id: 'rb1', position: 'RB', projectedPoints: 250 }),
+    ]
+    const scores = getPositionalRankScores(pool)
+    expect(scores.get('wr1')).toBe(3) // 3 WRs, best
+    expect(scores.get('wr2')).toBe(2)
+    expect(scores.get('wr3')).toBe(1)
+    expect(scores.get('rb1')).toBe(1) // only RB
+  })
+
+  it('is safe on empty / null input', () => {
+    expect(getPositionalRankScores([]).size).toBe(0)
+    expect(getPositionalRankScores(null).size).toBe(0)
+  })
+})
+
+// ─── buildPositionalRadar ───────────────────────────────────────────────────
+
+describe('buildPositionalRadar', () => {
+  const rc = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DST: 1, BENCH: 2 }
+
+  function teamWith(id, pts) {
+    // pts = { QB, RB:[..], WR:[..], TE, K, DST, benchRB? }
+    const roster = []
+    roster.push(makePlayer({ id: `${id}-qb`, position: 'QB', projectedPoints: pts.QB }))
+    ;(pts.RB || []).forEach((p, i) => roster.push(makePlayer({ id: `${id}-rb${i}`, position: 'RB', projectedPoints: p })))
+    ;(pts.WR || []).forEach((p, i) => roster.push(makePlayer({ id: `${id}-wr${i}`, position: 'WR', projectedPoints: p })))
+    roster.push(makePlayer({ id: `${id}-te`, position: 'TE', projectedPoints: pts.TE }))
+    roster.push(makePlayer({ id: `${id}-k`, position: 'K', projectedPoints: pts.K }))
+    roster.push(makePlayer({ id: `${id}-dst`, position: 'DST', projectedPoints: pts.DST }))
+    return makeTeam({ id, name: id, roster })
+  }
+
+  const teamA = teamWith('A', { QB: 300, RB: [250, 200, 150], WR: [180, 170], TE: 120, K: 130, DST: 110 })
+  const teamB = teamWith('B', { QB: 200, RB: [150, 140], WR: [220, 210], TE: 90, K: 120, DST: 100 })
+  const teams = [teamA, teamB]
+
+  it('lists axes from the roster config (incl FLEX, excl BENCH)', () => {
+    const { axes } = buildPositionalRadar(teams, rc, { stat: 'points' })
+    expect(axes).toEqual(['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DST'])
+    expect(axes).not.toContain('BENCH')
+  })
+
+  it('points: base axes use base-slot occupants under "starters"', () => {
+    const { byTeamId } = buildPositionalRadar(teams, rc, { stat: 'points', filter: 'starters' })
+    // A's RB axis = top 2 RBs (250+200); the leftover RB 150 fills FLEX
+    // (WR 180/170 are taken by the 2 WR slots, so nothing beats 150).
+    expect(byTeamId.A.values.RB).toBe(450)
+    expect(byTeamId.A.values.FLEX).toBe(150)
+  })
+
+  it('points: "all" counts every player at the base position', () => {
+    const { byTeamId } = buildPositionalRadar(teams, rc, { stat: 'points', filter: 'all' })
+    expect(byTeamId.A.values.RB).toBe(600) // 250+200+150
+  })
+
+  it('points: "bench" excludes starters', () => {
+    const { byTeamId } = buildPositionalRadar(teams, rc, { stat: 'points', filter: 'bench' })
+    // A: RBs 250,200 start; 150 is the FLEX starter → no bench RB.
+    expect(byTeamId.A.values.RB).toBe(0)
+  })
+
+  it('FLEX under "all"/"bench" = best bench flex-eligible not starting', () => {
+    // Give A a clear bench RB (100) below the FLEX starter (150).
+    const a2 = teamWith('A2', { QB: 300, RB: [250, 200, 150, 100], WR: [180, 170], TE: 120, K: 130, DST: 110 })
+    const { byTeamId } = buildPositionalRadar([a2], rc, { stat: 'points', filter: 'bench' })
+    // Starters: RB 250,200; FLEX 150. Bench flex-eligible best = RB 100.
+    expect(byTeamId.A2.values.FLEX).toBe(100)
+  })
+
+  it('normalizes each axis to the field max and ranks teams', () => {
+    const { byTeamId } = buildPositionalRadar(teams, rc, { stat: 'points', filter: 'starters' })
+    // QB: A 300 vs B 200 → A normalized 1, rank 1; B 0.667, rank 2.
+    expect(byTeamId.A.normalized.QB).toBeCloseTo(1, 5)
+    expect(byTeamId.B.normalized.QB).toBeCloseTo(200 / 300, 5)
+    expect(byTeamId.A.ranks.QB).toEqual({ rank: 1, of: 2 })
+    expect(byTeamId.B.ranks.QB).toEqual({ rank: 2, of: 2 })
+    // WR: B (220+210=430) beats A (180+170=350).
+    expect(byTeamId.B.ranks.WR).toEqual({ rank: 1, of: 2 })
+  })
+
+  it('vorp stat sums player VORP per axis', () => {
+    const repl = { QB: 100, RB: 100, WR: 100, TE: 100, K: 100, DST: 100 }
+    const { byTeamId } = buildPositionalRadar(teams, rc, { stat: 'vorp', filter: 'starters', replacementLevels: repl })
+    // A QB 300 - 100 = 200.
+    expect(byTeamId.A.values.QB).toBe(200)
+  })
+
+  it('guards divide-by-zero when an axis is empty across the field', () => {
+    const empty = makeTeam({ id: 'E', name: 'E', roster: [] })
+    const { byTeamId, fieldMax } = buildPositionalRadar([empty], rc, { stat: 'points' })
+    expect(fieldMax.QB).toBe(0)
+    expect(byTeamId.E.normalized.QB).toBe(0)
+    expect(Number.isNaN(byTeamId.E.normalized.QB)).toBe(false)
+  })
+})
+
+// ─── getPowerRankings ───────────────────────────────────────────────────────
+
+describe('getPowerRankings', () => {
+  it('orders teams by average per-axis rank, best (lowest) first', () => {
+    const radar = {
+      axes: ['QB', 'RB'],
+      byTeamId: {
+        A: { ranks: { QB: { rank: 1, of: 3 }, RB: { rank: 1, of: 3 } } }, // avg 1.0
+        B: { ranks: { QB: { rank: 2, of: 3 }, RB: { rank: 3, of: 3 } } }, // avg 2.5
+        C: { ranks: { QB: { rank: 3, of: 3 }, RB: { rank: 2, of: 3 } } }, // avg 2.5
+      },
+    }
+    const out = getPowerRankings(radar)
+    expect(out.map(r => r.teamId)).toEqual(['A', 'B', 'C'])
+    expect(out[0]).toMatchObject({ teamId: 'A', avgRank: 1, rank: 1 })
+    // B and C tie at 2.5 → share power rank 2
+    expect(out[1].rank).toBe(2)
+    expect(out[2].rank).toBe(2)
+    expect(out[1].avgRank).toBeCloseTo(2.5, 5)
+  })
+
+  it('is safe on empty radar', () => {
+    expect(getPowerRankings({})).toEqual([])
+    expect(getPowerRankings(null)).toEqual([])
+  })
+
+  it('matches a real buildPositionalRadar result', () => {
+    const mk = (id, qb, rb) => makeTeam({
+      id,
+      name: id,
+      roster: [
+        makePlayer({ id: `${id}-qb`, position: 'QB', projectedPoints: qb }),
+        makePlayer({ id: `${id}-rb`, position: 'RB', projectedPoints: rb }),
+      ],
+    })
+    const teams = [mk('A', 300, 100), mk('B', 100, 300)]
+    const radar = buildPositionalRadar(teams, { QB: 1, RB: 1 }, { stat: 'points', filter: 'starters' })
+    const out = getPowerRankings(radar)
+    // A: QB 1st, RB 2nd → 1.5; B: QB 2nd, RB 1st → 1.5 → tie at rank 1
+    expect(out.every(r => r.avgRank === 1.5)).toBe(true)
+    expect(out.every(r => r.rank === 1)).toBe(true)
   })
 })

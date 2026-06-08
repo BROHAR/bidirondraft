@@ -21,10 +21,14 @@ import {
   getPlayerVORP,
   getTeamVORP,
   generateValueCostTakeaways,
+  getLineupSlots,
+  getPositionalRankScores,
+  buildPositionalRadar,
+  getPowerRankings,
 } from '../utils/draftAnalysis.js'
 import '../styles/components/postDraftAnalysis.css'
 
-const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Draft Board']
+const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Draft Board']
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 const PRICE_TIERS = [
   { label: '$1–10', min: 1, max: 10 },
@@ -65,45 +69,20 @@ function InfoTip({ text, label }) {
 
 function buildRosterSlots(team, rosterPositions) {
   const rc = rosterPositions || {}
-  const sort = (a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0)
-  const byPos = {
-    QB:  [...team.roster].filter(p => p.position === 'QB').sort(sort),
-    RB:  [...team.roster].filter(p => p.position === 'RB').sort(sort),
-    WR:  [...team.roster].filter(p => p.position === 'WR').sort(sort),
-    TE:  [...team.roster].filter(p => p.position === 'TE').sort(sort),
-    K:   [...team.roster].filter(p => p.position === 'K').sort(sort),
-    DST: [...team.roster].filter(p => p.position === 'DST').sort(sort),
-  }
-  const used = { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 }
-  const starterIds = new Set()
+  const { slots: occupants, bench } = getLineupSlots(team, rosterPositions)
   const slots = []
 
   for (const slotType of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST']) {
     const count = rc[slotType] || 0
     if (!count) continue
-
-    if (slotType === 'FLEX' || slotType === 'SUPERFLEX') {
-      const pool = (slotType === 'FLEX'
-        ? [...byPos.RB.slice(used.RB), ...byPos.WR.slice(used.WR), ...byPos.TE.slice(used.TE)]
-        : [...byPos.QB.slice(used.QB), ...byPos.RB.slice(used.RB), ...byPos.WR.slice(used.WR), ...byPos.TE.slice(used.TE)]
-      ).sort(sort)
-      for (let i = 0; i < count; i++) {
-        const p = pool[i] || null
-        if (p) { starterIds.add(p.id); used[p.position] = (used[p.position] || 0) + 1 }
-        slots.push({ slotLabel: slotType === 'SUPERFLEX' ? 'SF' : 'FLEX', player: p, isStarter: true })
-      }
-    } else {
-      for (let i = 0; i < count; i++) {
-        const p = byPos[slotType]?.[used[slotType]] || null
-        if (p) { starterIds.add(p.id); used[slotType]++ }
-        slots.push({ slotLabel: slotType, player: p, isStarter: true })
-      }
+    const label = slotType === 'SUPERFLEX' ? 'SF' : slotType
+    const filled = occupants[slotType] || []
+    for (let i = 0; i < count; i++) {
+      slots.push({ slotLabel: label, player: filled[i] || null, isStarter: true })
     }
   }
 
-  team.roster.filter(p => !starterIds.has(p.id)).forEach(p =>
-    slots.push({ slotLabel: 'BENCH', player: p, isStarter: false })
-  )
+  bench.forEach(p => slots.push({ slotLabel: 'BENCH', player: p, isStarter: false }))
   return slots
 }
 
@@ -1283,6 +1262,222 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
   )
 }
 
+// ---- Tab: Positional Strengths (spider chart) --------------------------
+
+const STAT_OPTIONS = [
+  { key: 'points', label: 'Points' },
+  { key: 'vorp', label: 'VORP' },
+  { key: 'rank', label: 'Rank' },
+]
+const FILTER_OPTIONS = [
+  { key: 'starters', label: 'Starters' },
+  { key: 'all', label: 'All' },
+  { key: 'bench', label: 'Bench' },
+]
+const AXIS_FULL_LABEL = { FLEX: 'FLEX', SUPERFLEX: 'SF', QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'K', DST: 'DST' }
+
+// Hand-rolled SVG radar. `axes` is the ordered list of position labels;
+// `team`/`avg` are arrays of 0..1 normalized radii aligned to `axes`.
+function RadarChart({ axes, team, avg }) {
+  const SIZE = 320
+  const cx = SIZE / 2
+  const cy = SIZE / 2
+  const R = 118
+  const n = axes.length
+  if (n < 3) {
+    return <div className="radar-empty">Need at least 3 positions to chart.</div>
+  }
+
+  const angle = (i) => (Math.PI * 2 * i) / n - Math.PI / 2 // start at top, clockwise
+  const point = (i, r) => [cx + r * R * Math.cos(angle(i)), cy + r * R * Math.sin(angle(i))]
+  const polygon = (radii) => radii.map((r, i) => point(i, r).join(',')).join(' ')
+
+  const rings = [0.25, 0.5, 0.75, 1]
+
+  return (
+    <svg className="radar-svg" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="Positional strength radar">
+      {/* grid rings */}
+      {rings.map(r => (
+        <polygon
+          key={`ring-${r}`}
+          className="radar-ring"
+          points={polygon(axes.map(() => r))}
+        />
+      ))}
+      {/* spokes + labels */}
+      {axes.map((ax, i) => {
+        const [x, y] = point(i, 1)
+        const [lx, ly] = point(i, 1.16)
+        return (
+          <g key={`axis-${ax}`}>
+            <line className="radar-spoke" x1={cx} y1={cy} x2={x} y2={y} />
+            <text
+              className="radar-axis-label"
+              x={lx}
+              y={ly}
+              textAnchor={lx > cx + 1 ? 'start' : lx < cx - 1 ? 'end' : 'middle'}
+              dominantBaseline={ly > cy + 1 ? 'hanging' : ly < cy - 1 ? 'auto' : 'middle'}
+            >
+              {AXIS_FULL_LABEL[ax] || ax}
+            </text>
+          </g>
+        )
+      })}
+      {/* league-average reference polygon */}
+      {avg && <polygon className="radar-avg" points={polygon(avg)} />}
+      {/* selected team polygon */}
+      <polygon className="radar-team" points={polygon(team)} />
+      {team.map((r, i) => {
+        const [x, y] = point(i, r)
+        return <circle key={`dot-${i}`} className="radar-dot" cx={x} cy={y} r={3} />
+      })}
+    </svg>
+  )
+}
+
+function rankTierClass(rank, of) {
+  if (!of) return 'neutral'
+  if (rank <= of / 3) return 'value'
+  if (rank > (of * 2) / 3) return 'overpay'
+  return 'neutral'
+}
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
+function PositionalStrengthsTab({ allTeams, rosterPositions, replacementLevels, availablePlayers, humanTeam }) {
+  const [selectedTeamId, setSelectedTeamId] = useState(humanTeam?.id || allTeams[0]?.id)
+  const [filter, setFilter] = useState('starters')
+  const [stat, setStat] = useState('points')
+
+  const rankScores = useMemo(() => {
+    const pool = [...(availablePlayers || []), ...allTeams.flatMap(t => t.roster)]
+    return getPositionalRankScores(pool)
+  }, [availablePlayers, allTeams])
+
+  const radar = useMemo(
+    () => buildPositionalRadar(allTeams, rosterPositions, { stat, filter, replacementLevels, rankScores }),
+    [allTeams, rosterPositions, stat, filter, replacementLevels, rankScores]
+  )
+
+  const powerRankings = useMemo(() => getPowerRankings(radar), [radar])
+
+  const team = allTeams.find(t => t.id === selectedTeamId) || allTeams[0]
+  const teamData = team ? radar.byTeamId[team.id] : null
+
+  if (!teamData || radar.axes.length === 0) {
+    return <div className="analysis-section"><p style={{ color: 'var(--fg3)' }}>No positional data to chart.</p></div>
+  }
+
+  const teamRadii = radar.axes.map(ax => teamData.normalized[ax] || 0)
+  const avgRadii = radar.axes.map(ax => radar.fieldAvgNormalized[ax] || 0)
+  const statLabel = STAT_OPTIONS.find(s => s.key === stat).label
+
+  const fmtValue = (v) => stat === 'points' ? v.toFixed(0) : stat === 'vorp' ? Math.round(v) : v.toFixed(0)
+
+  return (
+    <div className="radar-tab">
+      <div className="radar-controls">
+        <div className="radar-control">
+          <label className="radar-control-label">Team</label>
+          <select
+            className="va-team-select"
+            value={selectedTeamId}
+            onChange={(e) => setSelectedTeamId(e.target.value)}
+          >
+            {allTeams.map(t => (
+              <option key={t.id} value={t.id}>{teamStrategyLabel(t)} — {t.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="radar-control">
+          <label className="radar-control-label">Players</label>
+          <div className="radar-toggle">
+            {FILTER_OPTIONS.map(o => (
+              <button
+                key={o.key}
+                className={`sort-btn${filter === o.key ? ' active' : ''}`}
+                onClick={() => setFilter(o.key)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="radar-control">
+          <label className="radar-control-label">Stat</label>
+          <div className="radar-toggle">
+            {STAT_OPTIONS.map(o => (
+              <button
+                key={o.key}
+                className={`sort-btn${stat === o.key ? ' active' : ''}`}
+                onClick={() => setStat(o.key)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="radar-layout">
+        <div className="radar-chart-wrap">
+          <RadarChart axes={radar.axes} team={teamRadii} avg={avgRadii} />
+          <div className="radar-legend">
+            <span className="radar-legend-item"><i className="radar-swatch team" />{team.name}</span>
+            <span className="radar-legend-item"><i className="radar-swatch avg" />League avg</span>
+          </div>
+        </div>
+
+        <div className="radar-rank-panel">
+          <div className="radar-rank-title">
+            League rank by {statLabel}
+            <span className="radar-rank-sub">{FILTER_OPTIONS.find(f => f.key === filter).label}</span>
+          </div>
+          {radar.axes.map(ax => {
+            const r = teamData.ranks[ax] || { rank: 0, of: 0 }
+            return (
+              <div key={ax} className="radar-rank-row">
+                <span className={`pos-badge ${ax === 'SUPERFLEX' ? 'QB' : ax}`}>{AXIS_FULL_LABEL[ax] || ax}</span>
+                <span className={`radar-rank-value ${rankTierClass(r.rank, r.of)}`}>
+                  {r.rank ? ordinal(r.rank) : '—'}<span className="radar-rank-of"> of {r.of}</span>
+                </span>
+                <span className="radar-rank-stat">{fmtValue(teamData.values[ax] || 0)}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="radar-power">
+        <div className="radar-power-title">
+          Power Rankings
+          <span className="radar-rank-sub">avg position rank · {statLabel} · {FILTER_OPTIONS.find(f => f.key === filter).label}</span>
+        </div>
+        <ol className="radar-power-list">
+          {powerRankings.map(row => {
+            const t = allTeams.find(x => x.id === row.teamId)
+            if (!t) return null
+            return (
+              <li
+                key={row.teamId}
+                className={`radar-power-row${t.id === team.id ? ' selected' : ''}${t.isHuman ? ' human' : ''}`}
+              >
+                <span className="radar-power-rank">{row.rank}</span>
+                <span className="radar-power-name">{t.name}<span className="radar-power-strat"> · {teamStrategyLabel(t)}</span></span>
+                <span className="radar-power-avg">{row.avgRank.toFixed(1)}</span>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
 // ---- Main component ----------------------------------------------------
 
 export default function PostDraftAnalysis({ onViewDraft }) {
@@ -1432,6 +1627,15 @@ export default function PostDraftAnalysis({ onViewDraft }) {
           />
         )}
         {activeTab === 5 && (
+          <PositionalStrengthsTab
+            allTeams={teams}
+            rosterPositions={rp}
+            replacementLevels={replacementLevels}
+            availablePlayers={availablePlayers}
+            humanTeam={humanTeam}
+          />
+        )}
+        {activeTab === 6 && (
           <DraftBoardTab
             draftHistory={draftHistory}
             allTeams={teams}
