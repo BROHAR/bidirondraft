@@ -978,4 +978,24 @@ describe('buildDreamTeam (budget-constrained)', () => {
     const res = buildDreamTeam([team], [], rc)
     expect(res.totalPoints).toBe(500)
   })
+
+  it('reserves $1 per bench spot, shrinking the starter budget', () => {
+    // 2 bench spots reserve $2, so a $12 budget leaves $10 for starters. The
+    // studs (qbA+rbA = $18) still can't fit, forcing qbB+rbB = 400 @ $6.
+    const rcBench = { QB: 1, RB: 1, BENCH: 2 }
+    const res = buildDreamTeam([team], [], rcBench, 12)
+    expect(res.benchReserve).toBe(2)
+    expect(res.starterBudget).toBe(10)
+    expect(res.totalPoints).toBe(400)
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbB', 'rbB'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('flags overBudget when the bench reserve leaves too little for starters', () => {
+    // Cheapest lineup is qbB+rbB = $6; a $7 budget with 2 bench spots reserves
+    // $2, leaving only $5 — not enough for the cheapest legal lineup.
+    const res = buildDreamTeam([team], [], { QB: 1, RB: 1, BENCH: 2 }, 7)
+    expect(res.starterBudget).toBe(5)
+    expect(res.overBudget).toBe(true)
+  })
 })

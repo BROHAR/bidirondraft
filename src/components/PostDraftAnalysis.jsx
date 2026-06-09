@@ -1527,7 +1527,10 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
         <div className="dream-stat">
           <div className="dream-stat-label">Best lineup pts</div>
           <div className="dream-stat-value">{dream.totalPoints.toFixed(0)}</div>
-          <div className="dream-stat-sub">${dream.totalCost} of ${budget} budget</div>
+          <div className="dream-stat-sub">
+            ${dream.totalCost} of ${dream.starterBudget}
+            {dream.benchReserve > 0 ? ` (−$${dream.benchReserve} bench)` : ''}
+          </div>
         </div>
         <div className="dream-stat">
           <div className="dream-stat-label">{team.name} pts</div>

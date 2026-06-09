@@ -732,11 +732,17 @@ function bestKCurve(items, k, budget) {
 // still-available free agents), chosen by projected points. With a finite
 // `budget`, returns the highest-points lineup whose players' summed cost fits
 // that budget ("the best starters you could have bought for $budget at cost");
-// unbounded otherwise. Returns ordered starter rows ({ slotLabel, player }), a
-// meta map (playerId -> { owner, cost, drafted }), and lineup totals. Cost is
-// the drafted purchase price, or estimatedValue for free agents (floored $1).
+// unbounded otherwise. The budget available for starters is the full budget
+// minus a $1 reservation per bench spot — a real roster still has to fill its
+// bench at a minimum bid of $1 each, so that money can't go toward starters.
+// Returns ordered starter rows ({ slotLabel, player }), a meta map
+// (playerId -> { owner, cost, drafted }), lineup totals, the starter budget
+// actually applied, and the bench reservation. Cost is the drafted purchase
+// price, or estimatedValue for free agents (floored $1).
 export function buildDreamTeam(allTeams, availablePlayers, rosterPositions, budget = Infinity) {
   const rc = rosterPositions || {}
+  const benchReserve = rc.BENCH || 0
+  const starterBudget = Number.isFinite(budget) ? Math.max(0, Math.floor(budget) - benchReserve) : budget
   const meta = new Map()
   const pool = []
   for (const t of allTeams || []) {
@@ -771,7 +777,7 @@ export function buildDreamTeam(allTeams, availablePlayers, rosterPositions, budg
   const dreamCost = dreamSlots.reduce((s, p) => s + costOf(p), 0)
 
   let rows
-  if (!Number.isFinite(budget) || dreamCost <= budget) {
+  if (!Number.isFinite(starterBudget) || dreamCost <= starterBudget) {
     rows = rowsFromPlayers(pool)
   } else {
     // Budget-constrained: prune each position to its strongest + cheapest
@@ -790,11 +796,20 @@ export function buildDreamTeam(allTeams, availablePlayers, rosterPositions, budg
       }
       byPosItems[pos] = items
     }
-    const chosen = optimizeAffordableLineup(byPosItems, rc, Math.floor(budget))
+    const chosen = optimizeAffordableLineup(byPosItems, rc, starterBudget)
     rows = chosen ? rowsFromPlayers(chosen) : rowsFromPlayers(pool)
   }
 
   const totalPoints = rows.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
   const totalCost = rows.reduce((s, r) => s + (r.player ? costOf(r.player) : 0), 0)
-  return { rows, meta, totalPoints, totalCost, budget, overBudget: Number.isFinite(budget) && totalCost > budget }
+  return {
+    rows,
+    meta,
+    totalPoints,
+    totalCost,
+    budget,
+    starterBudget,
+    benchReserve,
+    overBudget: Number.isFinite(starterBudget) && totalCost > starterBudget,
+  }
 }
