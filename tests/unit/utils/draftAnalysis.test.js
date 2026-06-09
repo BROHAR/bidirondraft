@@ -27,6 +27,7 @@ import {
   getPositionalRankScores,
   buildPositionalRadar,
   getPowerRankings,
+  buildDreamTeam,
 } from '../../../src/utils/draftAnalysis.js'
 
 function makePlayer(overrides = {}) {
@@ -873,5 +874,128 @@ describe('getPowerRankings', () => {
     // A: QB 1st, RB 2nd → 1.5; B: QB 2nd, RB 1st → 1.5 → tie at rank 1
     expect(out.every(r => r.avgRank === 1.5)).toBe(true)
     expect(out.every(r => r.rank === 1)).toBe(true)
+  })
+})
+
+// ─── buildDreamTeam ─────────────────────────────────────────────────────────
+
+describe('buildDreamTeam', () => {
+  const rc = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DST: 1 }
+
+  function fullTeam(id, scale) {
+    // scale multiplies points so different teams own different-strength players
+    return makeTeam({
+      id,
+      name: id,
+      roster: [
+        makePlayer({ id: `${id}-qb`, position: 'QB', projectedPoints: 300 * scale, purchasePrice: 30 }),
+        makePlayer({ id: `${id}-rb1`, position: 'RB', projectedPoints: 250 * scale, purchasePrice: 40 }),
+        makePlayer({ id: `${id}-rb2`, position: 'RB', projectedPoints: 200 * scale, purchasePrice: 20 }),
+        makePlayer({ id: `${id}-rb3`, position: 'RB', projectedPoints: 150 * scale, purchasePrice: 5 }),
+        makePlayer({ id: `${id}-wr1`, position: 'WR', projectedPoints: 220 * scale, purchasePrice: 35 }),
+        makePlayer({ id: `${id}-wr2`, position: 'WR', projectedPoints: 180 * scale, purchasePrice: 15 }),
+        makePlayer({ id: `${id}-te`, position: 'TE', projectedPoints: 120 * scale, purchasePrice: 10 }),
+        makePlayer({ id: `${id}-k`, position: 'K', projectedPoints: 130 * scale, purchasePrice: 1 }),
+        makePlayer({ id: `${id}-dst`, position: 'DST', projectedPoints: 110 * scale, purchasePrice: 2 }),
+      ],
+    })
+  }
+
+  it('picks the single best player at each slot across all teams', () => {
+    const strong = fullTeam('Strong', 1) // owns the best at every position
+    const weak = fullTeam('Weak', 0.5)
+    const { rows } = buildDreamTeam([strong, weak], [], rc)
+    const byLabel = {}
+    rows.forEach(r => { (byLabel[r.slotLabel] ||= []).push(r.player) })
+    expect(byLabel.QB[0].id).toBe('Strong-qb')
+    expect(byLabel.RB.map(p => p.id)).toEqual(['Strong-rb1', 'Strong-rb2']) // top 2 RBs
+    expect(byLabel.FLEX[0].id).toBe('Strong-rb3') // best leftover flex-eligible (150 > weak's)
+  })
+
+  it('includes free agents priced at estimatedValue', () => {
+    const team = fullTeam('A', 0.3) // weak roster
+    const fa = makePlayer({ id: 'fa-qb', position: 'QB', projectedPoints: 999, estimatedValue: 50 })
+    const { rows, meta } = buildDreamTeam([team], [fa], rc)
+    const qbRow = rows.find(r => r.slotLabel === 'QB')
+    expect(qbRow.player.id).toBe('fa-qb') // 999 beats everyone
+    expect(meta.get('fa-qb')).toMatchObject({ owner: 'FA', cost: 50, drafted: false })
+  })
+
+  it('reports total points and total cost of the dream lineup', () => {
+    const team = fullTeam('A', 1)
+    const { rows, totalPoints, totalCost, meta } = buildDreamTeam([team], [], rc)
+    const expectedPts = rows.reduce((s, r) => s + (r.player?.projectedPoints || 0), 0)
+    const expectedCost = rows.reduce((s, r) => s + (meta.get(r.player.id)?.cost || 0), 0)
+    expect(totalPoints).toBe(expectedPts)
+    expect(totalCost).toBe(expectedCost)
+  })
+
+  it('does not double-count a player listed both rostered and available', () => {
+    const p = makePlayer({ id: 'dup-qb', position: 'QB', projectedPoints: 400, purchasePrice: 25 })
+    const team = makeTeam({ id: 'A', name: 'A', roster: [p] })
+    const { meta } = buildDreamTeam([team], [p], { QB: 1 })
+    // drafted entry wins; FA dup ignored
+    expect(meta.get('dup-qb')).toMatchObject({ owner: 'A', drafted: true, cost: 25 })
+  })
+})
+
+describe('buildDreamTeam (budget-constrained)', () => {
+  // 2-slot lineup, no flex, to make the knapsack hand-checkable.
+  const rc = { QB: 1, RB: 1 }
+  const team = makeTeam({
+    id: 'A', name: 'A', roster: [
+      makePlayer({ id: 'qbA', position: 'QB', projectedPoints: 300, purchasePrice: 9 }),
+      makePlayer({ id: 'qbB', position: 'QB', projectedPoints: 250, purchasePrice: 3 }),
+      makePlayer({ id: 'rbA', position: 'RB', projectedPoints: 200, purchasePrice: 9 }),
+      makePlayer({ id: 'rbB', position: 'RB', projectedPoints: 150, purchasePrice: 3 }),
+    ],
+  })
+
+  it('returns the unconstrained best when the budget is ample', () => {
+    const res = buildDreamTeam([team], [], rc, 1000)
+    expect(res.totalPoints).toBe(500) // qbA + rbA
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbA', 'rbA'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('picks the best legal lineup within budget at cost', () => {
+    // Unconstrained best (qbA+rbA = 500) costs 18 > 10. The studs can't be
+    // paired with anything affordable, so the optimum is qbB+rbB = 400 @ $6.
+    const res = buildDreamTeam([team], [], rc, 10)
+    expect(res.totalCost).toBeLessThanOrEqual(10)
+    expect(res.totalPoints).toBe(400)
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbB', 'rbB'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('flags overBudget when even the cheapest legal lineup does not fit', () => {
+    // Cheapest lineup is qbB+rbB = $6; budget 4 cannot afford two slots.
+    const res = buildDreamTeam([team], [], rc, 4)
+    expect(res.overBudget).toBe(true)
+  })
+
+  it('defaults to unconstrained when no budget is passed', () => {
+    const res = buildDreamTeam([team], [], rc)
+    expect(res.totalPoints).toBe(500)
+  })
+
+  it('reserves $1 per bench spot, shrinking the starter budget', () => {
+    // 2 bench spots reserve $2, so a $12 budget leaves $10 for starters. The
+    // studs (qbA+rbA = $18) still can't fit, forcing qbB+rbB = 400 @ $6.
+    const rcBench = { QB: 1, RB: 1, BENCH: 2 }
+    const res = buildDreamTeam([team], [], rcBench, 12)
+    expect(res.benchReserve).toBe(2)
+    expect(res.starterBudget).toBe(10)
+    expect(res.totalPoints).toBe(400)
+    expect(res.rows.map(r => r.player.id).sort()).toEqual(['qbB', 'rbB'])
+    expect(res.overBudget).toBe(false)
+  })
+
+  it('flags overBudget when the bench reserve leaves too little for starters', () => {
+    // Cheapest lineup is qbB+rbB = $6; a $7 budget with 2 bench spots reserves
+    // $2, leaving only $5 — not enough for the cheapest legal lineup.
+    const res = buildDreamTeam([team], [], { QB: 1, RB: 1, BENCH: 2 }, 7)
+    expect(res.starterBudget).toBe(5)
+    expect(res.overBudget).toBe(true)
   })
 })

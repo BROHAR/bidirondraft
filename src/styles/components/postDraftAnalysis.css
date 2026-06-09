@@ -1722,3 +1722,126 @@
   font-size: var(--fs-sm);
   color: var(--fg3);
 }
+
+/* ---- Dream Team tab --------------------------------------------------- */
+
+.dream-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dream-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.dream-stat {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--gray-800);
+  border-radius: 6px;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.dream-stat-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+.dream-stat-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-2xl);
+  color: var(--fg1);
+}
+
+.dream-stat-sub {
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+
+.dream-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gray-800);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dream-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr 64px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--gray-900);
+}
+
+.dream-row:last-child { border-bottom: none; }
+
+.dream-head {
+  background: var(--bg-hud);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+.dream-row.owned {
+  background: #14241a;
+}
+
+.dream-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dream-cell-head { color: var(--fg2); }
+
+.dream-pname {
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dream-pmeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-numeric);
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+
+.dream-owner {
+  color: var(--fg3);
+  font-family: var(--font-body);
+  font-style: italic;
+}
+
+.dream-empty { color: var(--fg3); }
+
+.dream-delta,
+.dream-delta-head {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+  text-align: right;
+  color: var(--fg3);
+}
+
+.dream-delta.behind { color: var(--accent-negative); }
+.dream-delta.owned  { color: var(--accent-positive); }
+
+@media (max-width: 640px) {
+  .dream-summary { grid-template-columns: 1fr; }
+  .dream-row { grid-template-columns: 36px 1fr 1fr 44px; }
+}
