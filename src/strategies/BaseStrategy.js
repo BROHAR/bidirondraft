@@ -656,11 +656,17 @@ export class BaseStrategy {
     // Final safety check: prevent extreme overbids on low-value players — the
     // sanctioned endgame floor is the one exception, or it could never lift a
     // late-board $1-4 player above $3 and surplus would strand.
-    if (player.estimatedValue <= this.sd(4)) {
-      bidAmount = Math.min(bidAmount, Math.max(this.sd(3), endgameFloor))
+    const cheapFloor = player.estimatedValue <= this.sd(4) ? this.sd(3) : 0
+    if (cheapFloor) {
+      bidAmount = Math.min(bidAmount, Math.max(cheapFloor, endgameFloor))
     }
 
-    if (bidAmount > player.estimatedValue * 1.4 && bidAmount > endgameFloor) {
+    // Only a genuine over-cap warrants the diagnostic. Bids within a sanctioned
+    // floor — the endgame spend floor or the cheap-player $3 floor above (which
+    // routinely lifts a sub-$3 K/DST past 1.4× its tiny estimated value) — are
+    // intended, not anomalies; excluding them keeps the log signal, not noise.
+    const sanctionedFloor = Math.max(endgameFloor, cheapFloor)
+    if (bidAmount > player.estimatedValue * 1.4 && bidAmount > sanctionedFloor) {
       // eslint-disable-next-line no-console
       console.warn('[adraft] over-cap bid', {
         team: this.team?.name,

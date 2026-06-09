@@ -1,6 +1,27 @@
 .setup-screen {
-  max-width: 800px;
+  max-width: 1120px;
   margin: 0 auto;
+}
+
+/* Two-column layout: league/roster/timers on the left, customization,
+   auto-pilot, AI profiles and actions on the right — so the common case fits
+   without scrolling. Collapses to one column on narrow viewports. */
+.setup-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.setup-col {
+  min-width: 0;
+}
+
+@media (max-width: 880px) {
+  .setup-columns {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
 }
 
 .setup-screen .card h2,
@@ -125,36 +146,39 @@
   flex-wrap: wrap;
 }
 
+/* Actions stack vertically in the right column: a primary Start Draft, then
+   the two simulation tools, each with a short description. */
 .setup-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  margin-top: var(--space-5);
-  align-items: flex-start;
+  margin-top: var(--space-4);
 }
 
 .setup-actions .btn-large {
-  flex: 1;
+  width: 100%;
   margin-top: 0;
 }
 
-.simulate-action {
-  flex: 1;
+.action-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  padding: var(--space-3);
 }
 
-.simulate-action .btn-large {
-  width: 100%;
-}
-
-.simulate-hint {
-  font-family: var(--font-display);
-  font-size: var(--fs-xs);
-  letter-spacing: var(--ls-wide);
-  text-transform: uppercase;
+.action-desc {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
   color: var(--fg3);
-  text-align: center;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.action-desc strong {
+  color: var(--fg2);
 }
 
 .simulate-error {

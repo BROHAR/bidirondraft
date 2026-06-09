@@ -4,13 +4,21 @@ import DraftBoard from './components/DraftBoard'
 import SetupScreen from './components/SetupScreen'
 import TitleScreen from './components/TitleScreen'
 import PostDraftAnalysis from './components/PostDraftAnalysis'
+import MetaSimulationReport from './components/MetaSimulationReport'
+import MetaSimulationProgress from './components/MetaSimulationProgress'
 
 function App() {
   const draftState = useDraftStore(state => state.draftState)
+  const metaRunning = useDraftStore(state => state.metaSim.running)
+  const metaError = useDraftStore(state => state.metaSim.error)
   const [showDraftBoard, setShowDraftBoard] = useState(false)
 
   if (draftState === 'TITLE') {
     return <TitleScreen />
+  }
+
+  if (draftState === 'META_RESULTS') {
+    return <MetaSimulationReport />
   }
 
   if (draftState === 'COMPLETE' && !showDraftBoard) {
@@ -25,6 +33,7 @@ function App() {
       <main className="app-main">
         {draftState === 'SETUP' ? <SetupScreen /> : <DraftBoard />}
       </main>
+      {(metaRunning || metaError) && <MetaSimulationProgress />}
     </div>
   )
 }

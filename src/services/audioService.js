@@ -6,6 +6,12 @@ export class AudioService {
   }
 
   initAudioContext() {
+    // No Web Audio (and no window) in a Web Worker — the meta-simulation worker
+    // imports the engine, which imports this service. Bail quietly there.
+    if (typeof window === 'undefined') {
+      this.enabled = false
+      return
+    }
     try {
       // Create AudioContext on first user interaction
       this.context = new (window.AudioContext || window.webkitAudioContext)()

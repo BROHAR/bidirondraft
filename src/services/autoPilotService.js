@@ -5,6 +5,7 @@ import { StarsAndScrubs } from '../strategies/StarsAndScrubs.js'
 import { ZeroRB } from '../strategies/ZeroRB.js'
 import { HeroRB } from '../strategies/HeroRB.js'
 import { LateRoundQB } from '../strategies/LateRoundQB.js'
+import { Taco } from '../strategies/TacoStrategy.js'
 
 export class AutoPilotService {
   constructor() {
@@ -14,7 +15,8 @@ export class AutoPilotService {
       'StarsAndScrubs': StarsAndScrubs,
       'ZeroRB': ZeroRB,
       'HeroRB': HeroRB,
-      'LateRoundQB': LateRoundQB
+      'LateRoundQB': LateRoundQB,
+      'Taco': Taco
     }
     this.currentStrategy = null
   }
