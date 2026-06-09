@@ -1,0 +1,252 @@
+/* ===== Meta Simulation — progress modal + aggregate report ===== */
+
+/* ---- Progress modal ---- */
+.meta-progress-modal {
+  max-width: 460px;
+  width: 100%;
+}
+
+.meta-progress-label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--fg2);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.meta-progress-bar {
+  height: 18px;
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  overflow: hidden;
+}
+
+.meta-progress-fill {
+  height: 100%;
+  background: var(--accent-money);
+  transition: width 0.15s linear;
+}
+
+.meta-progress-pct {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-lg);
+  color: var(--fg1);
+  text-align: right;
+  margin: var(--space-2) 0 0 0;
+}
+
+.meta-progress-hint,
+.meta-foot-note {
+  color: var(--fg3);
+  font-size: var(--fs-sm);
+  margin: var(--space-2) 0 0 0;
+}
+
+.meta-progress-error {
+  color: var(--accent-negative);
+  margin: 0;
+}
+
+/* ---- Report shell ---- */
+.meta-report-header {
+  background: var(--bg-hud);
+  border-bottom: 4px solid var(--gray-950);
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.meta-report-header h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  text-transform: uppercase;
+  color: var(--fg1);
+  text-shadow: 3px 3px 0 var(--gray-950);
+  margin: 0;
+}
+
+.meta-report-sub {
+  color: var(--fg3);
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--fs-sm);
+}
+
+.meta-report-sub strong {
+  color: var(--accent-money);
+}
+
+/* ---- Scorecard table ---- */
+.meta-scorecard {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.meta-scorecard th,
+.meta-scorecard td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--gray-800);
+  white-space: nowrap;
+}
+
+.meta-scorecard thead th {
+  color: var(--fg2);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+}
+
+.meta-scorecard tbody tr:hover {
+  background: var(--bg-card-alt);
+}
+
+.meta-scorecard tr.meta-row-leader {
+  background: var(--bg-card);
+}
+
+.meta-scorecard tr.meta-row-leader td {
+  color: var(--fg1);
+  font-weight: 600;
+}
+
+/* ---- Strengths ---- */
+.meta-strengths {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .meta-strengths { grid-template-columns: 1fr; }
+}
+
+.meta-spend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.meta-spend-name {
+  flex: 0 0 120px;
+  color: var(--fg2);
+  font-size: var(--fs-sm);
+  text-align: right;
+}
+
+.meta-spend-bar {
+  flex: 1;
+  display: flex;
+  height: 22px;
+  border: 2px solid var(--gray-950);
+  background: var(--gray-800);
+  overflow: hidden;
+}
+
+.meta-spend-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-family: var(--font-numeric);
+  color: #fff;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.meta-spend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.meta-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--fg3);
+  font-size: var(--fs-xs);
+}
+
+.meta-legend-swatch {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  border: 1px solid var(--gray-950);
+}
+
+.meta-strengths-radar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---- Why cards ---- */
+.meta-why {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-3);
+}
+
+.meta-why-card {
+  background: var(--bg-card);
+  border: 2px solid var(--gray-800);
+  padding: var(--space-3);
+}
+
+.meta-why-card.leader {
+  border-color: var(--accent-money);
+}
+
+.meta-why-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.meta-why-rank {
+  font-family: var(--font-numeric);
+  color: var(--fg3);
+}
+
+.meta-why-name {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  color: var(--fg1);
+  flex: 1;
+}
+
+.meta-why-pts {
+  font-family: var(--font-numeric);
+  color: var(--accent-money);
+}
+
+.meta-why-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--fg2);
+  font-size: var(--fs-sm);
+}
+
+.meta-why-list li {
+  margin-bottom: var(--space-1);
+}
+
+/* ---- Setup launch control ---- */
+.meta-sim-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--fg3);
+  font-size: var(--fs-xs);
+}
+
+.meta-sim-count input[type='range'] {
+  flex: 1;
+}

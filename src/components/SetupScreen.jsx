@@ -11,29 +11,20 @@ import {
   applyOverrides,
   countOverrides,
 } from '../utils/playerOverrides'
+import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
+import '../styles/components/metaSimulation.css'
 
 function SetupScreen() {
-  const { initializeDraft, simulateDraft } = useDraftStore()
-  const [config, setConfig] = useState({
-    numberOfTeams: 12,
-    budgetPerTeam: 200,
-    humanTeamName: 'Your Team',
-    humanDraftPosition: 1,
-    nominationTimer: 20,
-    biddingTimer: 20,
-    minBidIncrement: 1,
-    scoringFormat: 'halfPPR',
-    rosterPositions: DEFAULT_CONFIGS.standard.rosterPositions,
-    autoPilotEnabled: false,
-    autoPilotStrategy: 'Balanced',
-    aiTeamStrategies: [],
-    aiTeamHomeTeams: []
-  })
-  
+  const { initializeDraft, simulateDraft, runMetaSimulation } = useDraftStore()
+  // Restore the persisted setup config (survives refresh / new draft).
+  const persisted = useMemo(() => loadSetupState(), [])
+  const [config, setConfig] = useState(persisted.config)
+
   const [playerValueAdjustments, setPlayerValueAdjustments] = useState(new Map())
   const [showValueModal, setShowValueModal] = useState(false)
   const [simulateError, setSimulateError] = useState(null)
-  const [aiBidderProfilesEnabled, setAiBidderProfilesEnabled] = useState(false)
+  const [aiBidderProfilesEnabled, setAiBidderProfilesEnabled] = useState(persisted.aiBidderProfilesEnabled)
+  const [metaDraftsPerStrategy, setMetaDraftsPerStrategy] = useState(persisted.metaDraftsPerStrategy)
   const [playerOverrides, setPlayerOverrides] = useState(() => loadOverrides())
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
 
@@ -44,6 +35,11 @@ function SetupScreen() {
   useEffect(() => {
     saveOverrides(playerOverrides)
   }, [playerOverrides])
+
+  // Persist the draft config + toggles so they survive refresh and new drafts.
+  useEffect(() => {
+    saveSetupState({ config, aiBidderProfilesEnabled, metaDraftsPerStrategy })
+  }, [config, aiBidderProfilesEnabled, metaDraftsPerStrategy])
 
   const customizedPlayersData = useMemo(
     () => applyOverrides(playersData, playerOverrides),
@@ -155,10 +151,42 @@ function SetupScreen() {
     }, customizedPlayersData)
   }
 
+  const runMeta = () => {
+    // Meta sim rates strategies for the user's team, so it needs a real seat.
+    if (!config.humanDraftPosition || config.humanDraftPosition < 1) {
+      setSimulateError('Meta Simulation rates strategies for your team — set your draft position to a seat first.')
+      return
+    }
+
+    const draftConfig = new DraftConfig(config)
+    const validation = draftConfig.validate()
+
+    if (!validation.isValid) {
+      alert('Configuration errors:\n' + validation.errors.join('\n'))
+      return
+    }
+
+    setSimulateError(null)
+    runMetaSimulation({
+      ...config,
+      autoPilotEnabled: true,
+      aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
+      aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      playerOverrides
+    }, customizedPlayersData, {
+      strategies: strategies.map(s => s.value),
+      draftsPerStrategy: metaDraftsPerStrategy,
+      baseSeed: 1,
+    })
+  }
+
   return (
     <div className="setup-screen">
       <div className="card">
         <h2>Draft Configuration</h2>
+
+        <div className="setup-columns">
+        <div className="setup-col">
 
         <div className="preset-buttons">
           <button
@@ -307,6 +335,9 @@ function SetupScreen() {
           </div>
         </div>
 
+        </div>{/* /setup-col left */}
+        <div className="setup-col">
+
         <div className="auto-pilot-section">
           <label className="section-toggle">
             <input
@@ -416,25 +447,57 @@ function SetupScreen() {
         </div>
 
         <div className="setup-actions">
-          <div className="simulate-action">
-            <button
-              className="btn btn-secondary btn-large"
-              onClick={runSimulation}
-            >
-              Simulate
-            </button>
-            {simulateError
-              ? <div className="simulate-error">{simulateError}</div>
-              : <div className="simulate-hint">Requires Auto-Pilot + Strategy</div>
-            }
-          </div>
           <button
             className="btn btn-primary btn-large"
             onClick={startDraft}
           >
             Start Draft
           </button>
+          <p className="action-desc">Run the auction live and bid in real time.</p>
+
+          <div className="action-card">
+            <button
+              className="btn btn-secondary btn-large"
+              onClick={runSimulation}
+            >
+              Simulate
+            </button>
+            <p className="action-desc">
+              Auto-drafts the whole league — your team included — to the finish in one shot, then drops
+              you on the post-draft report. A fast preview of how a single draft plays out.
+              {' '}<strong>Requires Auto-Pilot + a strategy.</strong>
+            </p>
+            {simulateError && <div className="simulate-error">{simulateError}</div>}
+          </div>
+
+          <div className="action-card">
+            <button
+              className="btn btn-secondary btn-large"
+              onClick={runMeta}
+            >
+              Meta Simulation
+            </button>
+            <div className="meta-sim-count">
+              <input
+                type="range"
+                min="10"
+                max="200"
+                step="10"
+                value={metaDraftsPerStrategy}
+                onChange={(e) => setMetaDraftsPerStrategy(parseInt(e.target.value, 10))}
+                aria-label="Drafts per strategy"
+              />
+              <span>{metaDraftsPerStrategy}/strategy · {metaDraftsPerStrategy * strategies.length} drafts</span>
+            </div>
+            <p className="action-desc">
+              Plays your seat with every strategy across many drafts against this same league, then
+              ranks which one builds you the strongest roster. Use it to pick your approach before drafting.
+            </p>
+          </div>
         </div>
+
+        </div>{/* /setup-col right */}
+        </div>{/* /setup-columns */}
       </div>
 
       <PlayerValueModal

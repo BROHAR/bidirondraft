@@ -3,8 +3,11 @@ import { immer } from 'zustand/middleware/immer'
 import { DraftEngine } from '../services/draftEngine.js'
 import { AIManager } from '../services/aiManager.js'
 import { autoPilotService } from '../services/autoPilotService.js'
+import { runMetaSimulationAsync } from '../utils/metaSimulation.js'
 
 let draftEngine = null
+let metaSimWorker = null
+let metaCancelRequested = false
 const aiManager = new AIManager()
 
 export const useDraftStore = create(
@@ -21,6 +24,9 @@ export const useDraftStore = create(
     // Auto-pilot State
     autoPilotEnabled: false,
     autoPilotStrategy: 'Balanced',
+
+    // Meta Simulation State (batch of headless drafts aggregated by strategy)
+    metaSim: { running: false, done: 0, total: 0, result: null, error: null },
     
     // Teams and Players
     teams: [],
@@ -78,7 +84,109 @@ export const useDraftStore = create(
         { simulate: true }
       )
     },
-    
+
+    // Run a batch of headless drafts on `config` and aggregate by strategy.
+    // Heavy work runs in a Web Worker so the UI stays responsive; if Worker is
+    // unavailable we fall back to running the same core on the main thread.
+    runMetaSimulation: (config, playersData, { strategies, draftsPerStrategy = 50, baseSeed = 1 } = {}) => {
+      // Strip non-cloneable / human-only fields before crossing the worker
+      // boundary (playerValueAdjustments is a Map and not needed here).
+      const safeConfig = JSON.parse(JSON.stringify({ ...config, playerValueAdjustments: undefined }))
+      const total = (strategies?.length || 0) * draftsPerStrategy
+
+      metaCancelRequested = false
+      set((draft) => {
+        draft.metaSim = { running: true, done: 0, total, result: null, error: null }
+      })
+
+      // Guard so the worker's error/done and the fallback can't both finish.
+      let settled = false
+      const finishWithResult = (result) => {
+        if (settled) return
+        settled = true
+        set((draft) => {
+          draft.metaSim.running = false
+          draft.metaSim.result = result
+          draft.metaSim.done = result.numDrafts
+          draft.draftState = 'META_RESULTS'
+        })
+      }
+      const finishWithError = (message) => {
+        if (settled) return
+        settled = true
+        set((draft) => {
+          draft.metaSim.running = false
+          draft.metaSim.error = message
+        })
+      }
+
+      // Cooperative, UI-friendly run on the main thread. Used directly when no
+      // Worker exists, and as the recovery path when the worker errors (the Vite
+      // dev server breaks module workers; production worker chunks are fine).
+      const runOnMainThread = () => {
+        if (settled) return
+        runMetaSimulationAsync(safeConfig, playersData, {
+          strategies,
+          draftsPerStrategy,
+          baseSeed,
+          shouldCancel: () => metaCancelRequested,
+          onProgress: (done, t) => set((draft) => { draft.metaSim.done = done; draft.metaSim.total = t }),
+        })
+          .then((result) => {
+            if (metaCancelRequested) return
+            finishWithResult(result)
+          })
+          .catch((err) => finishWithError(String(err?.message || err)))
+      }
+
+      if (typeof Worker === 'undefined') {
+        runOnMainThread()
+        return
+      }
+
+      try {
+        if (metaSimWorker) metaSimWorker.terminate()
+        metaSimWorker = new Worker(new URL('../workers/metaSimWorker.js', import.meta.url), { type: 'module' })
+        const recover = () => {
+          if (metaSimWorker) { metaSimWorker.terminate(); metaSimWorker = null }
+          runOnMainThread()
+        }
+        metaSimWorker.onmessage = (e) => {
+          const msg = e.data || {}
+          if (msg.type === 'progress') {
+            set((draft) => { draft.metaSim.done = msg.done; if (msg.total) draft.metaSim.total = msg.total })
+          } else if (msg.type === 'done') {
+            if (metaSimWorker) { metaSimWorker.terminate(); metaSimWorker = null }
+            finishWithResult(msg.result)
+          } else if (msg.type === 'error') {
+            // Worker-side failure — fall back to the main thread rather than fail.
+            recover()
+          }
+        }
+        // Worker failed to load/run (Vite dev HMR-client injection, CSP, etc.).
+        metaSimWorker.onerror = () => { recover() }
+        metaSimWorker.postMessage({ type: 'run', config: safeConfig, playersData, strategies, draftsPerStrategy, baseSeed })
+      } catch {
+        // Worker construction itself failed — run inline instead.
+        runOnMainThread()
+      }
+    },
+
+    cancelMetaSimulation: () => {
+      metaCancelRequested = true
+      if (metaSimWorker) { metaSimWorker.terminate(); metaSimWorker = null }
+      set((draft) => { draft.metaSim = { running: false, done: 0, total: 0, result: null, error: null } })
+    },
+
+    closeMetaResults: () => {
+      metaCancelRequested = true
+      if (metaSimWorker) { metaSimWorker.terminate(); metaSimWorker = null }
+      set((draft) => {
+        draft.draftState = 'SETUP'
+        draft.metaSim = { running: false, done: 0, total: 0, result: null, error: null }
+      })
+    },
+
     setCurrentNominator: (teamId) => set((draft) => {
       draft.currentNominator = teamId
     }),
