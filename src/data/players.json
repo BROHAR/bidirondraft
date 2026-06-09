@@ -446,7 +446,7 @@
         "ppr": 239.6
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_029",
@@ -1692,7 +1692,7 @@
         "ppr": 71.8
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_275",
@@ -2028,7 +2028,7 @@
         "ppr": 125.2
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_263",
@@ -2070,7 +2070,7 @@
         "ppr": 153.2
       },
       "byeWeek": 0,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_274",
@@ -5038,7 +5038,7 @@
         "ppr": 8.8
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_476",
@@ -5150,7 +5150,7 @@
         "ppr": 8.8
       },
       "byeWeek": 0,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_475",
@@ -6038,7 +6038,7 @@
       "id": "player_733",
       "name": "Joshua Karty",
       "position": "K",
-      "team": "ARI",
+      "team": "FA",
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 0,
