@@ -84,16 +84,30 @@ function computeProjectedPoints(row) {
   }
 }
 
+// Cross-source name reconciliation. Some players appear under different
+// spellings across ESPN, Yahoo, and our existing players.json. Keyed by the
+// fully-normalized string -> canonical normalized form, applied at the end of
+// normalizeName so every lookup (existing, scrape, Yahoo) collapses to one key
+// and the merge preserves the player's id/byeWeek instead of dropping + re-adding.
+//   - Kenneth Gainwell: ESPN's 2026 feed renamed him "Kenny Gainwell" while our
+//     players.json still had "Kenneth"; map the old spelling onto the new one.
+// (Suffix variants like "Ted Hurst" vs "Ted Hurst III" already collapse via the
+// jr|sr|ii.. strip below and don't need an alias here.)
+const NAME_ALIASES = {
+  kennethgainwell: 'kennygainwell',
+}
+
 // "Ja'Marr Chase Jr." -> "jamarrchase"
 // Also strips a trailing " D/ST" / " DST" so ESPN's "Bengals D/ST" matches
 // Yahoo's "Bengals" when keying defenses by name+position.
 export function normalizeName(name) {
-  return (name || '')
+  const n = (name || '')
     .toLowerCase()
     .replace(/[.'’,]/g, '')
     .replace(/\s+(jr|sr|ii|iii|iv|v)\b/gi, '')
     .replace(/\s+d\/?st\b/i, '')
     .replace(/\s+/g, '')
+  return NAME_ALIASES[n] || n
 }
 
 // Crude rank-based default for genuinely new players (no existing match).
