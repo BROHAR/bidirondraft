@@ -204,7 +204,20 @@ export class AIManager {
         const targetBid = Math.floor(currentPlayer.estimatedValue * (minBidPercent + random() * (maxBidPercent - minBidPercent)))
         // Cap the opener at the picked team's own adjustedValue so we never
         // force them to bid above what their strategy thinks the player's worth.
-        const cappedTarget = Math.min(targetBid, Math.floor(bestValue))
+        let cappedTarget = Math.min(targetBid, Math.floor(bestValue))
+        // ...but a flush team in endgame burn must open at its fair-share spend
+        // floor, not a fraction of book. targetBid is book * 0.6-0.85, which
+        // ignores surplus entirely; without this lift the opener wins the best
+        // remaining players for ~2/3 book unopposed, fills its roster, and
+        // strands the surplus (the $1000-tier ZeroRB failure). The floor is a
+        // sanctioned overpay — getEndgameSpendFloor already clamps to maxBid
+        // (reserving $1 per remaining required slot) and caps non-best players
+        // at 2x/4x book until the last 2 burn spots, so this drains money into
+        // the best players left, not into scrubs early.
+        const endgameFloor = bestTeam.draftStrategy.getEndgameSpendFloor
+          ? Math.round(bestTeam.draftStrategy.getEndgameSpendFloor(currentPlayer, availablePlayers))
+          : 0
+        if (endgameFloor > cappedTarget) cappedTarget = endgameFloor
         const amount = Math.min(bestTeam.maxBid, Math.max(cappedTarget, currentBid + 1))
 
         return {
