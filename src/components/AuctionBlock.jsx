@@ -6,6 +6,7 @@ import { budgetScaleFor } from '../utils/budgetScaling'
 
 function AuctionBlock() {
   const [isSkipping, setIsSkipping] = useState(false)
+  const [showAdvisor, setShowAdvisor] = useState(true)
 
   const {
     draftState,
@@ -215,25 +216,40 @@ function AuctionBlock() {
         <div className="advisor">
           <div className="advisor-header">
             <span className="advisor-label">Bid Advisor</span>
-            <span className={verdictClass}>{advice.verdict}</span>
+            <div className="advisor-header-right">
+              <span className={verdictClass}>{advice.verdict}</span>
+              <button
+                type="button"
+                className="advisor-toggle"
+                onClick={() => setShowAdvisor(v => !v)}
+                aria-expanded={showAdvisor}
+                title={showAdvisor ? 'Hide bid advisor details' : 'Show bid advisor details'}
+              >
+                {showAdvisor ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
-          <div className="advisor-max">
-            <span className="advisor-max-label">Bid up to</span>
-            <span className="advisor-max-value">${advice.maxBid}</span>
-          </div>
-          {advice.reasons.length > 0 && (
-            <ul className="advisor-reasons">
-              {advice.reasons.map((r, i) => (
-                <li key={i}>
-                  <span className="reason-label">{r.label}</span>
-                  {r.delta !== 0 && (
-                    <span className={`reason-delta ${r.delta > 0 ? 'pos' : 'neg'}`}>
-                      {r.delta > 0 ? '+' : ''}${r.delta}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+          {showAdvisor && (
+            <>
+              <div className="advisor-max">
+                <span className="advisor-max-label">Bid up to</span>
+                <span className="advisor-max-value">${advice.maxBid}</span>
+              </div>
+              {advice.reasons.length > 0 && (
+                <ul className="advisor-reasons">
+                  {advice.reasons.map((r, i) => (
+                    <li key={i}>
+                      <span className="reason-label">{r.label}</span>
+                      {r.delta !== 0 && (
+                        <span className={`reason-delta ${r.delta > 0 ? 'pos' : 'neg'}`}>
+                          {r.delta > 0 ? '+' : ''}${r.delta}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}
