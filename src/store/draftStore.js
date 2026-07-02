@@ -329,7 +329,7 @@ export const useDraftStore = create(
       if (state.autoPilotEnabled) {
         const humanTeam = state.teams.find(t => t.isHuman)
         if (humanTeam) {
-          autoPilotService.initializeStrategy(humanTeam, strategy)
+          autoPilotService.initializeStrategy(humanTeam, strategy, state.config?.customStrategies)
         }
       }
     },

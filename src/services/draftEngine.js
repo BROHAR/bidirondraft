@@ -126,7 +126,7 @@ export class DraftEngine {
     this.currentNominatorIndex = 0
     
     // Assign AI strategies to teams
-    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, players, config.aiTeamHomeTeams)
+    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, players, config.aiTeamHomeTeams, config.customStrategies)
     
     // Initialize auto-pilot for human team if enabled
     this.initializeAutoPilot(teams, config)
@@ -196,7 +196,7 @@ export class DraftEngine {
   initializeAutoPilot(teams, config) {
     const humanTeam = teams.find(t => t.isHuman)
     if (humanTeam && config.autoPilotEnabled) {
-      const strategy = autoPilotService.initializeStrategy(humanTeam, config.autoPilotStrategy)
+      const strategy = autoPilotService.initializeStrategy(humanTeam, config.autoPilotStrategy, config.customStrategies)
       humanTeam.setStrategy(strategy) // ensures humanTeam.draftStrategy is set for processAIBidding
     }
   }
@@ -1026,7 +1026,7 @@ export class DraftEngine {
     // the same way initializeAutoPilot does when it's missing.
     const humanTeam = state.teams.find(t => t.isHuman)
     if (humanTeam && !humanTeam.draftStrategy) {
-      const strategy = autoPilotService.initializeStrategy(humanTeam, state.autoPilotStrategy)
+      const strategy = autoPilotService.initializeStrategy(humanTeam, state.autoPilotStrategy, state.config?.customStrategies)
       humanTeam.setStrategy(strategy)
     }
 

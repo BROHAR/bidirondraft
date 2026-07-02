@@ -1,0 +1,70 @@
+/* Custom strategy builder modal + the SetupScreen entry section. Leans on the
+   shared modal-overlay / modal-content / form-group styles; only the bits unique
+   to this modal are defined here. */
+
+.custom-strategy-section {
+  margin-top: 1rem;
+}
+
+.strategy-builder-modal {
+  max-width: 640px;
+}
+
+.custom-strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.custom-strategy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #2a2f3a);
+  border-radius: 6px;
+}
+
+.custom-strategy-name {
+  font-weight: 600;
+}
+
+.custom-strategy-base {
+  color: var(--color-text-muted, #8b94a7);
+  font-size: 0.85rem;
+}
+
+.custom-strategy-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.custom-strategy-form h4 {
+  margin: 0 0 0.75rem;
+}
+
+.multiplier-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.multiplier-field label {
+  margin: 0;
+  width: 3rem;
+  font-weight: 600;
+}
+
+.multiplier-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-error {
+  color: var(--color-danger, #e5534b);
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}

@@ -1,36 +1,21 @@
-import { BaseStrategy } from '../strategies/BaseStrategy.js'
-import { Balanced } from '../strategies/Balanced.js'
-import { ValueHunter } from '../strategies/ValueHunter.js'
-import { StarsAndScrubs } from '../strategies/StarsAndScrubs.js'
-import { ZeroRB } from '../strategies/ZeroRB.js'
-import { HeroRB } from '../strategies/HeroRB.js'
-import { LateRoundQB } from '../strategies/LateRoundQB.js'
-import { Taco } from '../strategies/TacoStrategy.js'
+import { instantiateStrategy } from '../strategies/registry.js'
 
 export class AutoPilotService {
   constructor() {
-    this.strategies = {
-      'Balanced': Balanced,
-      'ValueHunter': ValueHunter,
-      'StarsAndScrubs': StarsAndScrubs,
-      'ZeroRB': ZeroRB,
-      'HeroRB': HeroRB,
-      'LateRoundQB': LateRoundQB,
-      'Taco': Taco
-    }
     this.currentStrategy = null
   }
 
-  initializeStrategy(humanTeam, strategyName) {
-    const StrategyClass = this.strategies[strategyName] || Balanced
-    this.currentStrategy = new StrategyClass()
-    
+  initializeStrategy(humanTeam, strategyName, customDefs = []) {
+    // Resolve built-in or custom (`custom:<id>`) keys via the registry; an
+    // unresolvable key falls back to Balanced inside instantiateStrategy.
+    this.currentStrategy = instantiateStrategy(strategyName, { customDefs })
+
     // Set the team for the strategy
     this.currentStrategy.setTeam(humanTeam)
-    
+
     // Apply player value adjustments to the strategy's value modifiers
     this.applyPlayerValueAdjustments(humanTeam)
-    
+
     return this.currentStrategy
   }
 

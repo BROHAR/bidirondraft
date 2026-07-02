@@ -34,6 +34,17 @@ export const STRATEGY_DISPLAY = {
 }
 export const DEFAULT_STRATEGY_KEYS = Object.keys(STRATEGY_DISPLAY)
 
+// Display-name lookup for a meta run, extending the built-in names with the
+// user's custom strategies (keyed `custom:<id>`) so custom candidates show their
+// chosen name in the results instead of the raw key.
+export function buildStrategyDisplay(config = {}) {
+  const map = { ...STRATEGY_DISPLAY }
+  for (const def of config.customStrategies || []) {
+    if (def?.id && def?.name) map[`custom:${def.id}`] = def.name
+  }
+  return map
+}
+
 // Minimal store the DraftEngine drives. Mirrors the fake store the integration
 // tests use (immer produce, { getState, setState }) so each draft runs in
 // isolation without touching the app's Zustand store.
@@ -102,11 +113,11 @@ export function extractTeamRows(teams, availablePlayers, rosterPositions, number
 // strategy we intended its seat to use. Tagging by intent (not the instance
 // name) is robust even if auto-pilot ever falls back. Returns null if there is
 // no human seat (an all-AI config can't be rated from the user's perspective).
-export function extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strategyKey) {
+export function extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strategyKey, displayMap = STRATEGY_DISPLAY) {
   const rows = extractTeamRows(teams, availablePlayers, rosterPositions, numberOfTeams)
   const userRow = rows.find(r => r.isHuman)
   if (!userRow) return null
-  userRow.strategyName = STRATEGY_DISPLAY[strategyKey] || strategyKey
+  userRow.strategyName = displayMap[strategyKey] || strategyKey
   return userRow
 }
 
@@ -248,12 +259,13 @@ function buildPlan(strategies, draftsPerStrategy, baseSeed) {
 // generator never leaks into the rest of the app/tests.
 export function runMetaSimulation(config, playersData, { strategies = DEFAULT_STRATEGY_KEYS, draftsPerStrategy = 50, baseSeed = 1, onProgress } = {}) {
   const { rosterPositions, numberOfTeams } = config
+  const displayMap = buildStrategyDisplay(config)
   const plan = buildPlan(strategies, draftsPerStrategy, baseSeed)
   const allRows = []
   try {
     plan.forEach(({ strat, seed }, i) => {
       const { teams, availablePlayers } = runSingleDraft({ ...config, autoPilotStrategy: strat }, playersData, seed)
-      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat)
+      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat, displayMap)
       if (row) allRows.push(row)
       onProgress?.(i + 1, plan.length)
     })
@@ -271,6 +283,7 @@ export function runMetaSimulation(config, playersData, { strategies = DEFAULT_ST
 // crashes them — production worker chunks are fine).
 export async function runMetaSimulationAsync(config, playersData, { strategies = DEFAULT_STRATEGY_KEYS, draftsPerStrategy = 50, baseSeed = 1, onProgress, shouldCancel, batchSize = 4 } = {}) {
   const { rosterPositions, numberOfTeams } = config
+  const displayMap = buildStrategyDisplay(config)
   const plan = buildPlan(strategies, draftsPerStrategy, baseSeed)
   const allRows = []
   try {
@@ -278,7 +291,7 @@ export async function runMetaSimulationAsync(config, playersData, { strategies =
       if (shouldCancel?.()) break
       const { strat, seed } = plan[i]
       const { teams, availablePlayers } = runSingleDraft({ ...config, autoPilotStrategy: strat }, playersData, seed)
-      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat)
+      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat, displayMap)
       if (row) allRows.push(row)
       onProgress?.(i + 1, plan.length)
       if ((i + 1) % batchSize === 0) await new Promise(r => setTimeout(r, 0))

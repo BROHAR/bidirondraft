@@ -20,6 +20,7 @@ import './styles/components/controls.css'
 import './styles/components/teamDetailsModal.css'
 import './styles/components/playerValueModal.css'
 import './styles/components/playerCustomizationModal.css'
+import './styles/components/strategyBuilderModal.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

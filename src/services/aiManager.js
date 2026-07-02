@@ -1,41 +1,32 @@
 import { random } from '../utils/rng.js'
 import { StarsAndScrubs } from '../strategies/StarsAndScrubs.js'
-import { Balanced } from '../strategies/Balanced.js'
-import { ZeroRB } from '../strategies/ZeroRB.js'
-import { HeroRB } from '../strategies/HeroRB.js'
-import { ValueHunter } from '../strategies/ValueHunter.js'
-import { LateRoundQB } from '../strategies/LateRoundQB.js'
-import { Taco } from '../strategies/TacoStrategy.js'
+import { MIXED_FILL_POOL, instantiateStrategy } from '../strategies/registry.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 
 export class AIManager {
   constructor() {
-    this.strategies = [
-      StarsAndScrubs,
-      Balanced,
-      ZeroRB,
-      HeroRB,
-      ValueHunter,
-      LateRoundQB,
-      Taco
-    ]
+    // Pool used to fill unpinned ("Mixed") AI slots. Sourced from the strategy
+    // registry so the built-in list lives in exactly one place.
+    this.strategies = MIXED_FILL_POOL
   }
 
-  assignStrategies(teams, aiTeamStrategies = [], players = [], aiTeamHomeTeams = []) {
+  assignStrategies(teams, aiTeamStrategies = [], players = [], aiTeamHomeTeams = [], customDefs = []) {
     const aiTeams = teams.filter(team => !team.isHuman)
-    const strategyByName = new Map(this.strategies.map(S => [S.name, S]))
 
-    // Pass 1: honor pinned slots. team_${i+1} maps to aiTeamStrategies[i].
+    // Each assignment is a thunk producing a fresh strategy instance, so pinned
+    // built-ins and pinned custom strategies are handled uniformly. Unpinned
+    // slots get a class from the mix pool, wrapped as a thunk below.
     const assignments = new Array(aiTeams.length).fill(null)
     aiTeams.forEach((team, index) => {
       const position = parseInt(team.id.replace('team_', ''), 10)
       const pinned = aiTeamStrategies[position - 1]
-      if (pinned && pinned !== 'Mixed' && strategyByName.has(pinned)) {
-        assignments[index] = strategyByName.get(pinned)
+      if (pinned && pinned !== 'Mixed') {
+        const homeTeam = aiTeamHomeTeams[position - 1]
+        assignments[index] = () => instantiateStrategy(pinned, { customDefs, homeTeam })
       }
     })
 
-    // Pass 2: fill unpinned slots with the legacy algorithm (≥50% Stars & Scrubs,
+    // Fill unpinned slots with the legacy algorithm (≥50% Stars & Scrubs,
     // remainder cycles through the other strategies, then shuffled).
     const unfilledIndices = assignments
       .map((s, i) => (s === null ? i : -1))
@@ -59,21 +50,13 @@ export class AIManager {
       }
       const shuffled = fillerPool.sort(() => random() - 0.5)
       unfilledIndices.forEach((idx, i) => {
-        assignments[idx] = shuffled[i]
+        const StrategyClass = shuffled[i]
+        assignments[idx] = () => new StrategyClass()
       })
     }
 
     aiTeams.forEach((team, index) => {
-      const StrategyClass = assignments[index]
-      const strategy = new StrategyClass()
-
-      // Honor a user-pinned home team for Taco bidders; otherwise the Taco
-      // constructor's random pick stands. No-op for strategies without one.
-      const position = parseInt(team.id.replace('team_', ''), 10)
-      const homeTeam = aiTeamHomeTeams[position - 1]
-      if (homeTeam && strategy.preferences && 'homeTeam' in strategy.preferences) {
-        strategy.preferences.homeTeam = homeTeam
-      }
+      const strategy = assignments[index]()
 
       team.setStrategy(strategy)
 

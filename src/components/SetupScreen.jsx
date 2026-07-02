@@ -4,7 +4,9 @@ import { DraftConfig, DEFAULT_CONFIGS } from '../models/DraftConfig'
 import playersData from '../data/players.json'
 import PlayerValueModal from './PlayerValueModal'
 import PlayerCustomizationModal from './PlayerCustomizationModal'
+import StrategyBuilderModal from './StrategyBuilderModal'
 import { NFL_TEAMS } from '../strategies/TacoStrategy'
+import { getStrategyOptions } from '../strategies/registry'
 import {
   loadOverrides,
   saveOverrides,
@@ -12,6 +14,7 @@ import {
   countOverrides,
 } from '../utils/playerOverrides'
 import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
+import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
 import '../styles/components/metaSimulation.css'
 
 function SetupScreen() {
@@ -27,6 +30,8 @@ function SetupScreen() {
   const [metaDraftsPerStrategy, setMetaDraftsPerStrategy] = useState(persisted.metaDraftsPerStrategy)
   const [playerOverrides, setPlayerOverrides] = useState(() => loadOverrides())
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
+  const [customStrategies, setCustomStrategies] = useState(() => loadCustomStrategies())
+  const [showStrategyModal, setShowStrategyModal] = useState(false)
 
   useEffect(() => {
     if (config.autoPilotEnabled) setSimulateError(null)
@@ -35,6 +40,11 @@ function SetupScreen() {
   useEffect(() => {
     saveOverrides(playerOverrides)
   }, [playerOverrides])
+
+  // Persist user-authored custom strategies so they survive refresh / new drafts.
+  useEffect(() => {
+    saveCustomStrategies(customStrategies)
+  }, [customStrategies])
 
   // Persist the draft config + toggles so they survive refresh and new drafts.
   useEffect(() => {
@@ -51,15 +61,9 @@ function SetupScreen() {
   // drives the active-preset highlight and the format badge below.
   const isSuperflex = (config.rosterPositions.SUPERFLEX || 0) > 0
 
-  const strategies = [
-    { value: 'Balanced', label: 'Balanced - Even focus across all positions' },
-    { value: 'ValueHunter', label: 'Value Hunter - Target undervalued players' },
-    { value: 'StarsAndScrubs', label: 'Stars & Scrubs - Elite players and cheap bench' },
-    { value: 'ZeroRB', label: 'Zero RB - Avoid early running backs' },
-    { value: 'HeroRB', label: 'Hero RB - Target elite running back early' },
-    { value: 'LateRoundQB', label: 'Late Round QB - Wait on quarterbacks' },
-    { value: 'Taco', label: 'Taco - Homer fan, overpays for top QBs, stacks K/DST' }
-  ]
+  // Dropdown options: every built-in strategy plus the user's custom strategies.
+  // Derived from the registry so the list lives in one place.
+  const strategies = useMemo(() => getStrategyOptions(customStrategies), [customStrategies])
 
   const handleConfigChange = (field, value) => {
     setConfig(prev => ({
@@ -120,6 +124,7 @@ function SetupScreen() {
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      customStrategies,
       playerValueAdjustments: playerValueAdjustments,
       playerOverrides
     }
@@ -146,6 +151,7 @@ function SetupScreen() {
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      customStrategies,
       playerValueAdjustments,
       playerOverrides
     }, customizedPlayersData)
@@ -172,8 +178,12 @@ function SetupScreen() {
       autoPilotEnabled: true,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      customStrategies,
       playerOverrides
     }, customizedPlayersData, {
+      // Rate every built-in AND every custom strategy for the user's seat.
+      // `strategies` (getStrategyOptions) already lists both; meta-sim resolves
+      // custom display names from config.customStrategies.
       strategies: strategies.map(s => s.value),
       draftsPerStrategy: metaDraftsPerStrategy,
       baseSeed: 1,
@@ -391,6 +401,20 @@ function SetupScreen() {
           )}
         </div>
 
+        <div className="custom-strategy-section">
+          <div className="form-group">
+            <label>Custom Strategies</label>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowStrategyModal(true)}
+            >
+              Manage Custom Strategies ({customStrategies.length})
+            </button>
+            <small className="section-hint">Clone a built-in strategy and tweak it; custom strategies appear in the dropdowns above and the AI bidder profiles below.</small>
+          </div>
+        </div>
+
         <div className="advanced-config-section">
           <label className="section-toggle">
             <input
@@ -525,6 +549,13 @@ function SetupScreen() {
         budgetPerTeam={config.budgetPerTeam}
         onChange={setPlayerOverrides}
         onClearAll={() => setPlayerOverrides({})}
+      />
+
+      <StrategyBuilderModal
+        isOpen={showStrategyModal}
+        onClose={() => setShowStrategyModal(false)}
+        customStrategies={customStrategies}
+        onChange={setCustomStrategies}
       />
     </div>
   )
