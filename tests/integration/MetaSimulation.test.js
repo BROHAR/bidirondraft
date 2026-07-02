@@ -65,6 +65,28 @@ describe('runMetaSimulation (user-perspective integration)', () => {
     expect(result.ranking[0]).toBe(result.summaries[0].strategyName)
   }, 60000)
 
+  it('rates a custom strategy candidate, labeled by its name', () => {
+    const customDef = {
+      id: 'meta-zero',
+      name: 'Meta Zero RB',
+      baseKey: 'ZeroRB',
+      positionMultipliers: { QB: 1.0, RB: 0.6, WR: 1.25, TE: 1.15, K: 0.85, DST: 0.85 },
+      skipProbability: 0.08,
+    }
+    const result = runMetaSimulation(
+      baseConfig({ customStrategies: [customDef] }),
+      playersData,
+      { strategies: ['Balanced', 'custom:meta-zero'], draftsPerStrategy: 2, baseSeed: 4200 }
+    )
+
+    expect(result.summaries.length).toBe(2)
+    const byName = Object.fromEntries(result.summaries.map(s => [s.strategyName, s]))
+    // The custom candidate is surfaced under its chosen display name, not the raw key.
+    expect(byName['Meta Zero RB']).toBeDefined()
+    expect(byName['Meta Zero RB'].samples).toBe(2)
+    expect(byName['custom:meta-zero']).toBeUndefined()
+  }, 60000)
+
   it('records no user rows when there is no human seat', () => {
     const result = runMetaSimulation(baseConfig({ humanDraftPosition: 0 }), playersData, {
       strategies: CANDIDATES, draftsPerStrategy: 2, baseSeed: 4100,
