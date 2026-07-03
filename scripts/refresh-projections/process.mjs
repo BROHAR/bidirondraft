@@ -1,9 +1,11 @@
 // Process a scraped CSV into src/data/players.json with computed scoring
-// for standard / halfPPR / ppr formats. Preserves estimatedValue and byeWeek
-// from the existing players.json by name+position match.
+// for standard / halfPPR / ppr formats. Preserves estimatedValue from the
+// existing players.json by name+position match; byeWeek is applied from the
+// hard-coded per-team schedule in byeWeeks.mjs.
 
 import fs from 'fs'
 import path from 'path'
+import { byeWeekForTeam } from './byeWeeks.mjs'
 
 const PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
 const PLAYERS_JSON = path.join(PROJECT_ROOT, 'src/data/players.json')
@@ -88,7 +90,7 @@ function computeProjectedPoints(row) {
 // spellings across ESPN, Yahoo, and our existing players.json. Keyed by the
 // fully-normalized string -> canonical normalized form, applied at the end of
 // normalizeName so every lookup (existing, scrape, Yahoo) collapses to one key
-// and the merge preserves the player's id/byeWeek instead of dropping + re-adding.
+// and the merge preserves the player's id instead of dropping + re-adding.
 //   - Kenneth Gainwell: ESPN's 2026 feed renamed him "Kenny Gainwell" while our
 //     players.json still had "Kenneth"; map the old spelling onto the new one.
 // (Suffix variants like "Ted Hurst" vs "Ted Hurst III" already collapse via the
@@ -242,7 +244,7 @@ export async function processCsv(csvPath, yahooCsvPath = null) {
         team: p.team,
         estimatedValue,
         projectedPoints: p.projectedPoints,
-        byeWeek: old.byeWeek,
+        byeWeek: byeWeekForTeam(p.team),
         injuryStatus: p.injuryStatus || '',
       }
     }
@@ -265,7 +267,7 @@ export async function processCsv(csvPath, yahooCsvPath = null) {
       team: p.team,
       estimatedValue,
       projectedPoints: p.projectedPoints,
-      byeWeek: 0,
+      byeWeek: byeWeekForTeam(p.team),
       injuryStatus: p.injuryStatus || '',
     }
   })
