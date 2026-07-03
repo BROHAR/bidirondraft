@@ -250,3 +250,29 @@
 .meta-sim-count input[type='range'] {
   flex: 1;
 }
+
+/* =========================================================
+   Phone pass — the scorecard table (9 cols) scrolls via the shared rule in
+   postDraftAnalysis.css; here we fix the meta-specific layout pieces.
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Header stacks: title/sub on top, "Back to Setup" below, no crowding. */
+  .meta-report-header {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .meta-report-header h1 {
+    font-size: var(--fs-lg);
+  }
+
+  /* Why cards: the 320px min track overflows a 375px phone — go single column. */
+  .meta-why {
+    grid-template-columns: 1fr;
+  }
+
+  /* Give the spend-row bars more room by shrinking the fixed label column. */
+  .meta-spend-name {
+    flex-basis: 92px;
+  }
+}

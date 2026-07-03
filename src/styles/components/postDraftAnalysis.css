@@ -309,7 +309,7 @@
 
 .roster-slot-row {
   display: grid;
-  grid-template-columns: 52px 1fr 40px 64px 70px 80px 80px;
+  grid-template-columns: 52px 1fr 40px 52px 64px 70px 80px 80px;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -347,6 +347,12 @@
 }
 
 .rs-team {
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+  white-space: nowrap;
+}
+
+.rs-bye {
   font-size: var(--fs-xs);
   color: var(--fg3);
   white-space: nowrap;
@@ -1844,4 +1850,86 @@
 @media (max-width: 640px) {
   .dream-summary { grid-template-columns: 1fr; }
   .dream-row { grid-template-columns: 36px 1fr 1fr 44px; }
+}
+
+/* =========================================================
+   Phone pass (≤768 / ≤480) — shared by the post-draft report and the
+   meta report, which reuses this shell (.analysis-page/-tabs/-body/-section).
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Reclaim horizontal room from the page shell. */
+  .analysis-body { padding: var(--space-3); }
+  .analysis-section { padding: var(--space-3); }
+
+  /* Header: let the title + action buttons wrap instead of crowding. */
+  .analysis-header { flex-wrap: wrap; gap: var(--space-2); }
+
+  /* Tab bar scrolls horizontally instead of overflowing off-screen. */
+  .analysis-tabs {
+    padding: 0 var(--space-2);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: var(--space-3);
+  }
+
+  /* Wide data tables become horizontally scrollable rather than overflowing
+     the card. (nominations-table already sits in .draft-board-scroll.) */
+  .pos-breakdown-table,
+  .rankings-table,
+  .va-table,
+  .meta-scorecard {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* The 7-column roster row can't fit a phone. Reflow to two clean lines:
+       line 1 → Position (colorized badge) · Name · Team
+       line 2 → Price + Value (grouped left) · Points (right)
+     The slot label is replaced by the colorized position badge; on empty rows
+     it stays to name which slot is unfilled. */
+  .roster-slot-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas:
+      "pos   name  team  bye"
+      "price value .     pts";
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+  .roster-slot-row .pos-badge   { grid-area: pos; }
+  .roster-slot-row .rs-name     { grid-area: name; min-width: 0; }
+  .roster-slot-row .rs-team     { grid-area: team; justify-self: end; }
+  .roster-slot-row .rs-bye      { grid-area: bye; justify-self: end; }
+  .roster-slot-row .rs-price    { grid-area: price; }
+  .roster-slot-row .value-badge { grid-area: value; justify-self: start; }
+  .roster-slot-row .rs-pts      { grid-area: pts; justify-self: end; }
+  .roster-slot-row .slot-label  { display: none; }
+  .roster-slot-row.empty-row .slot-label { display: inline-flex; grid-area: pos; }
+  .roster-slot-row .rs-empty    { grid-area: name; }
+
+  /* Dream team is cramped on a phone — drop the owning-team tag. */
+  .dream-pmeta .dream-owner { display: none; }
+
+  /* Modal summary: 4 stats → 2×2 so they don't crush. */
+  .trm-summary { grid-template-columns: 1fr 1fr; }
+
+  /* Control rows that were single-line flex should wrap on a phone. */
+  .draft-board-header,
+  .va-filter-bar { flex-wrap: wrap; gap: var(--space-2); }
+}
+
+@media (max-width: 480px) {
+  /* Trim the big scoreboard numbers so they don't overflow their cards. */
+  .hero-card-value { font-size: var(--fs-2xl); }
+
+  /* Shrink the fixed side tracks on the little bar/timeline rows. */
+  .bar-row { grid-template-columns: 64px 1fr 48px; }
+  .market-bar-row { grid-template-columns: 40px 1fr 64px; }
+  .timeline-pick { grid-template-columns: 1fr 48px 1fr; }
 }
