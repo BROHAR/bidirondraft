@@ -14,7 +14,7 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -24,6 +24,51 @@ body {
   color: var(--fg1);
   padding: var(--space-3) var(--space-5);
   border-bottom: 4px solid var(--gray-950);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Header countdown — mobile only; on desktop the AuctionBlock timer already
+   shows, so keep the header as just the wordmark. */
+.header-timer {
+  display: none;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  background: var(--gray-900);
+  border: 2px solid var(--gray-950);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+}
+
+.header-timer-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+.header-timer-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-lg);
+  line-height: 1;
+  color: var(--accent-money);
+  min-width: 1.5ch;
+  text-align: right;
+}
+
+.header-timer.urgent .header-timer-value {
+  color: var(--red-500);
+  animation: pulse 0.8s steps(2, end) infinite;
+}
+
+@media (max-width: 768px) {
+  .header-timer {
+    display: flex;
+  }
 }
 
 .app-header h1 {

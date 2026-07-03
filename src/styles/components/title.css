@@ -30,7 +30,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--space-7);
+  padding: clamp(var(--space-4), 6vw, var(--space-7));
 }
 
 .title-screen-mark {
@@ -41,12 +41,14 @@
 
 .title-screen-wordmark {
   font-family: var(--font-display);
-  font-size: 144px;
+  font-size: clamp(3rem, 15vw, 144px);
   line-height: 0.9;
   letter-spacing: 0.04em;
   margin: 0 0 var(--space-3);
   text-shadow: 6px 6px 0 var(--gray-950);
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
 }
 
@@ -107,7 +109,6 @@
 
 @media (max-width: 768px) {
   .title-screen-wordmark {
-    font-size: 80px;
     text-shadow: 4px 4px 0 var(--gray-950);
   }
 
