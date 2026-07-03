@@ -24,6 +24,34 @@
   }
 }
 
+@media (max-width: 768px) {
+  /* main.css collapses .grid-4 to a single column at this width, which makes the
+     Roster Positions inputs an over-tall stack. Keep them 2-up on phones. */
+  .setup-screen .grid-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Collapse the per-AI-team strategy grid so each team gets a full-width row. */
+  .advanced-config-rows {
+    grid-template-columns: 1fr;
+  }
+
+  /* Let the preset buttons wrap instead of cramming on a narrow screen. */
+  .preset-buttons {
+    flex-wrap: wrap;
+  }
+
+  .preset-buttons .btn {
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .setup-screen .card {
+    padding: var(--space-3);
+  }
+}
+
 .setup-screen .card h2,
 .setup-screen .card h3 {
   font-family: var(--font-display);

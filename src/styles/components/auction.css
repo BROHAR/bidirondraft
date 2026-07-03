@@ -578,3 +578,78 @@
   font-size: var(--fs-xs);
   color: var(--fg3);
 }
+
+/* =========================================================
+   Mobile — compact the bidding UI so the timer, current bid, and
+   bid buttons all fit above the fold without scrolling.
+   ========================================================= */
+@media (max-width: 768px) {
+  .auction-header {
+    margin-bottom: var(--space-2);
+  }
+
+  .timer-circle {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+  }
+
+  .player-on-block {
+    margin-bottom: var(--space-2);
+  }
+
+  .player-card-large {
+    padding: var(--space-3);
+  }
+
+  .player-info h2 {
+    font-size: var(--fs-lg);
+    margin-bottom: var(--space-2);
+  }
+
+  .player-details {
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    font-size: var(--fs-xs);
+  }
+
+  .player-stats {
+    gap: var(--space-2);
+  }
+
+  .stat label {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .stat .stat-value {
+    font-size: var(--fs-md);
+  }
+
+  .advisor {
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .current-bid {
+    margin-bottom: var(--space-3);
+  }
+
+  .bid-amount {
+    font-size: var(--fs-2xl);
+  }
+
+  .bid-controls {
+    margin-bottom: var(--space-3);
+  }
+
+  .bid-buttons .btn {
+    padding: 10px 2px;
+    font-size: 11px;
+  }
+
+  .skip-section {
+    margin: var(--space-2) 0;
+    padding: var(--space-2);
+  }
+}

@@ -6,6 +6,7 @@ import TitleScreen from './components/TitleScreen'
 import PostDraftAnalysis from './components/PostDraftAnalysis'
 import MetaSimulationReport from './components/MetaSimulationReport'
 import MetaSimulationProgress from './components/MetaSimulationProgress'
+import HeaderTimer from './components/HeaderTimer'
 
 function App() {
   const draftState = useDraftStore(state => state.draftState)
@@ -29,6 +30,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>BIDIRON</h1>
+        <HeaderTimer />
       </header>
       <main className="app-main">
         {draftState === 'SETUP' ? <SetupScreen /> : <DraftBoard />}

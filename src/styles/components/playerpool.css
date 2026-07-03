@@ -161,3 +161,34 @@
   background: rgba(138, 138, 138, 0.10);
   border-left: 3px solid var(--gray-500);
 }
+
+@media (max-width: 768px) {
+  /* The full 8-column table can't fit a phone. Keep the columns that matter for
+     nominating — Player, Pos, Value, Action — and drop Team/Bye/Points/VORP. */
+  .player-list-header,
+  .player-row {
+    grid-template-columns: 2fr 0.6fr 1fr auto;
+  }
+
+  /* Header cells have no per-column class, so hide by position: 3=Team, 4=Bye,
+     5=Points, 6=VORP. Row cells hide by their class. */
+  .player-list-header > div:nth-child(3),
+  .player-list-header > div:nth-child(4),
+  .player-list-header > div:nth-child(5),
+  .player-list-header > div:nth-child(6),
+  .player-team,
+  .player-bye,
+  .player-points,
+  .player-vorp {
+    display: none;
+  }
+
+  /* Search spans the full row above the position/sort selects. */
+  .player-pool-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .player-pool-filters .search-input {
+    grid-column: 1 / -1;
+  }
+}

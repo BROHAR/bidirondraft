@@ -129,17 +129,101 @@
   border: 0;
 }
 
+/* Mobile bottom-nav — hidden on desktop, shown as the panel switcher on phones. */
+.draft-mobile-nav {
+  display: none;
+}
+
 @media (max-width: 768px) {
+  /* App frame: fill the viewport under the header so the active panel scrolls
+     internally instead of the whole board overflowing its fixed height. .app
+     already sets min-height:100dvh, giving this chain a definite height. */
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
   .draft-board {
+    flex: 1;
+    min-height: 0;
+    height: auto;
     padding: var(--space-2);
+    /* Reserve room for the fixed bottom nav (+ iOS home-indicator inset) so the
+       active panel never sits underneath it. */
+    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
   }
 
   .draft-main {
-    gap: var(--space-2);
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: block;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* Show one panel at a time; the bottom nav picks which via mobile-panel-*. */
+  .draft-column {
+    display: none;
+    height: 100%;
+    margin-top: 0;
+  }
+
+  .draft-main.mobile-panel-auction .auction-column,
+  .draft-main.mobile-panel-players .left-column,
+  .draft-main.mobile-panel-board .tabbed-column,
+  .draft-main.mobile-panel-controls .right-column {
+    display: flex;
+  }
+
+  /* The "More" panel stacks three cards — let them scroll within the frame. */
+  .right-column {
+    overflow-y: auto;
   }
 
   .tab-button {
     padding: 8px var(--space-2);
     font-size: 12px;
+  }
+
+  .draft-mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    /* Pin to the bottom of the viewport so it stays reachable while a panel
+       scrolls. Padding carries the iOS safe-area inset above the home bar. */
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-hud);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--gray-950);
+    border-top: 2px solid var(--gray-950);
+  }
+
+  .draft-mobile-nav button {
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 12px 4px;
+    background: var(--gray-800);
+    color: var(--fg2);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .draft-mobile-nav button.active {
+    background: var(--red-600);
+    color: var(--white);
+  }
+
+  .draft-mobile-nav button.has-attention:not(.active) {
+    color: var(--gold-500);
   }
 }
