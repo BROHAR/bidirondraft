@@ -124,6 +124,38 @@
   .meta-strengths { grid-template-columns: 1fr; }
 }
 
+/* Winners/Blueprints tabs stack several headed blocks in one section; give every
+   heading after the first some breathing room above it. */
+.meta-report .analysis-section h3 ~ h3 {
+  margin-top: var(--space-5);
+}
+
+/* Blueprints tab — one card per example winning roster. */
+.meta-blueprint {
+  margin-bottom: var(--space-5);
+}
+
+.meta-blueprint-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.meta-blueprint-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--fg1);
+}
+
+.meta-blueprint-stats {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+  color: var(--fg3);
+}
+
 .meta-spend-row {
   display: flex;
   align-items: center;

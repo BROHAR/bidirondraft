@@ -65,6 +65,58 @@ describe('runMetaSimulation (user-perspective integration)', () => {
     expect(result.ranking[0]).toBe(result.summaries[0].strategyName)
   }, 60000)
 
+  it('exposes field-wide winning-composition aggregates and blueprint builds', () => {
+    const result = runMetaSimulation(baseConfig(), playersData, {
+      strategies: CANDIDATES, draftsPerStrategy: 3, baseSeed: 4300,
+    })
+    const totalDrafts = CANDIDATES.length * 3
+
+    // Exactly one winner (finishRank #1) per simulated draft.
+    expect(result.winningComposition).toBeDefined()
+    expect(result.winningComposition.samples).toBe(totalDrafts)
+    // Per-position starter points among winners are present for the AVG Points column.
+    for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DST']) {
+      expect(result.winningComposition.positionStarterPoints[pos]).toBeGreaterThanOrEqual(0)
+    }
+
+    // Field-wide win totals across strategies sum to the number of drafts.
+    const totalWins = result.winningComposition.winRateByStrategy.reduce((s, r) => s + r.wins, 0)
+    expect(totalWins).toBe(totalDrafts)
+    // Games are tallied over every seat in every draft (12-team league).
+    const totalGames = result.winningComposition.winRateByStrategy.reduce((s, r) => s + r.games, 0)
+    expect(totalGames).toBe(totalDrafts * 12)
+
+    // Blueprints: 1-5 real winning builds for the field's winningest strategy.
+    const bp = result.blueprints
+    expect(bp.strategyName).toBe(result.winningComposition.winRateByStrategy[0].strategyName)
+    expect(bp.teams.length).toBeGreaterThanOrEqual(1)
+    expect(bp.teams.length).toBeLessThanOrEqual(5)
+    const first = bp.teams[0]
+    expect(first.starters.length).toBeGreaterThan(0)
+    expect(first.starters[0]).toHaveProperty('slot')
+    expect(first.starters[0]).toHaveProperty('name')
+    expect(first.starters[0]).toHaveProperty('points')
+    // Sorted by starter points, descending.
+    for (let i = 1; i < bp.teams.length; i++) {
+      expect(bp.teams[i - 1].starterPoints).toBeGreaterThanOrEqual(bp.teams[i].starterPoints)
+    }
+
+    // Dream teams: one optimizer-built ideal roster for each of the top 5 strategies.
+    const dts = result.dreamTeams
+    expect(dts.length).toBeGreaterThanOrEqual(1)
+    expect(dts.length).toBeLessThanOrEqual(5)
+    // Ranked by field win rate, matching winRateByStrategy.
+    expect(dts[0].strategyName).toBe(result.winningComposition.winRateByStrategy[0].strategyName)
+    const starterBudget = baseConfig().budgetPerTeam - baseConfig().rosterPositions.BENCH
+    for (const dt of dts) {
+      expect(dt.rows.length).toBeGreaterThan(0)
+      expect(dt.rows[0]).toHaveProperty('slotLabel')
+      // Each ideal team spends within the starter budget.
+      expect(dt.totalCost).toBeLessThanOrEqual(starterBudget)
+      expect(dt.totalPoints).toBeGreaterThan(0)
+    }
+  }, 60000)
+
   it('rates a custom strategy candidate, labeled by its name', () => {
     const customDef = {
       id: 'meta-zero',
