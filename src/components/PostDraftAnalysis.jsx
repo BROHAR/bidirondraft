@@ -220,6 +220,7 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
                     <>
                       <span className="rs-name">{slot.player.name}</span>
                       <span className="rs-team">{slot.player.team}</span>
+                      <span className="rs-bye">Bye {slot.player.byeWeek}</span>
                       <span className={`pos-badge ${slot.player.position}`}>{slot.player.position}</span>
                       <span className="rs-price">${slot.player.purchasePrice || 0}</span>
                       <span className={`value-badge ${label.cls}`}>{label.text}</span>
@@ -1081,6 +1082,7 @@ function TeamRosterModal({ team, rosterPositions, onClose }) {
                       <>
                         <span className="rs-name">{slot.player.name}</span>
                         <span className="rs-team">{slot.player.team}</span>
+                        <span className="rs-bye">Bye {slot.player.byeWeek}</span>
                         <span className={`pos-badge ${slot.player.position}`}>{slot.player.position}</span>
                         <span className="rs-price">${slot.player.purchasePrice || 0}</span>
                         <span className={`value-badge ${label.cls}`}>{label.text}</span>
@@ -1507,7 +1509,6 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
                   <>
                     <span className="dream-pname">{dreamP.name}</span>
                     <span className="dream-pmeta">
-                      <span className={`pos-badge ${dreamP.position}`}>{dreamP.position}</span>
                       {(dreamP.projectedPoints || 0).toFixed(0)} pts · ${meta?.cost ?? 0}
                       <span className="dream-owner">{meta?.drafted ? meta.owner : 'FA'}</span>
                     </span>
@@ -1519,7 +1520,6 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
                   <>
                     <span className="dream-pname">{mine.name}</span>
                     <span className="dream-pmeta">
-                      <span className={`pos-badge ${mine.position}`}>{mine.position}</span>
                       {(mine.projectedPoints || 0).toFixed(0)} pts · ${mine.purchasePrice ?? 0}
                     </span>
                   </>
@@ -1594,7 +1594,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
       {/* Hero */}
       <div className="analysis-hero">
         <div className="analysis-hero-title">
-          Post-Draft Analysis — <span>{humanTeam.name}</span>
+          Post-Draft Analysis
         </div>
         <div className="hero-cards">
           <div className="hero-card">
