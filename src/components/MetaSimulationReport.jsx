@@ -5,7 +5,7 @@ import RadarChart from './RadarChart.jsx'
 import '../styles/components/postDraftAnalysis.css'
 import '../styles/components/metaSimulation.css'
 
-const TABS = ['Scorecard', 'Strengths', 'Why']
+const TABS = ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams']
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 const POS_COLOR = {
   QB: 'var(--pos-qb, #d65a5a)', RB: 'var(--pos-rb, #4a9d6f)', WR: 'var(--pos-wr, #4a7fd6)',
@@ -163,6 +163,195 @@ function WhyTab({ summaries, fieldAverages }) {
   )
 }
 
+// Field-wide winning rosters: the average #1-finishing team across all drafts.
+function WinnersTab({ winningComposition: wc }) {
+  if (!wc || wc.samples === 0) {
+    return <div className="analysis-section"><p className="meta-foot-note">No winning rosters recorded.</p></div>
+  }
+  return (
+    <div className="analysis-section">
+      <h3>Average winning roster — budget allocation</h3>
+      <div className="meta-spend-row">
+        <span className="meta-spend-name">Winners</span>
+        <span className="meta-spend-bar">
+          {POSITIONS.map(pos => {
+            const pct = (wc.positionSpendPct[pos] || 0) * 100
+            if (pct < 0.5) return null
+            return (
+              <span
+                key={pos}
+                className="meta-spend-seg"
+                style={{ width: `${pct}%`, background: POS_COLOR[pos] }}
+                title={`${pos}: ${pct.toFixed(0)}%`}
+              >
+                {pct >= 10 ? pos : ''}
+              </span>
+            )
+          })}
+        </span>
+      </div>
+      <div className="meta-spend-legend">
+        {POSITIONS.map(pos => (
+          <span key={pos} className="meta-legend-item">
+            <span className="meta-legend-swatch" style={{ background: POS_COLOR[pos] }} />{pos}
+          </span>
+        ))}
+      </div>
+
+      <h3>Average roster counts by position</h3>
+      <table className="meta-scorecard">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th style={{ textAlign: 'right' }}>Avg Count</th>
+            <th style={{ textAlign: 'right' }}>Avg $</th>
+            <th style={{ textAlign: 'right' }}>Avg Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {POSITIONS.map(pos => (
+            <tr key={pos}>
+              <td>{pos}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{wc.positionCounts[pos].toFixed(1)}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>${wc.positionSpend[pos].toFixed(0)}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{wc.positionStarterPoints[pos].toFixed(0)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>Which strategies win most (field-wide)</h3>
+      <table className="meta-scorecard">
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th style={{ textAlign: 'right' }}>Games</th>
+            <th style={{ textAlign: 'right' }}>Wins</th>
+            <th style={{ textAlign: 'right' }}>Win Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {wc.winRateByStrategy.map(r => (
+            <tr key={r.strategyName}>
+              <td>{r.strategyName}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{r.games}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{r.wins}</td>
+              <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{(r.winRate * 100).toFixed(0)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="meta-foot-note">
+        Aggregated from {wc.samples} winning rosters (the #1 team by projected starting-lineup points in each
+        simulated draft). Win rate is field-wide across every seat, so it reflects how each strategy fares against
+        your configured opponents — not a universal ranking.
+      </p>
+    </div>
+  )
+}
+
+// Example winning builds for the field's most successful strategy: 3-5 of its
+// highest-scoring winning rosters, so the user can see concrete ways the winning
+// strategy comes together (rather than one synthesized "dream team").
+function BlueprintsTab({ blueprints: bp }) {
+  if (!bp || !bp.teams.length) {
+    return <div className="analysis-section"><p className="meta-foot-note">No winning rosters recorded.</p></div>
+  }
+  return (
+    <div className="analysis-section">
+      <h3>Winning blueprints — {bp.strategyName}</h3>
+      <p className="meta-foot-note">
+        {bp.teams.length} of the highest-scoring winning rosters built with <strong>{bp.strategyName}</strong>, the
+        field's most successful strategy ({(bp.winRate * 100).toFixed(0)}% win rate). Each is a real build from a
+        simulated draft — different ways the same strategy can win.
+      </p>
+      {bp.teams.map((t, i) => (
+        <div key={i} className="meta-blueprint">
+          <div className="meta-blueprint-head">
+            <span className="meta-blueprint-title">Build {i + 1}</span>
+            <span className="meta-blueprint-stats">
+              {t.starterPoints.toFixed(0)} starter pts · ${t.totalSpent} spent · {t.benchCount} bench
+            </span>
+          </div>
+          <table className="meta-scorecard">
+            <thead>
+              <tr>
+                <th>Slot</th>
+                <th>Player</th>
+                <th>Team</th>
+                <th style={{ textAlign: 'right' }}>$</th>
+                <th style={{ textAlign: 'right' }}>Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {t.starters.map((s, j) => (
+                <tr key={j}>
+                  <td>{s.slot}</td>
+                  <td>{s.name}</td>
+                  <td>{s.team}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>${s.price}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{s.points.toFixed(0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// The best-possible budget team for each of the top strategies: the post-draft
+// Dream Team optimizer run over the players each strategy typically acquires,
+// priced at what it typically pays. One ideal lineup per strategy, top 5.
+function DreamTeamsTab({ dreamTeams }) {
+  if (!dreamTeams || !dreamTeams.length) {
+    return <div className="analysis-section"><p className="meta-foot-note">No dream teams available.</p></div>
+  }
+  return (
+    <div className="analysis-section">
+      <h3>Ideal budget teams by strategy</h3>
+      <p className="meta-foot-note">
+        The highest-scoring legal lineup each of the top {dreamTeams.length} strategies could afford, built from the
+        players it typically rosters at the prices it typically pays. A theoretical best case — how each philosophy
+        spends a full budget.
+      </p>
+      {dreamTeams.map((dt, i) => (
+        <div key={i} className="meta-blueprint">
+          <div className="meta-blueprint-head">
+            <span className="meta-blueprint-title">{dt.strategyName}</span>
+            <span className="meta-blueprint-stats">
+              {dt.totalPoints.toFixed(0)} pts · ${dt.totalCost} spent · {(dt.winRate * 100).toFixed(0)}% win rate
+            </span>
+          </div>
+          <table className="meta-scorecard">
+            <thead>
+              <tr>
+                <th>Slot</th>
+                <th>Player</th>
+                <th>Team</th>
+                <th style={{ textAlign: 'right' }}>$</th>
+                <th style={{ textAlign: 'right' }}>Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dt.rows.map((r, j) => (
+                <tr key={j}>
+                  <td>{r.slotLabel}</td>
+                  <td>{r.name || '—'}</td>
+                  <td>{r.team || '—'}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{r.name ? `$${r.price}` : '—'}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-numeric)' }}>{r.name ? r.points.toFixed(0) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function MetaSimulationReport() {
   const result = useDraftStore(state => state.metaSim.result)
   const closeMetaResults = useDraftStore(state => state.closeMetaResults)
@@ -177,7 +366,7 @@ export default function MetaSimulationReport() {
     )
   }
 
-  const { summaries, fieldAverages, totalDrafts, draftsPerStrategy, numberOfTeams } = result
+  const { summaries, fieldAverages, winningComposition, blueprints, dreamTeams, totalDrafts, draftsPerStrategy, numberOfTeams } = result
   const leader = summaries[0]
 
   return (
@@ -209,6 +398,9 @@ export default function MetaSimulationReport() {
         {activeTab === 0 && <ScorecardTab summaries={summaries} />}
         {activeTab === 1 && <StrengthsTab summaries={summaries} fieldAverages={fieldAverages} />}
         {activeTab === 2 && <WhyTab summaries={summaries} fieldAverages={fieldAverages} />}
+        {activeTab === 3 && <WinnersTab winningComposition={winningComposition} />}
+        {activeTab === 4 && <BlueprintsTab blueprints={blueprints} />}
+        {activeTab === 5 && <DreamTeamsTab dreamTeams={dreamTeams} />}
       </div>
     </div>
   )

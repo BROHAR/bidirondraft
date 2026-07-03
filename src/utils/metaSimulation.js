@@ -3,11 +3,14 @@ import { DraftEngine } from '../services/draftEngine.js'
 import { setSeed, resetRng } from './rng.js'
 import {
   calculateStarterPoints,
+  getStartingLineup,
+  getLineupSlots,
   getTotalValueCapture,
   getReplacementLevels,
   getTeamVORP,
   getPositionSpendingByGroup,
   rankTeamsByStarterPoints,
+  buildDreamTeam,
 } from './draftAnalysis.js'
 
 // Meta Simulation core. Answers "which bidder strategy is best for MY team
@@ -94,6 +97,23 @@ export function extractTeamRows(teams, availablePlayers, rosterPositions, number
     const groups = getPositionSpendingByGroup(team)
     const positionSpend = {}
     for (const pos of POSITIONS) positionSpend[pos] = groups[pos]?.spend || 0
+
+    // Per-position starter points, attributed to each player's real position
+    // (a FLEX/SUPERFLEX starter's points land on RB/WR/TE/QB, not on the slot).
+    const starters = getStartingLineup(team, rosterPositions)
+    const positionStarterPoints = {}
+    for (const pos of POSITIONS) positionStarterPoints[pos] = 0
+    for (const p of starters) {
+      if (positionStarterPoints[p.position] != null) positionStarterPoints[p.position] += p.projectedPoints || 0
+    }
+
+    // Full-roster count by position.
+    const positionCounts = {}
+    for (const pos of POSITIONS) positionCounts[pos] = 0
+    for (const p of team.roster) {
+      if (positionCounts[p.position] != null) positionCounts[p.position]++
+    }
+
     const finishRank = rankById.get(team.id)
     return {
       strategyName: team.draftStrategy?.name || (team.isHuman ? 'Human' : 'AI'),
@@ -105,6 +125,8 @@ export function extractTeamRows(teams, availablePlayers, rosterPositions, number
       finishRank,
       isWinner: finishRank === 1,
       positionSpend,
+      positionStarterPoints,
+      positionCounts,
     }
   })
 }
@@ -188,6 +210,168 @@ export function computeFieldAverages(summaries) {
   }
 }
 
+// Field-wide winning-roster composition. Aggregates every team that finished #1
+// across all simulated drafts (winners) into an "average winning roster":
+// mean budget allocation and roster counts by position. winRateByStrategy is
+// computed over ALL team rows (AI + human seats), so it reflects how often each
+// strategy produced the league winner against the configured opponents.
+export function aggregateWinningComposition(allTeamRows) {
+  const winners = allTeamRows.filter(r => r.isWinner)
+
+  const positionSpend = {}
+  for (const pos of POSITIONS) positionSpend[pos] = mean(winners.map(r => r.positionSpend[pos] || 0))
+  const totalSpend = POSITIONS.reduce((s, pos) => s + positionSpend[pos], 0)
+  const positionSpendPct = {}
+  for (const pos of POSITIONS) positionSpendPct[pos] = totalSpend > 0 ? positionSpend[pos] / totalSpend : 0
+
+  const positionCounts = {}
+  for (const pos of POSITIONS) positionCounts[pos] = mean(winners.map(r => r.positionCounts[pos] || 0))
+
+  const positionStarterPoints = {}
+  for (const pos of POSITIONS) positionStarterPoints[pos] = mean(winners.map(r => r.positionStarterPoints[pos] || 0))
+
+  const byStrategy = new Map()
+  for (const r of allTeamRows) {
+    if (!byStrategy.has(r.strategyName)) byStrategy.set(r.strategyName, { games: 0, wins: 0 })
+    const g = byStrategy.get(r.strategyName)
+    g.games++
+    if (r.isWinner) g.wins++
+  }
+  const winRateByStrategy = [...byStrategy.entries()]
+    .map(([strategyName, g]) => ({ strategyName, games: g.games, wins: g.wins, winRate: g.games ? g.wins / g.games : 0 }))
+    .sort((a, b) => b.winRate - a.winRate)
+
+  return { samples: winners.length, positionSpend, positionSpendPct, positionCounts, positionStarterPoints, winRateByStrategy }
+}
+
+// Slot display order for a blueprint's optimal starting lineup.
+const BLUEPRINT_SLOT_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST']
+
+// A concrete example roster for the "blueprints" view: the optimal starting
+// lineup (by slot) of a team that finished #1, with each starter's price and
+// projected points, plus the roster-wide spend and bench depth. Captured only
+// for the winner of each draft so we can show real winning builds.
+export function buildWinnerBlueprint(team, rosterPositions, strategyName, seed, starterPoints) {
+  const { slots, bench } = getLineupSlots(team, rosterPositions)
+  const starters = []
+  for (const slot of BLUEPRINT_SLOT_ORDER) {
+    for (const p of slots[slot] || []) {
+      starters.push({
+        slot,
+        name: p.name,
+        position: p.position,
+        team: p.team,
+        price: p.purchasePrice ?? 0,
+        points: p.projectedPoints || 0,
+      })
+    }
+  }
+  const totalSpent = (team.roster || []).reduce((s, p) => s + (p.purchasePrice ?? 0), 0)
+  return { strategyName, seed, starterPoints, totalSpent, benchCount: bench?.length || 0, starters }
+}
+
+// Find the draft winner among already-extracted rows, tag the blueprint with the
+// winner's natural strategy name (matching winRateByStrategy), and append it.
+// No-op if there's no winner (e.g. an empty draft).
+function collectBlueprint(acc, rows, teams, rosterPositions, seed) {
+  const winRow = rows.find(r => r.isWinner)
+  if (!winRow) return
+  const winTeam = teams.find(t => t.id === winRow.teamId)
+  if (!winTeam) return
+  acc.push(buildWinnerBlueprint(winTeam, rosterPositions, winRow.strategyName, seed, winRow.starterPoints))
+}
+
+// Pick the "winning strategy" (the field's most successful, from winRateByStrategy)
+// and return its highest-scoring winning builds — up to `limit`, de-duplicated by
+// their starter set so the user sees genuinely different combinations, not the
+// same roster repeated across seeds. Returns { strategyName, winRate, teams }.
+export function selectBlueprints(allBlueprints, winRateByStrategy, limit = 5) {
+  if (!winRateByStrategy.length || !allBlueprints.length) {
+    return { strategyName: null, winRate: 0, teams: [] }
+  }
+  const top = winRateByStrategy[0]
+  const forStrat = allBlueprints
+    .filter(b => b.strategyName === top.strategyName)
+    .sort((a, b) => b.starterPoints - a.starterPoints)
+
+  const teams = []
+  const seen = new Set()
+  for (const b of forStrat) {
+    const sig = b.starters.map(s => s.name).sort().join('|')
+    if (seen.has(sig)) continue
+    seen.add(sig)
+    teams.push(b)
+    if (teams.length >= limit) break
+  }
+  return { strategyName: top.strategyName, winRate: top.winRate, teams }
+}
+
+// How many of a strategy's most-frequently-rostered players (per position) form
+// its "typical acquisitions" pool. Enough to fill every slot and give the budget
+// optimizer real choices, while excluding one-off fluke buys that would poison
+// the average price. Keyed off roster frequency across the whole simulation.
+const DREAM_POOL_PER_POSITION = 15
+
+// Accumulate, per strategy (natural name, matching winRateByStrategy), how often
+// it rosters each player and the total price it paid — the raw material for a
+// per-strategy dream team. Mutates `pools` in place.
+function accumulateStrategyPool(pools, teams) {
+  for (const t of teams) {
+    const name = t.draftStrategy?.name || (t.isHuman ? 'Human' : 'AI')
+    let pool = pools.get(name)
+    if (!pool) { pool = new Map(); pools.set(name, pool) }
+    for (const p of t.roster || []) {
+      let e = pool.get(p.id)
+      if (!e) {
+        e = { id: p.id, name: p.name, position: p.position, team: p.team, projectedPoints: p.projectedPoints || 0, count: 0, priceSum: 0 }
+        pool.set(p.id, e)
+      }
+      e.count++
+      e.priceSum += p.purchasePrice ?? 0
+    }
+  }
+}
+
+// Build a budget-constrained "dream team" for each of the top `limit` strategies
+// (ranked by field win rate). Each strategy's team is the best affordable lineup
+// drawn from the players it typically rosters, priced at what it typically pays —
+// so the philosophy shows through (e.g. a stars-and-scrubs build can't also
+// afford elite depth). Reuses the same optimizer as the post-draft Dream Team.
+export function buildStrategyDreamTeams(strategyPools, winRateByStrategy, rosterPositions, budgetPerTeam, limit = 5) {
+  const out = []
+  for (const { strategyName, winRate } of winRateByStrategy.slice(0, limit)) {
+    const pool = strategyPools.get(strategyName)
+    if (!pool) continue
+
+    // Keep each position's most-frequently-rostered players; price = average paid.
+    const byPos = {}
+    for (const e of pool.values()) (byPos[e.position] ||= []).push(e)
+    const roster = []
+    for (const pos of Object.keys(byPos)) {
+      byPos[pos].sort((a, b) => (b.count - a.count) || (b.projectedPoints - a.projectedPoints))
+      for (const e of byPos[pos].slice(0, DREAM_POOL_PER_POSITION)) {
+        roster.push({
+          id: e.id, name: e.name, position: e.position, team: e.team,
+          projectedPoints: e.projectedPoints,
+          purchasePrice: Math.max(1, Math.round(e.priceSum / e.count)),
+        })
+      }
+    }
+
+    const dream = buildDreamTeam([{ name: strategyName, roster }], [], rosterPositions, budgetPerTeam)
+    const rows = dream.rows.map(r => ({
+      slotLabel: r.slotLabel,
+      name: r.player?.name || null,
+      position: r.player?.position || null,
+      team: r.player?.team || null,
+      price: r.player ? Math.max(1, Math.round(r.player.purchasePrice || 0)) : 0,
+      points: r.player?.projectedPoints || 0,
+    }))
+    out.push({ strategyName, winRate, totalPoints: dream.totalPoints, totalCost: dream.totalCost, rows })
+  }
+  return out
+}
+
 const POS_LABEL = { QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'kicker', DST: 'defense' }
 
 // 2-4 plain-English sentences on how this strategy fared for the user's team and
@@ -227,16 +411,25 @@ export function generateMetaTakeaways(summary, fieldAverages) {
   return out.slice(0, 4)
 }
 
-// Sort/rank the aggregated user rows into the final result payload. Ranked by
-// the user's average starting-lineup points (the headline metric).
-function finalizeResult(allRows, meta) {
-  const summaries = aggregateRows(allRows).sort((a, b) => b.starterPoints.mean - a.starterPoints.mean)
+// Sort/rank the aggregated user rows into the final result payload. userRows
+// (the user's seat, tagged by intended candidate strategy) drive the headline
+// scorecard, ranked by average starting-lineup points. allTeamRows (every seat
+// across every draft) feed the field-wide winning-composition aggregate, and
+// allBlueprints (one full roster per draft winner) feed the example builds for
+// the winning strategy; the raw rows/blueprints are consumed here and only the
+// aggregates + a handful of selected builds ship.
+function finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, meta) {
+  const summaries = aggregateRows(userRows).sort((a, b) => b.starterPoints.mean - a.starterPoints.mean)
   summaries.forEach((s, i) => { s.rank = i + 1 })
   const fieldAverages = computeFieldAverages(summaries)
+  const winningComposition = aggregateWinningComposition(allTeamRows)
   return {
     ...meta,
     summaries,
     fieldAverages,
+    winningComposition,
+    blueprints: selectBlueprints(allBlueprints, winningComposition.winRateByStrategy),
+    dreamTeams: buildStrategyDreamTeams(strategyPools, winningComposition.winRateByStrategy, meta.rosterPositions, meta.budgetPerTeam),
     ranking: summaries.map(s => s.strategyName),
     generatedAt: new Date().toISOString(),
   }
@@ -258,21 +451,31 @@ function buildPlan(strategies, draftsPerStrategy, baseSeed) {
 // is the seam the worker uses to post progress. resetRng in finally so a seeded
 // generator never leaks into the rest of the app/tests.
 export function runMetaSimulation(config, playersData, { strategies = DEFAULT_STRATEGY_KEYS, draftsPerStrategy = 50, baseSeed = 1, onProgress } = {}) {
-  const { rosterPositions, numberOfTeams } = config
+  const { rosterPositions, numberOfTeams, budgetPerTeam } = config
   const displayMap = buildStrategyDisplay(config)
   const plan = buildPlan(strategies, draftsPerStrategy, baseSeed)
-  const allRows = []
+  const userRows = []
+  const allTeamRows = []
+  const allBlueprints = []
+  const strategyPools = new Map()
   try {
     plan.forEach(({ strat, seed }, i) => {
       const { teams, availablePlayers } = runSingleDraft({ ...config, autoPilotStrategy: strat }, playersData, seed)
-      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat, displayMap)
-      if (row) allRows.push(row)
+      const rows = extractTeamRows(teams, availablePlayers, rosterPositions, numberOfTeams)
+      for (const r of rows) allTeamRows.push(r)
+      // Shallow copy so retagging the user's seat by intended candidate strategy
+      // doesn't relabel its entry inside allTeamRows (which the field-wide win
+      // rate reads under the seat's natural strategy name).
+      const userRow = rows.find(r => r.isHuman)
+      if (userRow) userRows.push({ ...userRow, strategyName: displayMap[strat] || strat })
+      collectBlueprint(allBlueprints, rows, teams, rosterPositions, seed)
+      accumulateStrategyPool(strategyPools, teams)
       onProgress?.(i + 1, plan.length)
     })
   } finally {
     resetRng()
   }
-  return finalizeResult(allRows, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams })
+  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
 }
 
 // Async, cooperatively-yielding variant for the main thread: runs drafts in
@@ -282,22 +485,29 @@ export function runMetaSimulation(config, playersData, { strategies = DEFAULT_ST
 // (e.g. the Vite dev server injects its HMR client into module workers, which
 // crashes them — production worker chunks are fine).
 export async function runMetaSimulationAsync(config, playersData, { strategies = DEFAULT_STRATEGY_KEYS, draftsPerStrategy = 50, baseSeed = 1, onProgress, shouldCancel, batchSize = 4 } = {}) {
-  const { rosterPositions, numberOfTeams } = config
+  const { rosterPositions, numberOfTeams, budgetPerTeam } = config
   const displayMap = buildStrategyDisplay(config)
   const plan = buildPlan(strategies, draftsPerStrategy, baseSeed)
-  const allRows = []
+  const userRows = []
+  const allTeamRows = []
+  const allBlueprints = []
+  const strategyPools = new Map()
   try {
     for (let i = 0; i < plan.length; i++) {
       if (shouldCancel?.()) break
       const { strat, seed } = plan[i]
       const { teams, availablePlayers } = runSingleDraft({ ...config, autoPilotStrategy: strat }, playersData, seed)
-      const row = extractUserRow(teams, availablePlayers, rosterPositions, numberOfTeams, strat, displayMap)
-      if (row) allRows.push(row)
+      const rows = extractTeamRows(teams, availablePlayers, rosterPositions, numberOfTeams)
+      for (const r of rows) allTeamRows.push(r)
+      const userRow = rows.find(r => r.isHuman)
+      if (userRow) userRows.push({ ...userRow, strategyName: displayMap[strat] || strat })
+      collectBlueprint(allBlueprints, rows, teams, rosterPositions, seed)
+      accumulateStrategyPool(strategyPools, teams)
       onProgress?.(i + 1, plan.length)
       if ((i + 1) % batchSize === 0) await new Promise(r => setTimeout(r, 0))
     }
   } finally {
     resetRng()
   }
-  return finalizeResult(allRows, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams })
+  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
 }
