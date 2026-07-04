@@ -21,6 +21,7 @@ describe('setupConfigStore', () => {
       config: { ...defaultDraftConfig(), numberOfTeams: 10, budgetPerTeam: 300, humanTeamName: 'Champs' },
       aiBidderProfilesEnabled: true,
       metaDraftsPerStrategy: 80,
+      launchMode: 'meta',
     }
     saveSetupState(state)
     const loaded = loadSetupState()
@@ -29,6 +30,16 @@ describe('setupConfigStore', () => {
     expect(loaded.config.humanTeamName).toBe('Champs')
     expect(loaded.aiBidderProfilesEnabled).toBe(true)
     expect(loaded.metaDraftsPerStrategy).toBe(80)
+    expect(loaded.launchMode).toBe('meta')
+  })
+
+  it('defaults launchMode to live and rejects invalid values', () => {
+    expect(defaultSetupState().launchMode).toBe('live')
+    // Unknown / missing launchMode falls back to 'live'.
+    window.localStorage.setItem(KEY, JSON.stringify({ launchMode: 'bogus' }))
+    expect(loadSetupState().launchMode).toBe('live')
+    window.localStorage.setItem(KEY, JSON.stringify({ launchMode: 'sim' }))
+    expect(loadSetupState().launchMode).toBe('sim')
   })
 
   it('falls back to defaults on corrupt JSON', () => {
