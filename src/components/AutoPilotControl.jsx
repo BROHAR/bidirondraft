@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { autoPilotService } from '../services/autoPilotService'
+import { getStrategyOptions } from '../strategies/registry'
+import ConfirmDialog from './ConfirmDialog'
 
 function AutoPilotControl() {
   const { 
@@ -12,12 +14,24 @@ function AutoPilotControl() {
     currentBid,
     draftState,
     currentNominator,
+    config,
     toggleAutoPilot,
     setAutoPilotStrategy,
     simulateToEnd
   } = useDraftStore()
 
   const humanTeam = teams.find(t => t.isHuman)
+  const [confirmSimulate, setConfirmSimulate] = useState(false)
+
+  // Same option source as the setup screen, so custom strategies stay
+  // available mid-draft. Labels drop the long descriptions to fit the panel.
+  const strategies = useMemo(
+    () => getStrategyOptions(config?.customStrategies).map(o => ({
+      ...o,
+      label: o.label.split(' - ')[0],
+    })),
+    [config?.customStrategies]
+  )
 
   if (!humanTeam) {
     return null
@@ -27,19 +41,9 @@ function AutoPilotControl() {
     ['NOMINATING', 'BIDDING', 'PAUSED'].includes(draftState)
 
   const handleSimulateToEnd = () => {
-    if (confirm('Simulate the rest of the draft and jump straight to the results? Picks so far are kept, but this cannot be undone.')) {
-      simulateToEnd()
-    }
+    simulateToEnd()
+    setConfirmSimulate(false)
   }
-
-  const strategies = [
-    { value: 'Balanced', label: 'Balanced' },
-    { value: 'ValueHunter', label: 'Value Hunter' },
-    { value: 'StarsAndScrubs', label: 'Stars & Scrubs' },
-    { value: 'ZeroRB', label: 'Zero RB' },
-    { value: 'HeroRB', label: 'Hero RB' },
-    { value: 'LateRoundQB', label: 'Late Round QB' }
-  ]
 
   const getNextAction = () => {
     if (!autoPilotEnabled) {
@@ -99,7 +103,7 @@ function AutoPilotControl() {
           <div className="form-group">
             <button
               className="btn btn-primary simulate-to-end-btn"
-              onClick={handleSimulateToEnd}
+              onClick={() => setConfirmSimulate(true)}
             >
               Simulate to End
             </button>
@@ -132,6 +136,15 @@ function AutoPilotControl() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmSimulate}
+        title="Simulate to End?"
+        message="The AI finishes the rest of the draft and jumps straight to the results. Picks so far are kept. This cannot be undone."
+        confirmLabel="Simulate"
+        onConfirm={handleSimulateToEnd}
+        onCancel={() => setConfirmSimulate(false)}
+      />
     </div>
   )
 }

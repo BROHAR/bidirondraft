@@ -359,6 +359,27 @@ body {
   padding: 0 var(--space-4) var(--space-4);
 }
 
+/* Confirm dialog — compact modal for destructive-action prompts */
+.confirm-dialog {
+  max-width: 440px;
+  padding: var(--space-4);
+}
+
+.confirm-dialog-title {
+  margin-bottom: var(--space-2);
+}
+
+.confirm-dialog-message {
+  color: var(--fg2);
+  margin-bottom: var(--space-4);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 @media (max-width: 768px) {
   .grid-2,
   .grid-3,

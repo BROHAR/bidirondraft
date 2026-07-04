@@ -28,6 +28,7 @@ import {
   buildDreamTeam,
 } from '../utils/draftAnalysis.js'
 import RadarChart, { AXIS_FULL_LABEL } from './RadarChart.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import '../styles/components/postDraftAnalysis.css'
 
 const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Dream Team', 'Draft Board']
@@ -1540,6 +1541,7 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
 
 export default function PostDraftAnalysis({ onViewDraft }) {
   const [activeTab, setActiveTab] = useState(0)
+  const [confirmNewDraft, setConfirmNewDraft] = useState(false)
   const { teams, draftHistory, config, restartDraft, availablePlayers } = useDraftStore()
 
   const humanTeam = teams.find(t => t.isHuman)
@@ -1578,7 +1580,6 @@ export default function PostDraftAnalysis({ onViewDraft }) {
     )
   }
 
-  const handleNewDraft = () => restartDraft()
 
   return (
     <div className="analysis-page">
@@ -1587,9 +1588,19 @@ export default function PostDraftAnalysis({ onViewDraft }) {
         <h1>BIDIRON</h1>
         <div className="analysis-header-actions">
           <button className="btn btn-secondary btn-sm" onClick={onViewDraft}>View Draft</button>
-          <button className="btn btn-primary btn-sm" onClick={handleNewDraft}>New Draft</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setConfirmNewDraft(true)}>New Draft</button>
         </div>
       </header>
+
+      <ConfirmDialog
+        open={confirmNewDraft}
+        title="Start a New Draft?"
+        message="This report and the completed draft will be discarded. This cannot be undone."
+        confirmLabel="New Draft"
+        danger
+        onConfirm={restartDraft}
+        onCancel={() => setConfirmNewDraft(false)}
+      />
 
       {/* Hero */}
       <div className="analysis-hero">
