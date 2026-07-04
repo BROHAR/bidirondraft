@@ -1,11 +1,11 @@
 .draft-board {
-  height: calc(100vh - 120px);
+  height: calc(100dvh - 120px);
   padding: var(--space-3);
 }
 
 .draft-main {
   display: grid;
-  grid-template-columns: 1fr 400px 380px 350px;
+  grid-template-columns: minmax(0, 1fr) 400px 380px 350px;
   gap: var(--space-3);
   height: 100%;
   overflow-x: auto;
@@ -16,6 +16,9 @@
   flex-direction: column;
   gap: var(--space-3);
   min-height: 0;
+  /* Let the fluid column actually shrink instead of forcing the whole
+     grid past the viewport (grid items default to min-width:auto). */
+  min-width: 0;
 }
 
 .tabbed-column .tabbed-section {
@@ -36,10 +39,19 @@
   }
 }
 
-@media (max-width: 1400px) {
+/* Two-column layout kicks in while the four fixed rails still need more
+   width than the viewport has (~1546px) — not at 1400px, which left the
+   1401–1545px band with a clipped right rail. */
+@media (max-width: 1560px) {
   .draft-main {
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: minmax(0, 1fr) 350px;
     grid-template-rows: auto auto;
+  }
+
+  /* Bidding is the primary task — surface it top-left in stacked layouts
+     so the bid controls don't land below the player pool. */
+  .auction-column {
+    order: -1;
   }
 
   .tabbed-column {
