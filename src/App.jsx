@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDraftStore } from './store/draftStore'
 import DraftBoard from './components/DraftBoard'
 import SetupScreen from './components/SetupScreen'
@@ -13,6 +13,19 @@ function App() {
   const metaRunning = useDraftStore(state => state.metaSim.running)
   const metaError = useDraftStore(state => state.metaSim.error)
   const [showDraftBoard, setShowDraftBoard] = useState(false)
+
+  // Draft state lives only in memory — refresh or close mid-draft destroys
+  // it. Warn before the browser lets that happen.
+  const draftActive = ['NOMINATING', 'BIDDING', 'PAUSED'].includes(draftState)
+  useEffect(() => {
+    if (!draftActive) return
+    const warn = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [draftActive])
 
   if (draftState === 'TITLE') {
     return <TitleScreen />
