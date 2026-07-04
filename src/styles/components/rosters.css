@@ -129,7 +129,13 @@
 
 .roster-slot {
   display: flex;
-  align-items: center;
+  /* Force row: the setup screen defines a global .roster-slot with
+     flex-direction: column, which otherwise stacks the badge above the name. */
+  flex-direction: row;
+  /* Top-align so the badge lines up with the player name, not centered
+     between the two-line name/info block. */
+  align-items: flex-start;
+  gap: 10px;
   padding: 10px;
   border: 2px solid var(--gray-950);
   border-radius: 0;
@@ -144,17 +150,38 @@
   border-style: dashed;
 }
 
-.slot-label {
-  min-width: 80px;
-  font-family: var(--font-display);
-  font-size: var(--fs-xs);
+/* Colorized position tag on the left of each roster card (shares the global
+   .pos-badge color rules from postDraftAnalysis.css). Fixed width so every
+   player name lines up down the roster. */
+.roster-slot .pos-badge {
+  flex-shrink: 0;
+  min-width: 44px;
+  padding: 4px 6px;
+  text-align: center;
   letter-spacing: var(--ls-wide);
-  text-transform: uppercase;
-  color: var(--fg2);
 }
 
 .roster-player {
   flex: 1;
+  min-width: 0;
+}
+
+.roster-player .player-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Slot role for FLEX/SUPERFLEX/BENCH players, whose colored badge shows their
+   actual position — this tells you which slot they're filling. */
+.slot-role {
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg3);
+  border: 1px solid var(--gray-700);
+  padding: 1px 4px;
 }
 
 .roster-player .player-name {
