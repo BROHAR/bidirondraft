@@ -32,7 +32,8 @@
   --sky-900:   #0b0d2a;     /* night-game black-blue */
   --sky-800:   #14183d;     /* HUD background */
   --sky-700:   #1f2a6b;     /* uniform navy */
-  --sky-500:   #3a5cff;     /* electric blue (Tecmo logo blue) */
+  --sky-500:   #3a5cff;     /* electric blue (Tecmo logo blue) — fills only */
+  --sky-400:   #6f8dff;     /* electric blue, text-safe (AA on dark surfaces) */
   --sky-300:   #6ec0ff;     /* score-flash cyan */
 
   /* Brand reds — jersey numerals, "DRAFT" stamps */
@@ -53,6 +54,7 @@
   --gray-800:  #2c2c2c;
   --gray-700:  #4a4a4a;
   --gray-500:  #8a8a8a;
+  --gray-400:  #a6a6a6;     /* muted text on gray-800 chips (AA) */
   --gray-300:  #c8c8c8;
   --gray-100:  #efefef;
   --white:     #ffffff;
@@ -60,6 +62,7 @@
   /* Crowd / accent purple (visiting team alt) */
   --purple-700: #4a1d8a;
   --purple-500: #8a3dff;
+  --purple-300: #b78aff;    /* purple as text on dark chips (AA) */
 
   /* Pick-card value system — single source of truth for value/fair/overpay */
   --value-strong:     var(--field-400);             /* #5fd96f */
@@ -69,7 +72,7 @@
   --overpay-soft:     rgba(245, 197, 24, 0.15);
   --overpay-red:      #ef5a5a;
   --overpay-red-soft: rgba(239, 90, 90, 0.15);
-  --fair-strong:      #8b94ad;
+  --fair-strong:      #a7b0c8;
   --fair-soft:        rgba(139, 148, 173, 0.18);
   --chip-bg:          #2a3454;
 
@@ -95,7 +98,7 @@
   /* Accents */
   --accent-primary:    var(--red-600);      /* BID, primary CTA */
   --accent-money:      var(--gold-500);     /* dollar amounts */
-  --accent-team:       var(--sky-500);      /* highlights, links */
+  --accent-team:       var(--sky-400);      /* highlights, links (text-safe) */
   --accent-positive:   var(--field-400);    /* WON, GAIN */
   --accent-negative:   var(--red-500);      /* LOST, BUST */
   --accent-warning:    var(--gold-500);

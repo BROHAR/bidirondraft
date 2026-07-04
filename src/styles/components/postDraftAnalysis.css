@@ -262,7 +262,7 @@
   white-space: nowrap;
 }
 
-.pos-badge.QB  { background: #2a1f4a; color: var(--purple-500); border-color: var(--purple-700); }
+.pos-badge.QB  { background: #2a1f4a; color: var(--purple-300); border-color: var(--purple-700); }
 .pos-badge.RB  { background: #1a2d1a; color: var(--field-400); border-color: var(--field-700); }
 .pos-badge.WR  { background: #1a2040; color: var(--sky-300); border-color: var(--sky-700); }
 .pos-badge.TE  { background: #2d2000; color: var(--gold-500); border-color: var(--gold-700); }
@@ -282,7 +282,7 @@
   font-size: 9px;
   padding: 2px 5px;
   background: var(--gray-800);
-  color: var(--fg3);
+  color: var(--gray-400);
   border: 1px solid var(--gray-700);
 }
 
@@ -941,7 +941,7 @@
   font-size: 9px;
   padding: 2px 5px;
   background: var(--gray-800);
-  color: var(--fg3);
+  color: var(--gray-400);
   border: 1px solid var(--gray-700);
 }
 
