@@ -270,7 +270,7 @@
 
 .starter-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--sky-700);
   color: var(--fg1);
@@ -279,7 +279,7 @@
 
 .bench-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--gray-800);
   color: var(--gray-400);
@@ -288,7 +288,7 @@
 
 .value-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 6px;
   border: 1px solid;
 }
@@ -439,7 +439,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   background: var(--gray-800);
   color: var(--fg3);
   border: 1px solid var(--gray-700);
@@ -938,7 +938,7 @@
 
 .strategy-tag {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--gray-800);
   color: var(--gray-400);
@@ -1081,7 +1081,7 @@
 
 .dbh-strat {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--fg3);
   margin-bottom: var(--space-2);
   text-transform: uppercase;
@@ -1106,7 +1106,7 @@
 
 .dbh-pts-label {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--fg3);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
