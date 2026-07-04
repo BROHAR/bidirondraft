@@ -31,11 +31,16 @@ export function defaultDraftConfig() {
 
 // The full persisted setup state: the draft config plus the two SetupScreen
 // toggles that change draft/sim behaviour.
+// Which of the three run modes the wizard will launch: 'live' (real-time
+// auction), 'sim' (one-shot auto-draft) or 'meta' (batch strategy ranking).
+const LAUNCH_MODES = ['live', 'sim', 'meta']
+
 export function defaultSetupState() {
   return {
     config: defaultDraftConfig(),
     aiBidderProfilesEnabled: false,
-    metaDraftsPerStrategy: 50,
+    metaDraftsPerStrategy: 10,
+    launchMode: 'live',
   }
 }
 
@@ -63,6 +68,9 @@ export function loadSetupState() {
       metaDraftsPerStrategy: Number.isFinite(parsed.metaDraftsPerStrategy)
         ? parsed.metaDraftsPerStrategy
         : defaults.metaDraftsPerStrategy,
+      launchMode: LAUNCH_MODES.includes(parsed.launchMode)
+        ? parsed.launchMode
+        : defaults.launchMode,
     }
   } catch {
     return defaults
@@ -76,6 +84,7 @@ export function saveSetupState(state) {
       config: state.config,
       aiBidderProfilesEnabled: !!state.aiBidderProfilesEnabled,
       metaDraftsPerStrategy: state.metaDraftsPerStrategy,
+      launchMode: LAUNCH_MODES.includes(state.launchMode) ? state.launchMode : 'live',
     }
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   } catch {
