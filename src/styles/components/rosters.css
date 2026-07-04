@@ -127,10 +127,11 @@
   margin-bottom: var(--space-4);
 }
 
-.roster-slot {
+/* Scoped under .roster-slots because the setup screen defines its own global
+   .roster-slot (column layout with steppers) — an unscoped rule here leaks into
+   it and overlaps the counts/controls. */
+.roster-slots .roster-slot {
   display: flex;
-  /* Force row: the setup screen defines a global .roster-slot with
-     flex-direction: column, which otherwise stacks the badge above the name. */
   flex-direction: row;
   /* Top-align so the badge lines up with the player name, not centered
      between the two-line name/info block. */
@@ -141,11 +142,11 @@
   border-radius: 0;
 }
 
-.roster-slot.filled {
+.roster-slots .roster-slot.filled {
   background: var(--bg-card-alt);
 }
 
-.roster-slot.empty {
+.roster-slots .roster-slot.empty {
   background: var(--gray-900);
   border-style: dashed;
 }
@@ -153,7 +154,7 @@
 /* Colorized position tag on the left of each roster card (shares the global
    .pos-badge color rules from postDraftAnalysis.css). Fixed width so every
    player name lines up down the roster. */
-.roster-slot .pos-badge {
+.roster-slots .roster-slot .pos-badge {
   flex-shrink: 0;
   min-width: 44px;
   padding: 4px 6px;
