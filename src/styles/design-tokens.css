@@ -190,6 +190,16 @@
   font-smooth: never;
 }
 
+/* Motion sensitivity: collapse the infinite blink/pulse/spinner loops
+   (and any future animation) to a single instant frame. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 html, body {
   background: var(--bg-stadium);
   color: var(--fg1);

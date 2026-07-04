@@ -25,7 +25,11 @@ function HeaderTimer() {
 
   const label = biddingActive ? 'Bid' : 'Pick'
   return (
-    <div className={`header-timer ${timeRemaining <= 5 ? 'urgent' : ''}`}>
+    <div
+      className={`header-timer ${timeRemaining <= 5 ? 'urgent' : ''}`}
+      role="timer"
+      aria-label={`${label}: ${timeRemaining} seconds remaining`}
+    >
       <span className="header-timer-label">{label}</span>
       <span className="header-timer-value">{timeRemaining}</span>
     </div>
