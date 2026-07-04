@@ -170,7 +170,11 @@ function AuctionBlock() {
       <div className="auction-header">
         <h3>Current Auction</h3>
         <div className="timer">
-          <div className={`timer-circle ${timeRemaining <= 5 ? 'urgent' : ''}`}>
+          <div
+            className={`timer-circle ${timeRemaining <= 5 ? 'urgent' : ''}`}
+            role="timer"
+            aria-label={`${timeRemaining} seconds remaining`}
+          >
             {timeRemaining}
           </div>
         </div>
@@ -254,23 +258,35 @@ function AuctionBlock() {
         </div>
       )}
 
-      <div className="current-bid">
-        <div className="bid-info">
+      <div className={`current-bid ${currentBidderTeam?.isHuman ? 'you-lead' : ''}`}>
+        <div className="bid-info" aria-live="polite">
           <div className="bid-amount">${currentBid}</div>
-          {currentBidderTeam && (
-            <div className="bid-team">
-              High bidder: {currentBidderTeam.name}
-            </div>
+          {currentBidderTeam ? (
+            currentBidderTeam.isHuman ? (
+              <div className="bid-team you-lead-chip">★ You lead ★</div>
+            ) : (
+              <div className="bid-team">
+                High bidder: {currentBidderTeam.name}
+              </div>
+            )
+          ) : (
+            <div className="bid-team no-bids">Opening bid — no bids yet</div>
           )}
         </div>
       </div>
 
       <div className="bid-controls">
+        <div className="budget-info">
+          <div>Your Budget: ${humanTeam?.remainingBudget || 0}</div>
+          <div>Max Bid: ${getMaxBid()}</div>
+        </div>
+
         <div className="bid-buttons">
-          <button 
+          <button
             className="btn btn-success"
             onClick={() => handleBid(1)}
             disabled={currentBid + 1 > getMaxBid()}
+            title={currentBid + 1 > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +$1 (${currentBid + 1})
           </button>
@@ -278,6 +294,7 @@ function AuctionBlock() {
             className="btn btn-success"
             onClick={() => handleBid(midStep)}
             disabled={currentBid + midStep > getMaxBid()}
+            title={currentBid + midStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +${midStep} (${currentBid + midStep})
           </button>
@@ -285,20 +302,22 @@ function AuctionBlock() {
             className="btn btn-success"
             onClick={() => handleBid(bigStep)}
             disabled={currentBid + bigStep > getMaxBid()}
+            title={currentBid + bigStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +${bigStep} (${currentBid + bigStep})
           </button>
-          <button 
+          <button
             className="btn btn-danger"
             onClick={() => handleBid(getMaxBid() - currentBid)}
             disabled={getMaxBid() <= currentBid}
+            title={getMaxBid() <= currentBid ? 'The bid already meets or exceeds your max' : undefined}
           >
             Max Bid (${getMaxBid()})
           </button>
         </div>
-        
+
         <div className="skip-section">
-          <button 
+          <button
             className="btn btn-secondary skip-btn"
             onClick={handleSkipPlayer}
             disabled={isSkipping}
@@ -307,11 +326,6 @@ function AuctionBlock() {
             {isSkipping ? 'Skipping...' : 'Skip Player'}
           </button>
           <small>Let AI teams handle this auction</small>
-        </div>
-        
-        <div className="budget-info">
-          <div>Your Budget: ${teams.find(t => t.isHuman)?.remainingBudget || 0}</div>
-          <div>Max Bid: ${getMaxBid()}</div>
         </div>
       </div>
 
