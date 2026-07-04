@@ -188,26 +188,30 @@ function TeamRosters() {
                 return getRosterSlots().map((slot, index) => {
                   const player = getPlayerForSlot(teams[selectedTeam], slot)
                   const position = slot.split(' ')[0]
-                  
+                  const isFlexSlot = ['FLEX', 'SUPERFLEX', 'BENCH'].includes(position)
+                  // Colorize the tag by the actual player's position when filled, else by
+                  // the slot's own position (FLEX/SUPERFLEX/BENCH fall back to a neutral badge).
+                  const badgePos = player ? player.position : position
+
                   return (
                     <div key={`${slot}-${index}`} className={`roster-slot ${player ? 'filled' : 'empty'}`}>
-                      <div className="slot-label">{slot}</div>
+                      <span className={`pos-badge ${badgePos}`}>{badgePos}</span>
                       {player ? (
                         <div className="roster-player">
-                          <div className="player-name">{player.name}</div>
+                          <div className="player-name">
+                            {player.name}
+                            {isFlexSlot && <span className="slot-role">{slot}</span>}
+                          </div>
                           <div className="player-info">
-                            {player.position} - {player.team}
+                            {player.team}
                             {player.purchasePrice && (
                               <span className="purchase-price"> - ${player.purchasePrice}</span>
-                            )}
-                            {player.position !== position && position !== 'FLEX' && position !== 'SUPERFLEX' && position !== 'BENCH' && (
-                              <span className="position-mismatch"> (in {position})</span>
                             )}
                           </div>
                         </div>
                       ) : (
                         <div className="empty-slot">
-                          <span>Empty {position}</span>
+                          <span>Empty {isFlexSlot ? slot : position}</span>
                         </div>
                       )}
                     </div>
