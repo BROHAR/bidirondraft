@@ -35,6 +35,31 @@ export class DraftEngine {
     this.aiManager = new AIManager()
     this.nominationOrder = []
     this.currentNominatorIndex = 0
+    // Every one-shot timer is tracked so clearTimers() can cancel the whole
+    // cascade (pause, restart, simulate-to-end). `disposed` is the backstop:
+    // once the engine is discarded, any callback that somehow survived
+    // cancellation must not touch the (shared) store of a newer draft.
+    this.pendingTimeouts = new Set()
+    this.disposed = false
+  }
+
+  // Tracked one-shot timer. All engine setTimeout scheduling goes through
+  // here so pending callbacks can't outlive a pause/restart (see clearTimers).
+  schedule(fn, delayMs) {
+    const handle = workerTimers.setTimeout(() => {
+      this.pendingTimeouts.delete(handle)
+      if (this.disposed) return
+      fn()
+    }, delayMs)
+    this.pendingTimeouts.add(handle)
+    return handle
+  }
+
+  // Permanently retire this engine (restart / new draft). Cancels everything
+  // and marks the instance so stray callbacks become no-ops.
+  dispose() {
+    this.disposed = true
+    this.clearTimers()
   }
 
   initializeDraft(config, playersData, options = {}) {
@@ -353,10 +378,13 @@ export class DraftEngine {
   startNominationPhase() {
     const state = this.store.getState()
 
-    // A stray AI-nomination/post-pick setTimeout (not tracked by clearTimers)
-    // can fire after simulateToEnd has already driven the draft to COMPLETE.
-    // Bail rather than restart nomination on a finished draft.
-    if (state.draftState === 'COMPLETE') return
+    // Never (re)start nomination on a finished or paused draft. The post-pick
+    // advance used to fire ~2s after a sale even if the user paused inside
+    // that window (timeouts are tracked+cancelled now, but this guard is the
+    // belt to that suspenders). SETUP stays allowed: initializeDraft calls
+    // this directly to open the first nomination, and restart-into-SETUP is
+    // covered by dispose() cancelling every pending callback.
+    if (['COMPLETE', 'PAUSED', 'TITLE'].includes(state.draftState)) return
 
     // Once the seeded nomination order is exhausted, round-robin among any
     // teams that can still bid — otherwise a team that mismanaged budget
@@ -393,7 +421,7 @@ export class DraftEngine {
     
     if (nominatorTeam && !nominatorTeam.isHuman) {
       // AI nomination - fixed 2 second delay
-      workerTimers.setTimeout(() => {
+      this.schedule(() => {
         const currentState = this.store.getState()
         const currentNominatorTeam = currentState.teams.find(t => t.id === nominatorId)
         if (!currentNominatorTeam || !currentNominatorTeam.hasRosterSpace()) {
@@ -414,7 +442,7 @@ export class DraftEngine {
       }, 2000) // Fixed 2 second delay
     } else if (nominatorTeam && nominatorTeam.isHuman && nominatorTeam.isAutoPilot) {
       // Auto-pilot nomination
-      workerTimers.setTimeout(() => {
+      this.schedule(() => {
         const pool = this.nominationPoolFor(nominatorTeam, state.availablePlayers)
         const viablePool = this.marketViableNominations(nominatorTeam, pool, state.teams, state.availablePlayers)
         const player = autoPilotService.selectNomination(viablePool, nominatorTeam)
@@ -519,7 +547,7 @@ export class DraftEngine {
     this.startBiddingTimer()
 
     // Start AI bidding after small delay
-    workerTimers.setTimeout(() => {
+    this.schedule(() => {
       this.processAIBids(player)
     }, 1000 + random() * 2000) // 1-3 second delay
   }
@@ -578,7 +606,7 @@ export class DraftEngine {
           this.placeBid(humanTeam.id, bidAmount)
 
           // Schedule next potential bid
-          workerTimers.setTimeout(() => {
+          this.schedule(() => {
             this.processAIBids(player)
           }, 1000 + random() * 2000) // 1-3 second delay for auto-pilot
           return
@@ -594,7 +622,7 @@ export class DraftEngine {
       this.placeBid(aiBid.team.id, aiBid.amount)
 
       // Schedule next potential AI bid
-      workerTimers.setTimeout(() => {
+      this.schedule(() => {
         this.processAIBids(player)
       }, this.aiManager.getBiddingDelay(totalBiddingTime))
     } else if (this.biddingTimeRemaining > 3) {
@@ -602,7 +630,7 @@ export class DraftEngine {
       // Re-attempt with fresh rolls while the bidding window still has room.
       // The time guard bounds retries within the actual auction window so
       // the loop terminates cleanly for players nobody truly wants.
-      workerTimers.setTimeout(() => {
+      this.schedule(() => {
         this.processAIBids(player)
       }, this.aiManager.getBiddingDelay(totalBiddingTime))
     }
@@ -613,6 +641,10 @@ export class DraftEngine {
     // Ensure bid amount is always a whole number
     const roundedAmount = Math.round(amount)
     const state = this.store.getState()
+    // A click dispatched in the same event-loop turn as the sale (timer expiry)
+    // would otherwise validate against the reset currentBid=0 and write a
+    // phantom bid into the post-sale state.
+    if (state.draftState !== 'BIDDING' || !state.currentPlayer) return false
     const { currentBid, config, teams } = state
     const team = teams.find(t => t.id === teamId)
     if (!team) return false
@@ -733,7 +765,7 @@ export class DraftEngine {
     this.currentNominatorIndex++
 
     // Move to next nomination
-    workerTimers.setTimeout(() => {
+    this.schedule(() => {
       this.startNominationPhase()
     }, 2000) // 2 second delay between picks
   }
@@ -808,6 +840,10 @@ export class DraftEngine {
       workerTimers.clearInterval(this.biddingTimer)
       this.biddingTimer = null
     }
+    for (const handle of this.pendingTimeouts) {
+      workerTimers.clearTimeout(handle)
+    }
+    this.pendingTimeouts.clear()
   }
 
   pauseDraft() {
@@ -832,17 +868,15 @@ export class DraftEngine {
     if (currentPlayer) {
       this.startBiddingTimer()
 
-      // Re-kick the AI bidding loop. The processAIBids setTimeout cascade is
-      // not tracked by clearTimers, so it dies during the pause (each pending
-      // callback early-returns once draftState flips to PAUSED) and would
-      // otherwise never restart — leaving the resumed auction with no AI bids
-      // until the next nomination. Realign biddingStartTime so timeElapsed
+      // Re-kick the AI bidding loop: pauseDraft cancels the pending
+      // processAIBids cascade, so the resumed auction would otherwise sit
+      // with no AI bids until the next nomination. Realign biddingStartTime so timeElapsed
       // reflects the time already spent on this player (the bidding timer
       // resumes from the preserved biddingTimeRemaining), keeping the AI's
       // early-aggressive window consistent across the pause.
       const totalBiddingTime = (config?.biddingTimer ?? 0) * 1000
       this.biddingStartTime = Date.now() - (totalBiddingTime - this.biddingTimeRemaining * 1000)
-      workerTimers.setTimeout(() => {
+      this.schedule(() => {
         this.processAIBids(currentPlayer)
       }, 1000 + random() * 2000) // 1-3 second delay, matching startBiddingPhase
     } else {
@@ -979,11 +1013,19 @@ export class DraftEngine {
     }
 
     // Assign player to winner (same mutation pattern as completeBidding).
-    // If no team holds the high bid, the nominator takes the player for $1.
+    // If no team holds the high bid, the nominator takes the player for $1 —
+    // but only if it can actually afford it (canBid guards the reserve, same
+    // as the live no-bid branch in completeBidding).
     const finalState = this.store.getState()
-    const winner = finalState.teams.find(t => t.id === currentBidder)
-      ?? finalState.teams.find(t => t.id === nominatorTeam.id)
-    const finalPrice = (winner && winner.id === currentBidder) ? currentBid : 1
+    let winner = finalState.teams.find(t => t.id === currentBidder)
+    let finalPrice = currentBid
+    if (!winner) {
+      const fallback = finalState.teams.find(t => t.id === nominatorTeam.id)
+      if (fallback && fallback.canBid()) {
+        winner = fallback
+        finalPrice = 1
+      }
+    }
 
     if (winner) {
       player.purchasePrice = finalPrice
@@ -995,9 +1037,9 @@ export class DraftEngine {
     this.store.setState((draft) => {
       draft.draftHistory.push({
         player,
-        team: winner?.name ?? nominatorTeam.name,
+        team: winner?.name ?? 'No Bids',
         nominator: nominatorTeam.name,
-        price: finalPrice,
+        price: winner ? finalPrice : 0,
         timestamp: Date.now()
       })
       draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
@@ -1016,9 +1058,7 @@ export class DraftEngine {
       return
     }
 
-    // Stop live timers. (Pending AI-nomination setTimeouts aren't tracked here,
-    // but the COMPLETE guards in startNominationPhase/nominatePlayer neutralize
-    // any that fire after we finish.)
+    // Stop live timers — including every pending one-shot in the cascade.
     this.clearTimers()
 
     // The synchronous bidding loop bids the human team via team.draftStrategy.
