@@ -79,4 +79,47 @@ describe('setupConfigStore', () => {
     clearSetupState()
     expect(window.localStorage.getItem(KEY)).toBeNull()
   })
+
+  // Stored numeric scalars are only trusted within sane ranges — a corrupt or
+  // legacy value (huge numberOfTeams, NaN budget) used to pass straight into
+  // Array.from({length}) / bid math and wedge the setup screen.
+  it('rejects out-of-range or non-integer numeric scalars', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: {
+        numberOfTeams: 1e9,
+        budgetPerTeam: 'lots',
+        humanDraftPosition: -3,
+        nominationTimer: 2.5,
+        biddingTimer: null,
+        minBidIncrement: NaN,
+      },
+    }))
+    const d = defaultDraftConfig()
+    const { config } = loadSetupState()
+    expect(config.numberOfTeams).toBe(d.numberOfTeams)
+    expect(config.budgetPerTeam).toBe(d.budgetPerTeam)
+    expect(config.humanDraftPosition).toBe(d.humanDraftPosition)
+    expect(config.nominationTimer).toBe(d.nominationTimer)
+    expect(config.biddingTimer).toBe(d.biddingTimer)
+    expect(config.minBidIncrement).toBe(d.minBidIncrement)
+  })
+
+  it('keeps in-range numeric scalars from storage', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: { numberOfTeams: 10, budgetPerTeam: 300, humanDraftPosition: 10, biddingTimer: 15 },
+    }))
+    const { config } = loadSetupState()
+    expect(config.numberOfTeams).toBe(10)
+    expect(config.budgetPerTeam).toBe(300)
+    expect(config.humanDraftPosition).toBe(10)
+    expect(config.biddingTimer).toBe(15)
+  })
+
+  it('clamps a draft position that exceeds the stored team count', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: { numberOfTeams: 8, humanDraftPosition: 12 },
+    }))
+    const { config } = loadSetupState()
+    expect(config.humanDraftPosition).toBe(defaultDraftConfig().humanDraftPosition)
+  })
 })
