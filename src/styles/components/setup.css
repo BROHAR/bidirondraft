@@ -127,7 +127,9 @@
 }
 
 .setup-screen .card h2 {
-  font-size: var(--fs-xl);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-md);
+  line-height: 1.4;
   text-shadow: 2px 2px 0 var(--gray-950);
   margin-bottom: var(--space-4);
 }
@@ -459,8 +461,8 @@
   font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
-  color: var(--accent-primary);
-  border: 2px solid var(--accent-primary);
+  color: var(--red-500);
+  border: 2px solid var(--red-500);
   padding: 1px var(--space-2);
   white-space: nowrap;
 }
@@ -541,7 +543,7 @@
 }
 
 .mode-card.selected .mode-card-tag {
-  color: var(--accent-primary);
+  color: var(--red-300);
   background: rgba(200, 16, 46, 0.15);
 }
 

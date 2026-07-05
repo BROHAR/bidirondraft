@@ -165,7 +165,7 @@
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--white);
+  color: var(--gray-950);
   text-align: center;
   background: var(--accent-team);
   border: 2px solid var(--gray-950);

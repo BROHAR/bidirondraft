@@ -9,6 +9,7 @@ vi.mock('../../../src/components/TabbedSection', () => ({ default: () => <div>Ta
 vi.mock('../../../src/components/ControlPanel', () => ({ default: () => <div>ControlPanel</div> }))
 vi.mock('../../../src/components/AutoPilotControl', () => ({ default: () => <div>AutoPilotControl</div> }))
 vi.mock('../../../src/components/DraftProgress', () => ({ default: () => <div>DraftProgress</div> }))
+vi.mock('../../../src/components/SoldBanner', () => ({ default: () => <div>SoldBanner</div> }))
 
 // DraftBoard reads store state via selectors; feed a controllable snapshot.
 let storeState

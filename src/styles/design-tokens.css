@@ -8,13 +8,10 @@
    ========================================================= */
 
 /* ---------- Webfonts ---------- */
-/* Press Start 2P — display / HUD font (NES-style) */
-/* VT323 — terminal / scoreboard digits */
-/* Silkscreen — small UI labels */
-/* All loaded from Google Fonts as substitutes for ripped Tecmo Bowl bitmap fonts.
-   FLAG: True Tecmo Bowl in-game font is a custom 8x8 bitmap; Press Start 2P is the
-   closest free-license equivalent. Replace with a licensed bitmap if shipped. */
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Chakra Petch — body / HUD text (readable at small sizes) */
+/* Press Start 2P — pixel display font, big identity headings ONLY.
+   At 8x8-bitmap proportions it is illegible small; keep it >= 14px. */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Press+Start+2P&display=swap');
 
 :root {
   /* =========================================================
@@ -32,7 +29,8 @@
   --sky-900:   #0b0d2a;     /* night-game black-blue */
   --sky-800:   #14183d;     /* HUD background */
   --sky-700:   #1f2a6b;     /* uniform navy */
-  --sky-500:   #3a5cff;     /* electric blue (Tecmo logo blue) */
+  --sky-500:   #3a5cff;     /* electric blue (Tecmo logo blue) — fills only */
+  --sky-400:   #6f8dff;     /* electric blue, text-safe (AA on dark surfaces) */
   --sky-300:   #6ec0ff;     /* score-flash cyan */
 
   /* Brand reds — jersey numerals, "DRAFT" stamps */
@@ -53,6 +51,7 @@
   --gray-800:  #2c2c2c;
   --gray-700:  #4a4a4a;
   --gray-500:  #8a8a8a;
+  --gray-400:  #a6a6a6;     /* muted text on gray-800 chips (AA) */
   --gray-300:  #c8c8c8;
   --gray-100:  #efefef;
   --white:     #ffffff;
@@ -60,6 +59,7 @@
   /* Crowd / accent purple (visiting team alt) */
   --purple-700: #4a1d8a;
   --purple-500: #8a3dff;
+  --purple-300: #b78aff;    /* purple as text on dark chips (AA) */
 
   /* Pick-card value system — single source of truth for value/fair/overpay */
   --value-strong:     var(--field-400);             /* #5fd96f */
@@ -69,7 +69,7 @@
   --overpay-soft:     rgba(245, 197, 24, 0.15);
   --overpay-red:      #ef5a5a;
   --overpay-red-soft: rgba(239, 90, 90, 0.15);
-  --fair-strong:      #8b94ad;
+  --fair-strong:      #a7b0c8;
   --fair-soft:        rgba(139, 148, 173, 0.18);
   --chip-bg:          #2a3454;
 
@@ -95,7 +95,7 @@
   /* Accents */
   --accent-primary:    var(--red-600);      /* BID, primary CTA */
   --accent-money:      var(--gold-500);     /* dollar amounts */
-  --accent-team:       var(--sky-500);      /* highlights, links */
+  --accent-team:       var(--sky-400);      /* highlights, links (text-safe) */
   --accent-positive:   var(--field-400);    /* WON, GAIN */
   --accent-negative:   var(--red-500);      /* LOST, BUST */
   --accent-warning:    var(--gold-500);
@@ -139,6 +139,7 @@
      TYPOGRAPHY — base families
      ========================================================= */
   --font-display:    'Chakra Petch', sans-serif;  /* HUD, headers */
+  --font-pixel:      'Press Start 2P', 'Chakra Petch', monospace; /* big identity headings */
   --font-numeric:    'Chakra Petch', sans-serif;  /* scoreboard */
   --font-body:       'Chakra Petch', sans-serif;  /* small UI */
   --font-jersey:     'Jersey 15', 'Press Start 2P', monospace;          /* big jersey numerals */
@@ -185,6 +186,16 @@
   image-rendering: crisp-edges;
   -webkit-font-smoothing: none;
   font-smooth: never;
+}
+
+/* Motion sensitivity: collapse the infinite blink/pulse/spinner loops
+   (and any future animation) to a single instant frame. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html, body {

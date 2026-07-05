@@ -258,9 +258,13 @@ describe('DraftEngine', () => {
   describe('placeBid', () => {
     beforeEach(() => {
       const teams = engine.createTeams(defaultConfig)
+      // placeBid only accepts bids during a live auction, so the fixture
+      // needs a player on the block.
+      const onBlock = new Player(makePlayers(1)[0])
       store.setState(draft => {
         draft.teams = teams
         draft.currentBid = 5
+        draft.currentPlayer = onBlock
         draft.config = defaultConfig
         draft.draftState = 'BIDDING'
       })
@@ -1053,6 +1057,90 @@ describe('DraftEngine', () => {
         engine.updateTeamPsychology(teams, winner, player, 25)
       }
       expect(winner.recentBidOutcomes).toHaveLength(5)
+    })
+  })
+
+  describe('timer-cascade and live-auction guards', () => {
+    function activeDraft(overrides = {}) {
+      const teams = engine.createTeams(defaultConfig)
+      engine.nominationOrder = teams.map(t => t.id)
+      engine.currentNominatorIndex = 0
+      store.setState(draft => {
+        draft.teams = teams
+        draft.config = defaultConfig
+        draft.availablePlayers = makePlayers(12).map(p => new Player(p))
+        draft.draftState = 'NOMINATING'
+        Object.assign(draft, overrides)
+      })
+      return teams
+    }
+
+    // The post-pick advance is a 2s setTimeout. Restarting inside that window
+    // used to let the stale callback flip the freshly reset SETUP state back
+    // into a teamless NOMINATING auction.
+    it('dispose() cancels the pending post-pick advance (restart mid-gap)', () => {
+      activeDraft()
+      engine.schedule(() => engine.startNominationPhase(), 2000)
+
+      engine.dispose()
+      store.setState(draft => {
+        draft.draftState = 'SETUP'
+        draft.teams = []
+        draft.currentNominator = null
+      })
+
+      vi.advanceTimersByTime(10000)
+      expect(store.getState().draftState).toBe('SETUP')
+      expect(store.getState().currentNominator).toBeNull()
+    })
+
+    // Pausing during the inter-pick gap used to silently un-pause 2s later:
+    // pauseDraft didn't cancel the advance and startNominationPhase had no
+    // PAUSED guard.
+    it('pause during the inter-pick gap sticks', () => {
+      activeDraft()
+      engine.schedule(() => engine.startNominationPhase(), 2000)
+
+      engine.pauseDraft()
+
+      vi.advanceTimersByTime(10000)
+      expect(store.getState().draftState).toBe('PAUSED')
+    })
+
+    it('startNominationPhase is a no-op while PAUSED even if called directly', () => {
+      activeDraft({ draftState: 'PAUSED', currentNominator: 'team_2' })
+      engine.startNominationPhase()
+      expect(store.getState().draftState).toBe('PAUSED')
+      expect(store.getState().currentNominator).toBe('team_2')
+    })
+
+    // A click dispatched in the same tick as the sale used to validate against
+    // the reset currentBid=0 and write a phantom bid into post-sale state.
+    it('placeBid is rejected outside a live auction', () => {
+      const teams = activeDraft({ currentPlayer: null, currentBid: 0, currentBidder: null })
+
+      const ok = engine.placeBid(teams[0].id, 5)
+
+      expect(ok).toBe(false)
+      expect(store.getState().currentBid).toBe(0)
+      expect(store.getState().currentBidder).toBeNull()
+    })
+
+    // Sync no-bid fallback must respect the same canBid() guard as the live
+    // path instead of driving the nominator's budget negative.
+    it('resolveAuctionSync records No Bids when the nominator cannot afford $1', () => {
+      const teams = activeDraft()
+      const nominator = teams[1]
+      nominator.remainingBudget = 0
+
+      const player = store.getState().availablePlayers[0]
+      engine.resolveAuctionSync(player, 1, null, nominator)
+
+      const pick = store.getState().draftHistory.at(-1)
+      expect(pick.team).toBe('No Bids')
+      expect(pick.price).toBe(0)
+      expect(nominator.remainingBudget).toBe(0)
+      expect(nominator.roster).toHaveLength(0)
     })
   })
 })

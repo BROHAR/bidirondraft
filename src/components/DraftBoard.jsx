@@ -6,6 +6,7 @@ import TabbedSection from './TabbedSection'
 import ControlPanel from './ControlPanel'
 import AutoPilotControl from './AutoPilotControl'
 import DraftProgress from './DraftProgress'
+import SoldBanner from './SoldBanner'
 
 function DraftBoard() {
   const draftState = useDraftStore(state => state.draftState)
@@ -42,6 +43,7 @@ function DraftBoard() {
 
   return (
     <div className="draft-board">
+      <SoldBanner />
       <div className={`draft-main mobile-panel-${mobilePanel}`}>
         <div className="draft-column left-column">
           <PlayerPool />

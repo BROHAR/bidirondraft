@@ -65,7 +65,9 @@ export const useDraftStore = create(
         draft.autoPilotStrategy = config.autoPilotStrategy || 'Balanced'
       })
 
-      // Create and initialize the draft engine
+      // Create and initialize the draft engine. Retire any previous engine
+      // first so its pending timer callbacks can't touch the new draft.
+      if (draftEngine) draftEngine.dispose()
       draftEngine = new DraftEngine({ getState: get, setState: set })
       draftEngine.initializeDraft(config, playersData)
     },
@@ -77,6 +79,7 @@ export const useDraftStore = create(
         draft.autoPilotStrategy = strategy
         draft.draftHistory = []
       })
+      if (draftEngine) draftEngine.dispose()
       draftEngine = new DraftEngine({ getState: get, setState: set })
       draftEngine.initializeDraft(
         { ...config, autoPilotEnabled: true, autoPilotStrategy: strategy },
@@ -191,14 +194,6 @@ export const useDraftStore = create(
       draft.currentNominator = teamId
     }),
     
-    nominatePlayer: (player) => set((draft) => {
-      draft.currentPlayer = player
-      draft.currentBid = 1
-      draft.currentBidder = null
-      draft.draftState = 'BIDDING'
-      draft.timeRemaining = draft.config.biddingTimer
-    }),
-    
     placeBid: (teamId, amount) => {
       if (draftEngine) {
         const success = draftEngine.placeBid(teamId, amount)
@@ -207,31 +202,6 @@ export const useDraftStore = create(
       }
       return false
     },
-    
-    completePurchase: () => set((draft) => {
-      const winningTeam = draft.teams.find(t => t.id === draft.currentBidder)
-      const nominatorTeam = draft.teams.find(t => t.id === draft.currentNominator)
-      const player = draft.currentPlayer
-
-      if (winningTeam && player) {
-        winningTeam.roster.push(player)
-        winningTeam.remainingBudget -= draft.currentBid
-
-        draft.draftHistory.push({
-          player: player,
-          team: winningTeam.name,
-          nominator: nominatorTeam ? nominatorTeam.name : null,
-          price: draft.currentBid,
-          timestamp: Date.now()
-        })
-        
-        draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
-        draft.currentPlayer = null
-        draft.currentBid = 0
-        draft.currentBidder = null
-        draft.draftState = 'NOMINATING'
-      }
-    }),
     
     setTeams: (teams) => set((draft) => {
       draft.teams = teams
@@ -277,7 +247,7 @@ export const useDraftStore = create(
     
     restartDraft: () => {
       if (draftEngine) {
-        draftEngine.clearTimers()
+        draftEngine.dispose()
         draftEngine = null
       }
       set((draft) => {

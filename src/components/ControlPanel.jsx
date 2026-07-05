@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { audioService } from '../services/audioService'
+import ConfirmDialog from './ConfirmDialog'
 
 function ControlPanel() {
   const { 
@@ -15,6 +16,7 @@ function ControlPanel() {
   } = useDraftStore()
   
   const [audioEnabled, setAudioEnabled] = useState(audioService.enabled)
+  const [confirmRestart, setConfirmRestart] = useState(false)
 
   const isPaused = draftState === 'PAUSED'
   const currentNominatorTeam = teams.find(t => t.id === currentNominator)
@@ -28,9 +30,8 @@ function ControlPanel() {
   }
 
   const handleRestartDraft = () => {
-    if (confirm('Are you sure you want to restart the draft? All progress will be lost.')) {
-      restartDraft()
-    }
+    restartDraft()
+    setConfirmRestart(false)
   }
 
   const toggleAudio = () => {
@@ -73,9 +74,9 @@ function ControlPanel() {
           {isPaused ? 'Resume Draft' : 'Pause Draft'}
         </button>
         
-        <button 
+        <button
           className="btn btn-danger"
-          onClick={handleRestartDraft}
+          onClick={() => setConfirmRestart(true)}
         >
           Restart Draft
         </button>
@@ -89,6 +90,15 @@ function ControlPanel() {
         </button>
       </div>
 
+      <ConfirmDialog
+        open={confirmRestart}
+        title="Restart Draft?"
+        message="All progress will be lost. This cannot be undone."
+        confirmLabel="Restart"
+        danger
+        onConfirm={handleRestartDraft}
+        onCancel={() => setConfirmRestart(false)}
+      />
     </div>
   )
 }

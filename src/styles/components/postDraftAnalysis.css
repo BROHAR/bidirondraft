@@ -21,8 +21,8 @@
 }
 
 .analysis-header h1 {
-  font-family: var(--font-display);
-  font-size: var(--fs-xl);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-md);
   text-transform: uppercase;
   color: var(--fg1);
   text-shadow: 3px 3px 0 var(--gray-950);
@@ -262,7 +262,7 @@
   white-space: nowrap;
 }
 
-.pos-badge.QB  { background: #2a1f4a; color: var(--purple-500); border-color: var(--purple-700); }
+.pos-badge.QB  { background: #2a1f4a; color: var(--purple-300); border-color: var(--purple-700); }
 .pos-badge.RB  { background: #1a2d1a; color: var(--field-400); border-color: var(--field-700); }
 .pos-badge.WR  { background: #1a2040; color: var(--sky-300); border-color: var(--sky-700); }
 .pos-badge.TE  { background: #2d2000; color: var(--gold-500); border-color: var(--gold-700); }
@@ -270,7 +270,7 @@
 
 .starter-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--sky-700);
   color: var(--fg1);
@@ -279,16 +279,16 @@
 
 .bench-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--gray-800);
-  color: var(--fg3);
+  color: var(--gray-400);
   border: 1px solid var(--gray-700);
 }
 
 .value-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 6px;
   border: 1px solid;
 }
@@ -439,7 +439,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   background: var(--gray-800);
   color: var(--fg3);
   border: 1px solid var(--gray-700);
@@ -938,10 +938,10 @@
 
 .strategy-tag {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 5px;
   background: var(--gray-800);
-  color: var(--fg3);
+  color: var(--gray-400);
   border: 1px solid var(--gray-700);
 }
 
@@ -1081,7 +1081,7 @@
 
 .dbh-strat {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--fg3);
   margin-bottom: var(--space-2);
   text-transform: uppercase;
@@ -1106,7 +1106,7 @@
 
 .dbh-pts-label {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--fg3);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);

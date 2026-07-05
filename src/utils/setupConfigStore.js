@@ -44,6 +44,14 @@ export function defaultSetupState() {
   }
 }
 
+// A stored numeric scalar is only trusted when it's a finite integer within
+// the field's sane range; anything else (corrupt value, older app version)
+// falls back to the default. numberOfTeams matters most — it feeds
+// Array.from({length}) on the setup screen, so a wild value wedges the page.
+function intInRange(value, min, max, fallback) {
+  return Number.isInteger(value) && value >= min && value <= max ? value : fallback
+}
+
 export function loadSetupState() {
   const defaults = defaultSetupState()
   if (typeof window === 'undefined' || !window.localStorage) return defaults
@@ -53,14 +61,22 @@ export function loadSetupState() {
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return defaults
     const savedConfig = parsed.config && typeof parsed.config === 'object' ? parsed.config : {}
+    const d = defaults.config
     // Merge over defaults so configs saved before a field existed still load.
+    const numberOfTeams = intInRange(savedConfig.numberOfTeams, 2, 20, d.numberOfTeams)
     return {
       config: {
-        ...defaults.config,
+        ...d,
         ...savedConfig,
+        numberOfTeams,
+        budgetPerTeam: intInRange(savedConfig.budgetPerTeam, 10, 100000, d.budgetPerTeam),
+        humanDraftPosition: intInRange(savedConfig.humanDraftPosition, 1, numberOfTeams, d.humanDraftPosition),
+        nominationTimer: intInRange(savedConfig.nominationTimer, 1, 3600, d.nominationTimer),
+        biddingTimer: intInRange(savedConfig.biddingTimer, 1, 3600, d.biddingTimer),
+        minBidIncrement: intInRange(savedConfig.minBidIncrement, 1, 1000, d.minBidIncrement),
         rosterPositions: savedConfig.rosterPositions && typeof savedConfig.rosterPositions === 'object'
           ? { ...savedConfig.rosterPositions }
-          : defaults.config.rosterPositions,
+          : d.rosterPositions,
         aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
       },

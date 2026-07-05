@@ -62,8 +62,13 @@ export function calculateDraftGrade(humanTeam, allTeams, rosterPositions) {
   const n = allTeams.length
 
   const rankPct  = 1 - (rank - 1) / Math.max(n - 1, 1)
-  const valuePct = Math.min(1, Math.max(0, (getTotalValueCapture(humanTeam) + 30) / 80))
-  const budgetPct = Math.min(1, (humanTeam.budget - humanTeam.remainingBudget) / humanTeam.budget)
+  // Estimated values are rescaled to the league budget at draft init, so the
+  // value-capture window must scale too or it saturates at non-$200 budgets.
+  const bs = budgetScaleFor(humanTeam.budget)
+  const valuePct = Math.min(1, Math.max(0, (getTotalValueCapture(humanTeam) + 30 * bs) / (80 * bs)))
+  const budgetPct = humanTeam.budget > 0
+    ? Math.min(1, (humanTeam.budget - humanTeam.remainingBudget) / humanTeam.budget)
+    : 0
 
   const score = rankPct * 0.4 + valuePct * 0.4 + budgetPct * 0.2
 
@@ -84,10 +89,23 @@ export function gradeColor(grade) {
 
 // Percentage-based value classifier shared by the pick card and post-draft badges.
 // Tiers: value (≤ -15%), slight-value (-5% to -15%), fair (±5%), slight-overpay (+5% to +15%), overpay (≥ +15%)
-export function getValueLabel(estimatedValue, pricePaid) {
+export function getValueLabel(estimatedValue, pricePaid, budgetScale = 1) {
   const deltaDollars = pricePaid - estimatedValue
   if (!estimatedValue || estimatedValue <= 0) {
     return { text: 'FAIR', cls: 'fair', pct: 0, deltaDollars }
+  }
+  // Tiny denominators make the percentage lens shout — a $1-est kicker bought
+  // for $3 is a $2 miss, not a "+200% OVER" disaster. Below ~$5 (scaled to the
+  // league budget) classify and label by dollar delta instead.
+  if (estimatedValue < 5 * budgetScale) {
+    const d = deltaDollars / budgetScale
+    const rounded = Math.round(deltaDollars)
+    const pct = (deltaDollars / estimatedValue) * 100
+    if (d <= -3) return { text: `−$${Math.abs(rounded)} VALUE`, cls: 'value',          pct, deltaDollars }
+    if (d <= -1) return { text: `−$${Math.abs(rounded)} VALUE`, cls: 'slight-value',   pct, deltaDollars }
+    if (d < 1)   return { text: 'FAIR',                         cls: 'fair',           pct, deltaDollars }
+    if (d < 3)   return { text: `+$${rounded} OVER`,            cls: 'slight-overpay', pct, deltaDollars }
+    return         { text: `+$${rounded} OVER`,                 cls: 'overpay',        pct, deltaDollars }
   }
   const pct = (deltaDollars / estimatedValue) * 100
   const pctRounded = Math.round(pct)
@@ -136,9 +154,9 @@ export function getPointsValueLabel(projectedPoints, price, leagueAvgPointsPerDo
 }
 
 // Annotates draftHistory with pickIndex (1-based) plus both value lenses for table rendering and sorting.
-export function getPickAnalysis(draftHistory, leagueAvgPointsPerDollar) {
+export function getPickAnalysis(draftHistory, leagueAvgPointsPerDollar, budgetScale = 1) {
   return draftHistory.map((pick, i) => {
-    const dollarLabel = getValueLabel(pick.player.estimatedValue, pick.price)
+    const dollarLabel = getValueLabel(pick.player.estimatedValue, pick.price, budgetScale)
     const pointsLabel = getPointsValueLabel(pick.player.projectedPoints, pick.price, leagueAvgPointsPerDollar)
     return {
       ...pick,

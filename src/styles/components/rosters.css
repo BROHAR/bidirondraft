@@ -177,7 +177,7 @@
    actual position — this tells you which slot they're filling. */
 .slot-role {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--fg3);

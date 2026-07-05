@@ -201,10 +201,11 @@ function PlayerPool() {
             <div className="player-vorp">{Math.round(getPlayerVORP(player, replacementLevels))}</div>
             <div className="player-value">${player.estimatedValue}</div>
             <div className="player-action">
-              <button 
+              <button
                 className="btn btn-sm btn-primary"
                 onClick={() => handleNominate(player)}
                 disabled={!canNominate()}
+                title={canNominate() ? undefined : 'You can nominate when it’s your turn'}
               >
                 {canNominate() ? 'Nominate' : 'N/A'}
               </button>
