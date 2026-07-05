@@ -21,8 +21,8 @@
 }
 
 .analysis-header h1 {
-  font-family: var(--font-display);
-  font-size: var(--fs-xl);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-md);
   text-transform: uppercase;
   color: var(--fg1);
   text-shadow: 3px 3px 0 var(--gray-950);

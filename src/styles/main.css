@@ -72,8 +72,8 @@ body {
 }
 
 .app-header h1 {
-  font-family: var(--font-display);
-  font-size: var(--fs-xl);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-md);
   letter-spacing: var(--ls-normal);
   text-transform: uppercase;
   color: var(--fg1);
@@ -430,7 +430,7 @@ body {
   }
 
   .app-header h1 {
-    font-size: var(--fs-md);
+    font-size: var(--fs-sm);
   }
 
   .modal-content {

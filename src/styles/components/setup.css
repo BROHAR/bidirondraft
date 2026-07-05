@@ -127,7 +127,9 @@
 }
 
 .setup-screen .card h2 {
-  font-size: var(--fs-xl);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-md);
+  line-height: 1.4;
   text-shadow: 2px 2px 0 var(--gray-950);
   margin-bottom: var(--space-4);
 }

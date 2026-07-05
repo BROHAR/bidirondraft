@@ -8,13 +8,10 @@
    ========================================================= */
 
 /* ---------- Webfonts ---------- */
-/* Press Start 2P — display / HUD font (NES-style) */
-/* VT323 — terminal / scoreboard digits */
-/* Silkscreen — small UI labels */
-/* All loaded from Google Fonts as substitutes for ripped Tecmo Bowl bitmap fonts.
-   FLAG: True Tecmo Bowl in-game font is a custom 8x8 bitmap; Press Start 2P is the
-   closest free-license equivalent. Replace with a licensed bitmap if shipped. */
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Chakra Petch — body / HUD text (readable at small sizes) */
+/* Press Start 2P — pixel display font, big identity headings ONLY.
+   At 8x8-bitmap proportions it is illegible small; keep it >= 14px. */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Press+Start+2P&display=swap');
 
 :root {
   /* =========================================================
@@ -142,6 +139,7 @@
      TYPOGRAPHY — base families
      ========================================================= */
   --font-display:    'Chakra Petch', sans-serif;  /* HUD, headers */
+  --font-pixel:      'Press Start 2P', 'Chakra Petch', monospace; /* big identity headings */
   --font-numeric:    'Chakra Petch', sans-serif;  /* scoreboard */
   --font-body:       'Chakra Petch', sans-serif;  /* small UI */
   --font-jersey:     'Jersey 15', 'Press Start 2P', monospace;          /* big jersey numerals */
