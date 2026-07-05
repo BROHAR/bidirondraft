@@ -1,6 +1,7 @@
 import React from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { getValueLabel, getVariancePosition } from '../utils/draftAnalysis'
+import { budgetScaleFor } from '../utils/budgetScaling'
 
 function formatDelta(cls, deltaDollars) {
   if (cls === 'fair') return '~'
@@ -10,7 +11,8 @@ function formatDelta(cls, deltaDollars) {
 }
 
 function DraftHistory() {
-  const { draftHistory } = useDraftStore()
+  const { draftHistory, config } = useDraftStore()
+  const bs = budgetScaleFor(config?.budgetPerTeam)
 
   return (
     <div className="card draft-history">
@@ -27,7 +29,7 @@ function DraftHistory() {
           <div className="picks-list">
             {draftHistory.slice().reverse().map((pick, index) => {
               const pickNumber = draftHistory.length - index
-              const { text, cls, pct, deltaDollars } = getValueLabel(pick.player.estimatedValue, pick.price)
+              const { text, cls, pct, deltaDollars } = getValueLabel(pick.player.estimatedValue, pick.price, bs)
               const markerLeft = getVariancePosition(pct)
 
               return (

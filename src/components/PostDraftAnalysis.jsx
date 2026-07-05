@@ -27,19 +27,26 @@ import {
   getPowerRankings,
   buildDreamTeam,
 } from '../utils/draftAnalysis.js'
+import { budgetScaleFor } from '../utils/budgetScaling.js'
 import RadarChart, { AXIS_FULL_LABEL } from './RadarChart.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import '../styles/components/postDraftAnalysis.css'
 
 const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Dream Team', 'Draft Board']
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
-const PRICE_TIERS = [
-  { label: '$1–10', min: 1, max: 10 },
-  { label: '$11–25', min: 11, max: 25 },
-  { label: '$26–40', min: 26, max: 40 },
-  { label: '$41–60', min: 41, max: 60 },
-  { label: '$60+', min: 60, max: Infinity },
-]
+// Price-tier bounds are tuned for a $200 budget and scale with the league's
+// actual budget (estimated values are rescaled at draft init).
+function buildPriceTiers(budgetScale) {
+  const s = v => Math.max(1, Math.round(v * budgetScale))
+  const bounds = [[1, 10], [11, 25], [26, 40], [41, 60]]
+  const tiers = bounds.map(([min, max]) => ({
+    label: `$${s(min)}–${s(max)}`,
+    min: s(min),
+    max: s(max),
+  }))
+  tiers.push({ label: `$${s(60)}+`, min: s(60), max: Infinity })
+  return tiers
+}
 
 // ---- InfoTip — small ⓘ glyph with a styled hover/focus tooltip ----------
 
@@ -100,6 +107,17 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
   const posSpend = useMemo(() => getPositionSpendingByGroup(humanTeam), [humanTeam])
   const byeMap = useMemo(() => getByeWeekMap(humanTeam, rosterPositions), [humanTeam, rosterPositions])
 
+  // "Room fair" price: the player's estimate corrected for how this draft
+  // actually priced the position (league paid / league estimated). Answers
+  // "what should this have cost in THIS room?" — omitted when it rounds to
+  // the estimate itself.
+  const roomFair = (pick) => {
+    const m = mkt[pick.player.position]
+    if (!m || !(m.avgEstimated > 0)) return null
+    const fair = Math.round(pick.player.estimatedValue * (m.avgPaid / m.avgEstimated))
+    return fair !== Math.round(pick.player.estimatedValue) ? fair : null
+  }
+
   const myBestValues = useMemo(() => {
     const myPicks = draftHistory.filter(p => p.team === humanTeam.name)
     return [...myPicks]
@@ -116,6 +134,7 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
       .slice(0, 3)
   }, [draftHistory, humanTeam.name])
 
+  const bs = budgetScaleFor(config?.budgetPerTeam)
   const posRows = POSITION_ORDER.map(pos => {
     const mine = posSpend[pos]
     const market = mkt[pos]
@@ -124,12 +143,14 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
     const myAvg = mine.spend / mine.players.length
     const diff = marketAvg !== null ? myAvg - marketAvg : null
 
+    // Verdict bands are per-player dollar deltas tuned for $200, scaled to
+    // the league budget.
     let verdict = 'verdict-fair', verdictText = 'Fair'
     if (diff !== null) {
-      if (diff <= -3)      { verdict = 'verdict-under';    verdictText = `$${Math.abs(diff).toFixed(0)} under mkt` }
-      else if (diff <= 3)  { verdict = 'verdict-fair';     verdictText = 'At market' }
-      else if (diff <= 8)  { verdict = 'verdict-over';     verdictText = `$${diff.toFixed(0)} over mkt` }
-      else                 { verdict = 'verdict-big-over'; verdictText = `$${diff.toFixed(0)} over mkt` }
+      if (diff <= -3 * bs)      { verdict = 'verdict-under';    verdictText = `$${Math.abs(diff).toFixed(0)} under mkt` }
+      else if (diff <= 3 * bs)  { verdict = 'verdict-fair';     verdictText = 'At market' }
+      else if (diff <= 8 * bs)  { verdict = 'verdict-over';     verdictText = `$${diff.toFixed(0)} over mkt` }
+      else                      { verdict = 'verdict-big-over'; verdictText = `$${diff.toFixed(0)} over mkt` }
     }
 
     const posVorp = mine.players.reduce(
@@ -142,6 +163,7 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
         <td><span className={`pos-badge ${pos}`}>{pos}</span></td>
         <td>{mine.players.length}</td>
         <td>${mine.spend}</td>
+        <td>${myAvg.toFixed(0)}</td>
         <td>{marketAvg !== null ? `$${marketAvg.toFixed(0)}` : '—'}</td>
         <td>{Math.round(posVorp)}</td>
         <td className={verdict}>{verdictText}</td>
@@ -187,7 +209,8 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
                   <th>Position</th>
                   <th>Drafted</th>
                   <th>Spent</th>
-                  <th>Mkt Avg</th>
+                  <th>My $/Player</th>
+                  <th>Mkt $/Player <InfoTip label="Mkt $/Player" text="League-wide average price paid per player at this position. The vs-Market verdict compares your per-player average against it." /></th>
                   <th>VORP</th>
                   <th>vs Market</th>
                 </tr>
@@ -210,7 +233,7 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
         <h3>Your Roster ({starters.length} starters · {bench.length} bench)</h3>
         <div className="roster-slot-list">
           {rosterSlots.map((slot, i) => {
-            const label = slot.player ? getValueLabel(slot.player.estimatedValue, slot.player.purchasePrice || 0) : null
+            const label = slot.player ? getValueLabel(slot.player.estimatedValue, slot.player.purchasePrice || 0, bs) : null
             const isFirstBench = slot.slotLabel === 'BENCH' && (i === 0 || rosterSlots[i - 1].slotLabel !== 'BENCH')
             return (
               <React.Fragment key={i}>
@@ -242,12 +265,15 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
         <h3>Your Best Deals &amp; Overpays</h3>
         <div className="steals-overpays">
           <div>
-            <div className="so-list-title steals-title">Top Steals</div>
+            <div className="so-list-title steals-title">Top Steals <InfoTip label="Top Steals" text="Room fair = the player's estimated value adjusted by how far above or below estimates this draft actually paid at the position." /></div>
             {myBestValues.map((pick, i) => (
               <div key={i} className="so-item">
                 <div>
                   <div className="so-player">{pick.player.name}</div>
-                  <div className="so-team">{pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue})</div>
+                  <div className="so-team">
+                    {pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue}
+                    {roomFair(pick) !== null ? ` · room fair $${roomFair(pick)}` : ''})
+                  </div>
                 </div>
                 <span className="so-delta-positive">+${pick.valueDiff.toFixed(0)}</span>
               </div>
@@ -260,7 +286,10 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
               <div key={i} className="so-item">
                 <div>
                   <div className="so-player">{pick.player.name}</div>
-                  <div className="so-team">{pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue})</div>
+                  <div className="so-team">
+                    {pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue}
+                    {roomFair(pick) !== null ? ` · room fair $${roomFair(pick)}` : ''})
+                  </div>
                 </div>
                 <span className="so-delta-negative">-${Math.abs(pick.valueDiff).toFixed(0)}</span>
               </div>
@@ -293,7 +322,8 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
 
 // ---- Tab 2: Market Intel ------------------------------------------------
 
-function MarketIntelTab({ draftHistory, humanTeam, allTeams, rosterPositions, replacementInfo }) {
+function MarketIntelTab({ draftHistory, humanTeam, allTeams, rosterPositions, replacementInfo, config }) {
+  const bs = budgetScaleFor(config?.budgetPerTeam)
   const mkt = useMemo(() => getMarketAveragesByPosition(draftHistory), [draftHistory])
   const bestValues = useMemo(() => getBestValues(draftHistory, 5), [draftHistory])
   const overpays = useMemo(() => getBiggestOverpays(draftHistory, 5), [draftHistory])
@@ -307,7 +337,7 @@ function MarketIntelTab({ draftHistory, humanTeam, allTeams, rosterPositions, re
   const maxAvg = Math.max(...posEntries.map(([, v]) => Math.max(v.avgPaid, v.avgEstimated)), 1)
 
   // Tier analysis
-  const tiers = PRICE_TIERS.map(tier => {
+  const tiers = buildPriceTiers(bs).map(tier => {
     const picks = draftHistory.filter(p => p.price >= tier.min && p.price <= tier.max)
     const totalOverpay = picks.reduce((sum, p) => sum + (p.price - p.player.estimatedValue), 0)
     const avgOverpay = picks.length > 0 ? totalOverpay / picks.length : 0
@@ -380,8 +410,8 @@ function MarketIntelTab({ draftHistory, humanTeam, allTeams, rosterPositions, re
         <div className="tier-grid">
           {tiers.map(tier => {
             const sign = tier.avgOverpay >= 0 ? '+' : ''
-            const color = tier.avgOverpay > 3 ? 'var(--accent-negative)'
-              : tier.avgOverpay < -3 ? 'var(--accent-positive)'
+            const color = tier.avgOverpay > 3 * bs ? 'var(--accent-negative)'
+              : tier.avgOverpay < -3 * bs ? 'var(--accent-positive)'
               : 'var(--fg2)'
             return (
               <div key={tier.label} className="tier-card">
@@ -456,7 +486,8 @@ function ValueAnalysisTab({ draftHistory, allTeams, humanTeam, replacementLevels
   const [sortDir, setSortDir] = useState('asc') // 'asc' | 'desc'
 
   const leagueAvg = useMemo(() => getLeagueAvgPointsPerDollar(draftHistory), [draftHistory])
-  const annotated = useMemo(() => getPickAnalysis(draftHistory, leagueAvg), [draftHistory, leagueAvg])
+  const bs = budgetScaleFor(humanTeam?.budget)
+  const annotated = useMemo(() => getPickAnalysis(draftHistory, leagueAvg, bs), [draftHistory, leagueAvg, bs])
 
   // Whole-draft synthesis — neutral, never changes with the team filter.
   const valueTakeaways = useMemo(() => {
@@ -749,6 +780,7 @@ function BudgetFlowTab({ humanTeam, allTeams, draftHistory, config }) {
     () => getHumanPicksTimeline(draftHistory, humanTeam.name, config.budgetPerTeam),
     [draftHistory, humanTeam.name, config.budgetPerTeam]
   )
+  const leaguePtsPerDollar = useMemo(() => getLeagueAvgPointsPerDollar(draftHistory), [draftHistory])
 
   const posSpend = useMemo(() => getPositionSpendingByGroup(humanTeam), [humanTeam])
   const totalSpend = config.budgetPerTeam - humanTeam.remainingBudget
@@ -843,12 +875,21 @@ function BudgetFlowTab({ humanTeam, allTeams, draftHistory, config }) {
             <h3>Budget Efficiency</h3>
             <div className="eff-stats">
               <div className="eff-stat">
+                <label>Pts per $ <InfoTip label="Pts per dollar" text="Your roster's total projected points per dollar spent, vs the league-wide average across every pick. Above the league number = your dollars bought more production." /></label>
+                <span className="eff-value">
+                  {totalSpend > 0
+                    ? (humanTeam.roster.reduce((sum, p) => sum + (p.projectedPoints || 0), 0) / totalSpend).toFixed(1)
+                    : '—'}
+                  {leaguePtsPerDollar > 0 ? ` (lg ${leaguePtsPerDollar.toFixed(1)})` : ''}
+                </span>
+              </div>
+              <div className="eff-stat">
                 <label>Total Spent</label>
                 <span className="eff-value">${totalSpend}</span>
               </div>
               <div className="eff-stat">
                 <label>Budget Used</label>
-                <span className="eff-value">{((totalSpend / config.budgetPerTeam) * 100).toFixed(0)}%</span>
+                <span className="eff-value">{config.budgetPerTeam > 0 ? ((totalSpend / config.budgetPerTeam) * 100).toFixed(0) : 0}%</span>
               </div>
               <div className="eff-stat">
                 <label>Bench Spend</label>
@@ -1072,7 +1113,7 @@ function TeamRosterModal({ team, rosterPositions, onClose }) {
           </div>
           <div className="roster-slot-list">
             {rosterSlots.map((slot, i) => {
-              const label = slot.player ? getValueLabel(slot.player.estimatedValue, slot.player.purchasePrice || 0) : null
+              const label = slot.player ? getValueLabel(slot.player.estimatedValue, slot.player.purchasePrice || 0, budgetScaleFor(team.budget)) : null
               const isFirstBench = slot.slotLabel === 'BENCH' && (i === 0 || rosterSlots[i - 1].slotLabel !== 'BENCH')
               return (
                 <React.Fragment key={i}>
@@ -1238,7 +1279,7 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
               {Array.from({ length: maxPicks }, (_, i) => {
                 const pick = picks[i]
                 if (!pick) return <div key={i} className="db-cell db-cell-empty" />
-                const label = getValueLabel(pick.player.estimatedValue, pick.price)
+                const label = getValueLabel(pick.player.estimatedValue, pick.price, budgetScaleFor(allTeams[0]?.budget))
                 const isBenchStart = sortBy === 'position' && !pick.isStarter && (i === 0 || picks[i - 1]?.isStarter)
                 return (
                   <div
@@ -1468,7 +1509,7 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
 
       <div className="dream-summary">
         <div className="dream-stat">
-          <div className="dream-stat-label">Best lineup pts</div>
+          <div className="dream-stat-label">Best lineup pts <InfoTip label="Best lineup pts" text="Best starting lineup buyable for this budget at the prices this draft actually produced: drafted players cost their sale price, free agents their estimated value." /></div>
           <div className="dream-stat-value">{dream.totalPoints.toFixed(0)}</div>
           <div className="dream-stat-sub">
             ${dream.totalCost} of ${dream.starterBudget}
@@ -1561,6 +1602,8 @@ export default function PostDraftAnalysis({ onViewDraft }) {
   const rank = humanTeam ? rankedTeams.findIndex(t => t.id === humanTeam.id) + 1 : null
   const valueCapture = humanTeam ? getTotalValueCapture(humanTeam) : 0
   const budgetLeft = humanTeam ? humanTeam.remainingBudget : 0
+  // Dollar thresholds in the hero cards are $200-tuned; scale to the budget.
+  const heroScale = budgetScaleFor(config?.budgetPerTeam)
 
   const starterPts = humanTeam ? calculateStarterPoints(humanTeam, rp) : 0
 
@@ -1626,13 +1669,13 @@ export default function PostDraftAnalysis({ onViewDraft }) {
             >
               {valueCapture >= 0 ? '+' : ''}{valueCapture.toFixed(0)}
             </div>
-            <div className="hero-card-sub">est. value vs price paid</div>
+            <div className="hero-card-sub">est. value vs price, full roster</div>
           </div>
-          <div className={`hero-card ${budgetLeft > 15 ? 'warn' : ''}`}>
+          <div className={`hero-card ${budgetLeft > 15 * heroScale ? 'warn' : ''}`}>
             <div className="hero-card-label">Budget Left</div>
             <div className="hero-card-value">${budgetLeft}</div>
             <div className="hero-card-sub">
-              {budgetLeft > 15 ? 'left on the table' : `of $${humanTeam.budget} used`}
+              {budgetLeft > 15 * heroScale ? 'left on the table' : `of $${humanTeam.budget} used`}
             </div>
           </div>
         </div>
@@ -1664,6 +1707,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
         )}
         {activeTab === 1 && (
           <MarketIntelTab
+            config={config}
             draftHistory={draftHistory}
             humanTeam={humanTeam}
             allTeams={teams}
