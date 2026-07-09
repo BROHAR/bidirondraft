@@ -89,11 +89,6 @@
 }
 
 @media (max-width: 768px) {
-  /* Collapse the per-AI-team strategy grid so each team gets a full-width row. */
-  .advanced-config-rows {
-    grid-template-columns: 1fr;
-  }
-
   /* Let the preset buttons wrap instead of cramming on a narrow screen. */
   .preset-buttons {
     flex-wrap: wrap;
@@ -425,6 +420,21 @@
 .advanced-config-row select {
   min-width: 0;
   width: 100%;
+  font-family: var(--font-numeric);
+  font-size: var(--fs-md);
+  color: var(--accent-money);
+  background: #0b0d2a;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
+  outline: none;
+  cursor: pointer;
+}
+
+.advanced-config-row select:focus {
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6),
+              0 0 0 2px var(--gold-500);
 }
 
 /* Stacks the strategy select and (for Taco) the home-team select in the row's
@@ -443,6 +453,21 @@
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--fg2);
+}
+
+/* Mobile: collapse the per-AI-team grid to one column and stack each row's
+   label above its full-width dropdown. These live after the base rules above
+   so they win on equal specificity when the media query matches. */
+@media (max-width: 768px) {
+  .advanced-config-rows {
+    grid-template-columns: 1fr;
+  }
+
+  .advanced-config-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+    align-items: stretch;
+  }
 }
 
 .value-adjustments-controls {
