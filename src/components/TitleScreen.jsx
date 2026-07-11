@@ -1,12 +1,18 @@
-import React, { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useDraftStore } from '../store/draftStore'
+import SignupModal from './SignupModal'
+import { isSubscribed } from '../utils/subscribeStore'
 
 function TitleScreen() {
   const setDraftState = useDraftStore(state => state.setDraftState)
+  const [showSignup, setShowSignup] = useState(false)
 
-  const handleStart = () => setDraftState('SETUP')
+  const handleStart = useCallback(() => setDraftState('SETUP'), [setDraftState])
 
   useEffect(() => {
+    // While the signup modal is open, keys belong to the email form —
+    // Space/Enter must not start the game.
+    if (showSignup) return
     const onKey = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -15,10 +21,10 @@ function TitleScreen() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [showSignup, handleStart])
 
   return (
-    <div className="title-screen" onClick={handleStart}>
+    <div className="title-screen" onClick={() => { if (!showSignup) handleStart() }}>
       <div className="title-screen-scanlines" aria-hidden="true" />
 
       <div className="title-screen-content">
@@ -47,8 +53,22 @@ function TitleScreen() {
 
         <div className="title-screen-footer">
           ©2026 BIDIRON · 1-PLAYER · AUCTION MODE
+          {!isSubscribed() && (
+            <>
+              {' · '}
+              <button
+                type="button"
+                className="title-screen-updates"
+                onClick={(e) => { e.stopPropagation(); setShowSignup(true) }}
+              >
+                GET UPDATES
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      <SignupModal open={showSignup} onClose={() => setShowSignup(false)} source="title" />
     </div>
   )
 }

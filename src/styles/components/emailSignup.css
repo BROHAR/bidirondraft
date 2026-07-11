@@ -1,0 +1,174 @@
+/* =========================================================
+   News & updates email signup
+   Form core (card + inline variants), title-footer link,
+   post-draft card, setup-footer line, signup modal.
+   ========================================================= */
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.signup-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+
+.signup-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.signup-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+  background: var(--sky-900);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
+  outline: none;
+}
+
+.signup-input:focus {
+  border-color: var(--gold-500);
+}
+
+.signup-input::placeholder {
+  color: var(--fg3);
+}
+
+.signup-submit {
+  white-space: nowrap;
+}
+
+/* Honeypot — off-screen for humans, present for bots */
+.signup-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.signup-dismiss {
+  background: none;
+  border: none;
+  color: var(--fg3);
+  font-size: var(--fs-md);
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
+.signup-dismiss:hover,
+.signup-dismiss:focus-visible {
+  color: var(--fg1);
+}
+
+.signup-status {
+  min-height: 1em;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+}
+
+.signup-error {
+  color: var(--accent-negative);
+}
+
+.signup-success {
+  color: var(--accent-positive);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: var(--ls-wide);
+}
+
+/* --- Inline variant: quiet footer line (setup screen) -------------------- */
+.signup-form--inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.signup-form--inline .signup-label {
+  color: var(--fg3);
+}
+
+.signup-form--inline .signup-input {
+  max-width: 240px;
+  padding: 4px 8px;
+}
+
+.signup-form--inline .signup-submit {
+  font-size: var(--fs-xs);
+  padding: 6px 10px;
+}
+
+/* --- Title screen footer link -------------------------------------------- */
+.title-screen-updates {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--fg3);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.title-screen-updates:hover,
+.title-screen-updates:focus-visible {
+  color: var(--gold-500);
+}
+
+/* --- Signup modal (title screen) ------------------------------------------ */
+.modal-content--signup {
+  max-width: 440px;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.signup-modal-title {
+  margin: 0;
+}
+
+.signup-modal-blurb {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--fg2);
+}
+
+.signup-modal-close {
+  align-self: flex-end;
+}
+
+/* --- Post-draft analysis card --------------------------------------------- */
+.signup-card {
+  background: var(--bg-card);
+  border: var(--border-pixel);
+  box-shadow: var(--shadow-pixel);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+/* --- Setup screen footer line ---------------------------------------------- */
+.setup-signup-footer {
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--gray-800);
+  opacity: 0.85;
+}

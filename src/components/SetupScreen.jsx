@@ -14,6 +14,8 @@ import {
   countOverrides,
 } from '../utils/playerOverrides'
 import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
+import { shouldShowPrompt } from '../utils/subscribeStore'
+import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
 import '../styles/components/metaSimulation.css'
 
@@ -72,6 +74,7 @@ function SetupScreen() {
   const [playerValueAdjustments, setPlayerValueAdjustments] = useState(new Map())
   const [showValueModal, setShowValueModal] = useState(false)
   const [simulateError, setSimulateError] = useState(null)
+  const [showSignup, setShowSignup] = useState(() => shouldShowPrompt())
   const [aiBidderProfilesEnabled, setAiBidderProfilesEnabled] = useState(persisted.aiBidderProfilesEnabled)
   const [metaDraftsPerStrategy, setMetaDraftsPerStrategy] = useState(
     () => Math.min(50, Math.max(10, persisted.metaDraftsPerStrategy))
@@ -722,6 +725,12 @@ function SetupScreen() {
             </button>
           )}
         </div>
+
+        {showSignup && (
+          <div className="setup-signup-footer">
+            <EmailSignupForm source="setup" variant="inline" onDismiss={() => setShowSignup(false)} />
+          </div>
+        )}
       </div>
 
       <PlayerValueModal

@@ -1,5 +1,8 @@
 node_modules/
 dist/
+
+# Local SQLite data for the news & updates signup server (prod uses DATA_DIR)
+data-local/
 .env
 .env.local
 .DS_Store

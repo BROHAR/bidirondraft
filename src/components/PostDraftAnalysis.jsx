@@ -30,6 +30,8 @@ import {
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 import RadarChart, { AXIS_FULL_LABEL } from './RadarChart.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import EmailSignupForm from './EmailSignupForm.jsx'
+import { shouldShowPrompt } from '../utils/subscribeStore'
 import '../styles/components/postDraftAnalysis.css'
 
 const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Dream Team', 'Draft Board']
@@ -1583,6 +1585,7 @@ function DreamTeamTab({ allTeams, rosterPositions, availablePlayers, humanTeam }
 export default function PostDraftAnalysis({ onViewDraft }) {
   const [activeTab, setActiveTab] = useState(0)
   const [confirmNewDraft, setConfirmNewDraft] = useState(false)
+  const [showSignup, setShowSignup] = useState(() => shouldShowPrompt())
   const { teams, draftHistory, config, restartDraft, availablePlayers } = useDraftStore()
 
   const humanTeam = teams.find(t => t.isHuman)
@@ -1680,6 +1683,12 @@ export default function PostDraftAnalysis({ onViewDraft }) {
           </div>
         </div>
       </div>
+
+      {showSignup && (
+        <div className="signup-card">
+          <EmailSignupForm source="postdraft" variant="card" onDismiss={() => setShowSignup(false)} />
+        </div>
+      )}
 
       {/* Tabs */}
       <nav className="analysis-tabs">
