@@ -9,6 +9,10 @@
   gap: var(--space-3);
   height: 100%;
   overflow-x: auto;
+  /* When this grid is the scrollport (769-1560px stacked layouts), the sticky
+     .bid-controls bar sits over its bottom edge; pad scroll-into-view targets
+     clear of it. */
+  scroll-padding-bottom: 120px;
 }
 
 .draft-column {
@@ -66,6 +70,36 @@
   }
 }
 
+/* Stacked layouts (2-col and 1-col, but not the ≤768px mobile panel system):
+   with min-height:0 on the columns, the auto grid rows all collapsed to an
+   equal slice of the fixed-height grid and the four panels rendered on top
+   of each other. Size the rows to their content and let .draft-main scroll
+   instead. */
+@media (min-width: 769px) and (max-width: 1560px) {
+  .draft-column {
+    min-height: auto;
+  }
+
+  .auction-column .auction-block {
+    flex: 0 0 auto;
+    /* Must not be a scroll container here or it captures the sticky
+       .bid-controls. Both axes: overflow-x:hidden would recompute
+       overflow-y:visible back to auto. With overflow visible the bar pins
+       to .draft-main's visible bottom edge while the card is in view. */
+    overflow: visible;
+  }
+
+  /* Bound the tall panels so the stacked page stays scannable; their inner
+     lists (.player-list, .tab-content) already scroll internally. */
+  .left-column .player-pool {
+    height: 80vh;
+  }
+
+  .tabbed-column .tabbed-section {
+    height: 70vh;
+  }
+}
+
 @media (max-width: 1200px) {
   .draft-main {
     grid-template-columns: 1fr;
@@ -75,6 +109,9 @@
   .left-column, .auction-column, .tabbed-column, .right-column {
     grid-column: 1;
     margin-top: 0;
+    /* Undo the ≤1560px explicit row placements; with auto rows the
+       auction column's order:-1 puts bidding first, not Draft Progress. */
+    grid-row: auto;
   }
 }
 

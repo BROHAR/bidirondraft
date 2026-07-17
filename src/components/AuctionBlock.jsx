@@ -6,7 +6,7 @@ import { budgetScaleFor } from '../utils/budgetScaling'
 
 function AuctionBlock() {
   const [isSkipping, setIsSkipping] = useState(false)
-  const [showAdvisor, setShowAdvisor] = useState(true)
+  const [showAdvisor, setShowAdvisor] = useState(false)
 
   const {
     draftState,
@@ -196,11 +196,11 @@ function AuctionBlock() {
             )}
             <div className="player-stats">
               <div className="stat">
-                <label>Projected Points</label>
+                <label title="Projected Points">Proj Pts</label>
                 <span className="stat-value">{currentPlayer.projectedPoints.toFixed(1)}</span>
               </div>
               <div className="stat">
-                <label>Estimated Value</label>
+                <label title="Estimated Value">Est Val</label>
                 <span className="stat-value">${currentPlayer.estimatedValue}</span>
               </div>
               <div className="stat">
@@ -315,18 +315,18 @@ function AuctionBlock() {
             Max Bid (${getMaxBid()})
           </button>
         </div>
+      </div>
 
-        <div className="skip-section">
-          <button
-            className="btn btn-secondary skip-btn"
-            onClick={handleSkipPlayer}
-            disabled={isSkipping}
-            title="Let AI teams bid this out quickly without your participation"
-          >
-            {isSkipping ? 'Skipping...' : 'Skip Player'}
-          </button>
-          <small>Let AI teams handle this auction</small>
-        </div>
+      <div className="skip-section">
+        <button
+          className="btn btn-secondary skip-btn"
+          onClick={handleSkipPlayer}
+          disabled={isSkipping}
+          title="Let AI teams bid this out quickly without your participation"
+        >
+          {isSkipping ? 'Skipping...' : 'Skip Player'}
+        </button>
+        <small>Let AI teams handle this auction</small>
       </div>
 
     </div>
