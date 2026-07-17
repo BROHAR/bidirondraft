@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import SetupScreen from '../../../src/components/SetupScreen.jsx'
+import playersData from '../../../src/data/players.json'
 
 // Mock the Zustand store so we can assert which launch action the wizard fires
 // without booting the draft engine.
@@ -141,5 +142,33 @@ describe('SetupScreen wizard', () => {
     fireEvent.click(nextButton()) // -> step 2
     fireEvent.click(backButton()) // -> step 1
     expect(screen.getByPlaceholderText(/enter your team name/i)).toHaveValue('Gridiron Gang')
+  })
+
+  it('value-adjustments modal shows format-adjusted book values but keeps user overrides verbatim', () => {
+    // Derive fixtures from the live data so a projections refresh can't break
+    // this: top two WRs by book value — any top WR gains value under PPR.
+    const wrs = [...playersData.players]
+      .filter(p => p.position === 'WR')
+      .sort((a, b) => b.estimatedValue - a.estimatedValue)
+    const [topWr, secondWr] = wrs
+    window.localStorage.setItem(
+      'adraft.playerOverrides.v1',
+      JSON.stringify({ [secondWr.id]: { estimatedValue: 25 } })
+    )
+
+    render(<SetupScreen />)
+    const formatGroup = screen.getByText('Scoring Format').closest('.form-group')
+    fireEvent.change(within(formatGroup).getByRole('combobox'), { target: { value: 'ppr' } })
+    gotoStep3('real time')
+    // The value-adjustments panel lives under Auto-Pilot.
+    fireEvent.click(screen.getByRole('switch', { name: /enable auto-pilot/i }))
+    fireEvent.click(screen.getByRole('button', { name: /adjust values/i }))
+
+    const baseValueOf = (name) =>
+      screen.getByText(name).closest('.adjustment-row').querySelector('.base-value').textContent
+    // Non-overridden top WR: PPR book above the half-PPR data value.
+    expect(parseInt(baseValueOf(topWr.name).slice(1), 10)).toBeGreaterThan(topWr.estimatedValue)
+    // Overridden WR: exact user value, no format delta applied.
+    expect(baseValueOf(secondWr.name)).toBe('$25')
   })
 })

@@ -14,6 +14,7 @@ import {
   countOverrides,
 } from '../utils/playerOverrides'
 import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
+import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
 import { shouldShowPrompt } from '../utils/subscribeStore'
 import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
@@ -107,6 +108,32 @@ function SetupScreen() {
     [playerOverrides]
   )
   const overrideCount = countOverrides(playerOverrides)
+
+  // estimatedValue in the data is half-PPR book; under standard/ppr both
+  // player modals show format-adjusted values so users customize against the
+  // same book the draft will actually use.
+  const formatDeltas = useMemo(
+    () => buildFormatValueDeltas(playersData.players, {
+      scoringFormat: config.scoringFormat,
+      numberOfTeams: config.numberOfTeams,
+      rosterPositions: config.rosterPositions,
+    }),
+    [config.scoringFormat, config.numberOfTeams, config.rosterPositions]
+  )
+
+  // Value-adjustment modal input: format-adjusted book, except players whose
+  // value the user overrode — overrides are authoritative (the engine snaps
+  // them back after its own format adjustment too).
+  const valueModalPlayers = useMemo(
+    () => customizedPlayersData.players.map(player => {
+      const delta = formatDeltas.get(player.id)
+      if (delta === undefined) return player
+      const o = playerOverrides[player.id]
+      if (o && typeof o.estimatedValue === 'number') return player
+      return { ...player, estimatedValue: Math.max(1, Math.round(player.estimatedValue + delta)) }
+    }),
+    [customizedPlayersData, formatDeltas, playerOverrides]
+  )
 
   // The presence of a SUPERFLEX roster slot is what makes a league superflex —
   // drives the active-preset highlight and the format badge below.
@@ -736,7 +763,7 @@ function SetupScreen() {
       <PlayerValueModal
         isOpen={showValueModal}
         onClose={() => setShowValueModal(false)}
-        players={customizedPlayersData.players}
+        players={valueModalPlayers}
         valueAdjustments={playerValueAdjustments}
         onUpdateAdjustment={(playerId, multiplier) => {
           const newAdjustments = new Map(playerValueAdjustments)
@@ -756,6 +783,7 @@ function SetupScreen() {
         overrides={playerOverrides}
         scoringFormat={config.scoringFormat}
         budgetPerTeam={config.budgetPerTeam}
+        formatDeltas={formatDeltas}
         onChange={setPlayerOverrides}
         onClearAll={() => setPlayerOverrides({})}
       />

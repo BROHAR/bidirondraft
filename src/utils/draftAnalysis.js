@@ -400,18 +400,19 @@ export function getReplacementThresholds(rosterPositions, numberOfTeams) {
   return thresholds
 }
 
-export function getReplacementLevels(allPlayers, rosterPositions, numberOfTeams) {
+export function getReplacementLevels(allPlayers, rosterPositions, numberOfTeams,
+                                     getPoints = p => p.projectedPoints || 0) {
   const thresholds = getReplacementThresholds(rosterPositions, numberOfTeams)
   const levels = {}
   const players = {}
   for (const pos of Object.keys(thresholds)) {
     const positionPlayers = allPlayers
       .filter(p => p.position === pos)
-      .sort((a, b) => (b.projectedPoints || 0) - (a.projectedPoints || 0))
+      .sort((a, b) => getPoints(b) - getPoints(a))
     const replacementRank = Math.round(thresholds[pos])
     const replacementPlayer =
       positionPlayers[replacementRank] || positionPlayers[positionPlayers.length - 1]
-    levels[pos] = replacementPlayer?.projectedPoints || 0
+    levels[pos] = replacementPlayer ? getPoints(replacementPlayer) : 0
     players[pos] = replacementPlayer || null
   }
   return { levels, players, thresholds }

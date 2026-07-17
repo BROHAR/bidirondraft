@@ -26,6 +26,7 @@ function PlayerCustomizationModal({
   overrides,
   scoringFormat,
   budgetPerTeam,
+  formatDeltas,
   onChange,
   onClearAll,
 }) {
@@ -34,6 +35,10 @@ function PlayerCustomizationModal({
   const [sortBy, setSortBy] = useState('estimatedValue')
 
   const filteredPlayers = useMemo(() => {
+    // Book values are half-PPR; the format delta reshapes them to the league's
+    // scoring so users type overrides against the book the draft will use.
+    const formatValueOf = (player) =>
+      Math.max(1, player.estimatedValue + (formatDeltas?.get(player.id) ?? 0))
     return basePlayers
       .filter(player => {
         if (positionFilter !== 'ALL' && player.position !== positionFilter) return false
@@ -41,7 +46,7 @@ function PlayerCustomizationModal({
         return true
       })
       .sort((a, b) => {
-        if (sortBy === 'estimatedValue') return b.estimatedValue - a.estimatedValue
+        if (sortBy === 'estimatedValue') return formatValueOf(b) - formatValueOf(a)
         if (sortBy === 'name') return a.name.localeCompare(b.name)
         if (sortBy === 'position') return a.position.localeCompare(b.position)
         if (sortBy === 'points') {
@@ -49,7 +54,7 @@ function PlayerCustomizationModal({
         }
         return 0
       })
-  }, [basePlayers, searchTerm, positionFilter, sortBy, scoringFormat])
+  }, [basePlayers, searchTerm, positionFilter, sortBy, scoringFormat, formatDeltas])
 
   const handleValueChange = (playerId, raw) => {
     const value = parseNumber(raw)
@@ -154,9 +159,11 @@ function PlayerCustomizationModal({
                   : null
                 const isModified = valueOverride !== null || pointsOverride !== null
                 const basePoints = player.projectedPoints?.[scoringFormat] ?? 0
-                // Base values are tuned for a $200 budget; show them scaled to
-                // the league's budget so users set custom values in context.
-                const scaledBaseValue = scaleValueToBudget(player.estimatedValue, budgetPerTeam)
+                // Base values are half-PPR book tuned for a $200 budget; apply
+                // the scoring-format delta, then scale to the league's budget
+                // so users set custom values in context.
+                const formatValue = Math.max(1, player.estimatedValue + (formatDeltas?.get(player.id) ?? 0))
+                const scaledBaseValue = scaleValueToBudget(formatValue, budgetPerTeam)
 
                 return (
                   <div

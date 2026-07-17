@@ -7,6 +7,7 @@ import { audioService } from './audioService.js'
 import { BidValidator } from './bidValidator.js'
 import { workerTimers } from './workerTimers.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
+import { applyFormatValueAdjustment } from '../utils/formatValueAdjustment.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
 // SUPERFLEX, and BENCH are intentionally excluded — they can be filled by
@@ -66,6 +67,11 @@ export class DraftEngine {
     const teams = this.createTeams(config)
     const scoringFormat = config.scoringFormat || 'halfPPR'
     const players = playersData.players.map(p => new Player(p, scoringFormat))
+
+    // estimatedValue is half-PPR book; reshape it for standard/PPR before the
+    // calibration below (the budget anchor re-normalizes the total, so only
+    // per-player relative shifts survive — which is exactly what this applies).
+    applyFormatValueAdjustment(players, config)
 
     // League-size calibration in two passes:
     //   1. One-sided budget anchor: if the top-(totalSpots) of the pool sums

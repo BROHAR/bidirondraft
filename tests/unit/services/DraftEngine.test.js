@@ -192,6 +192,83 @@ describe('DraftEngine', () => {
     })
   })
 
+  describe('scoring-format value adjustment', () => {
+    // estimatedValue in the data is half-PPR book; under standard/ppr the
+    // engine reshapes it by each player's VORP change before calibration.
+    // QBs (format-identical points) shift only via the uniform budget anchor,
+    // so cross-format assertions use ratios/order, never absolute values.
+    const fmtPlayer = (id, position, [standard, halfPPR, ppr], estimatedValue) => ({
+      id, name: id, position, team: 'KC', byeWeek: 7, estimatedValue,
+      projectedPoints: { standard, halfPPR, ppr },
+    })
+
+    const formatPool = () => [
+      fmtPlayer('q1', 'QB', [350, 350, 350], 30),
+      fmtPlayer('q2', 'QB', [320, 320, 320], 22),
+      fmtPlayer('q3', 'QB', [300, 300, 300], 10),
+      fmtPlayer('q4', 'QB', [250, 250, 250], 1),
+      fmtPlayer('r1', 'RB', [240, 250, 260], 45),
+      fmtPlayer('r2', 'RB', [200, 210, 220], 25),
+      fmtPlayer('r3', 'RB', [160, 165, 170], 8),
+      fmtPlayer('r4', 'RB', [100, 105, 110], 1),
+      fmtPlayer('w1', 'WR', [150, 200, 250], 40), // reception monster
+      fmtPlayer('w2', 'WR', [140, 180, 220], 28),
+      fmtPlayer('w3', 'WR', [130, 160, 190], 15),
+      fmtPlayer('w4', 'WR', [120, 140, 160], 6),
+      fmtPlayer('w5', 'WR', [100, 115, 130], 2),
+      fmtPlayer('w6', 'WR', [80, 90, 100], 1),
+      fmtPlayer('k1', 'K', [150, 150, 150], 1),
+      fmtPlayer('k2', 'K', [130, 130, 130], 1),
+      fmtPlayer('d1', 'DST', [120, 120, 120], 1),
+      fmtPlayer('d2', 'DST', [100, 100, 100], 1),
+    ]
+
+    const initWithFormat = (scoringFormat, extraConfig = {}) => {
+      const config = { ...defaultConfig, scoringFormat, ...extraConfig }
+      engine.initializeDraft(config, { players: formatPool() })
+      const byId = {}
+      for (const p of store.getState().availablePlayers) byId[p.id] = p
+      return byId
+    }
+
+    it('prices a reception-heavy WR (relative to QB) ppr > halfPPR > standard', () => {
+      const ratios = {}
+      for (const format of ['standard', 'halfPPR', 'ppr']) {
+        const byId = initWithFormat(format)
+        ratios[format] = byId.w1.estimatedValue / byId.q1.estimatedValue
+      }
+      expect(ratios.ppr).toBeGreaterThan(ratios.halfPPR)
+      expect(ratios.halfPPR).toBeGreaterThan(ratios.standard)
+    })
+
+    it('keeps QB order (format-identical points) the same across formats', () => {
+      const orderFor = (format) => {
+        const byId = initWithFormat(format)
+        return ['q1', 'q2', 'q3', 'q4']
+          .sort((a, b) => byId[b].estimatedValue - byId[a].estimatedValue)
+      }
+      const half = orderFor('halfPPR')
+      expect(orderFor('standard')).toEqual(half)
+      expect(orderFor('ppr')).toEqual(half)
+    })
+
+    it('keeps K/DST tiering floors intact under ppr (zero format delta)', () => {
+      // Tiering is a floor (Math.max), so the budget anchor can lift these
+      // slightly above $3/$2 — assert the floors and the tier order.
+      const byId = initWithFormat('ppr')
+      expect(byId.k1.estimatedValue).toBeGreaterThanOrEqual(3)
+      expect(byId.k2.estimatedValue).toBeGreaterThanOrEqual(2)
+      expect(byId.k1.estimatedValue).toBeGreaterThanOrEqual(byId.k2.estimatedValue)
+      expect(byId.d1.estimatedValue).toBeGreaterThanOrEqual(3)
+      expect(byId.d2.estimatedValue).toBeGreaterThanOrEqual(2)
+    })
+
+    it('user overrides still snap back last under ppr', () => {
+      const byId = initWithFormat('ppr', { playerOverrides: { w1: { estimatedValue: 7 } } })
+      expect(byId.w1.estimatedValue).toBe(7)
+    })
+  })
+
   describe('createTeams', () => {
     it('creates the correct number of teams', () => {
       const teams = engine.createTeams(defaultConfig)

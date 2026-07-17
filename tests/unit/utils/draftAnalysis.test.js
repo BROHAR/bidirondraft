@@ -646,6 +646,22 @@ describe('getReplacementLevels', () => {
     expect(levels.QB).toBe(0)
     expect(levels.K).toBe(0)
   })
+
+  it('uses a custom points accessor for sorting and level extraction', () => {
+    // PPR points flip the order: A leads in halfPPR (scalar projectedPoints),
+    // B leads in PPR — so the rank-1 replacement differs per accessor.
+    const players = [
+      { position: 'WR', name: 'A', projectedPoints: 200, allProjections: { halfPPR: 200, ppr: 210 } },
+      { position: 'WR', name: 'B', projectedPoints: 180, allProjections: { halfPPR: 180, ppr: 240 } },
+    ]
+    const scalar = getReplacementLevels(players, { WR: 1 }, 1)
+    expect(scalar.players.WR.name).toBe('B')
+    expect(scalar.levels.WR).toBe(180)
+
+    const ppr = getReplacementLevels(players, { WR: 1 }, 1, p => p.allProjections.ppr)
+    expect(ppr.players.WR.name).toBe('A')
+    expect(ppr.levels.WR).toBe(210)
+  })
 })
 
 describe('getPlayerVORP', () => {
