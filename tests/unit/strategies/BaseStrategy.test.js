@@ -460,6 +460,75 @@ describe('BaseStrategy', () => {
     })
   })
 
+  describe('positional spend limits', () => {
+    function makeLimitedTeam(limits, isHuman = true) {
+      const t = new Team('h1', 'Human', isHuman, { ...config, positionalSpendLimits: limits })
+      const s = new TestStrategy()
+      t.setStrategy(s)
+      return { team: t, strategy: s }
+    }
+
+    it('getPositionalBidCap returns the configured cap for the human team', () => {
+      const { strategy: s } = makeLimitedTeam({ RB: 20, K: 1 })
+      expect(s.getPositionalBidCap(makePlayer('RB'))).toBe(20)
+      expect(s.getPositionalBidCap(makePlayer('K'))).toBe(1)
+      expect(s.getPositionalBidCap(makePlayer('WR'))).toBe(Infinity)
+    })
+
+    it('returns Infinity for AI teams even with limits in config', () => {
+      const { strategy: s } = makeLimitedTeam({ RB: 20 }, false)
+      expect(s.getPositionalBidCap(makePlayer('RB'))).toBe(Infinity)
+    })
+
+    it('ignores invalid caps (below $1 or non-numeric)', () => {
+      const { strategy: s } = makeLimitedTeam({ RB: 0, WR: 'nope' })
+      expect(s.getPositionalBidCap(makePlayer('RB'))).toBe(Infinity)
+      expect(s.getPositionalBidCap(makePlayer('WR'))).toBe(Infinity)
+    })
+
+    it('shouldBid stays in below the cap and drops out exactly at it', () => {
+      const { strategy: s } = makeLimitedTeam({ RB: 20 })
+      const rb = makePlayer('RB', 30, 'rb_capped')
+      expect(s.shouldBid(rb, 5, [rb])).toBe(true)
+      expect(s.shouldBid(rb, 20, [rb])).toBe(false)
+      expect(s.shouldBid(rb, 25, [rb])).toBe(false)
+    })
+
+    it('calculateBidAmount never exceeds the cap even with a high adjusted value', () => {
+      const { strategy: s } = makeLimitedTeam({ RB: 20 })
+      const rb = makePlayer('RB', 60, 'rb_stud')
+      const bid = s.calculateBidAmount(rb, 18, 60, [rb])
+      expect(bid).toBeLessThanOrEqual(20)
+    })
+
+    it('a player value adjustment trumps the positional limit', () => {
+      const { team: t, strategy: s } = makeLimitedTeam({ RB: 20 })
+      const rb = makePlayer('RB', 30, 'rb_pinned')
+      t.playerValueAdjustments.set(rb.id, 1.5)
+      expect(s.getPositionalBidCap(rb)).toBe(Infinity)
+      expect(s.shouldBid(rb, 25, [rb])).toBe(true)
+
+      // A sub-1.0 adjustment also exempts — the multiplier itself governs.
+      t.playerValueAdjustments.set(rb.id, 0.5)
+      expect(s.getPositionalBidCap(rb)).toBe(Infinity)
+
+      // A 1.0 adjustment is a no-op, so the limit still applies.
+      t.playerValueAdjustments.set(rb.id, 1.0)
+      expect(s.getPositionalBidCap(rb)).toBe(20)
+    })
+
+    it('the cap beats the human endgame spend floor in shouldBid and calculateBidAmount', () => {
+      const { team: t, strategy: s } = makeLimitedTeam({ WR: 3 })
+      // Flush human team inside the endgame window: floor for a $2 WR is ~2x book = $4.
+      for (let i = 0; i < 6; i++) t.roster.push(makePlayer('RB', 1, `rb${i}`))
+      const wr = makePlayer('WR', 2, 'wr_cheap')
+      expect(s.getEndgameSpendFloor(wr, [wr])).toBeGreaterThan(3)
+      expect(s.shouldBid(wr, 3, [wr])).toBe(false)
+      const bid = s.calculateBidAmount(wr, 1, 2, [wr])
+      expect(bid).toBeLessThanOrEqual(3)
+    })
+  })
+
   describe('isRiskyNomination', () => {
     it('flags a cheap player at a filled position with non-positive multiplier', () => {
       // K mult is 0.8 in TestStrategy. Fill the K slot so getPositionNeed=0.

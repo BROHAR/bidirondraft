@@ -66,6 +66,31 @@ describe('setupConfigStore', () => {
     expect(loaded.config.aiTeamHomeTeams).toEqual([])
   })
 
+  it('defaults positionalSpendLimits to an empty object', () => {
+    expect(defaultDraftConfig().positionalSpendLimits).toEqual({})
+    // Configs saved before the field existed load with the default.
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { numberOfTeams: 8 } }))
+    expect(loadSetupState().config.positionalSpendLimits).toEqual({})
+  })
+
+  it('round-trips positional spend limits and drops invalid entries', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: {
+        positionalSpendLimits: {
+          RB: 70, K: 1,            // valid
+          WR: 0, TE: 5.5, QB: 'x', // out of range / non-integer
+          FLEX: 30, BENCH: 10,     // unknown position keys
+        }
+      }
+    }))
+    expect(loadSetupState().config.positionalSpendLimits).toEqual({ RB: 70, K: 1 })
+  })
+
+  it('coerces a non-object positionalSpendLimits back to empty', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { positionalSpendLimits: 'oops' } }))
+    expect(loadSetupState().config.positionalSpendLimits).toEqual({})
+  })
+
   it('does not share the rosterPositions reference between loads (no mutation bleed)', () => {
     const a = loadSetupState()
     a.config.rosterPositions.QB = 99

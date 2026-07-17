@@ -171,4 +171,44 @@ describe('SetupScreen wizard', () => {
     // Overridden WR: exact user value, no format delta applied.
     expect(baseValueOf(secondWr.name)).toBe('$25')
   })
+
+  describe('positional limits', () => {
+    const limitInput = (pos) => screen.getByRole('spinbutton', { name: `Max spend for ${pos}` })
+    const persistedLimits = () =>
+      JSON.parse(window.localStorage.getItem('adraft.setupConfig.v1')).config.positionalSpendLimits
+
+    it('renders the six inputs only when Auto-Pilot is enabled', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      expect(screen.queryByText('Positional Limits')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('switch', { name: /enable auto-pilot/i }))
+      expect(screen.getByText('Positional Limits')).toBeInTheDocument()
+      for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DST']) {
+        expect(limitInput(pos)).toBeInTheDocument()
+      }
+    })
+
+    it('persists a typed limit, clamps to the budget, and clearing removes the key', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      fireEvent.click(screen.getByRole('switch', { name: /enable auto-pilot/i }))
+
+      fireEvent.change(limitInput('RB'), { target: { value: '70' } })
+      expect(limitInput('RB')).toHaveValue(70)
+      expect(persistedLimits()).toEqual({ RB: 70 })
+
+      // Above the $200 default budget → clamps to it.
+      fireEvent.change(limitInput('QB'), { target: { value: '999' } })
+      expect(limitInput('QB')).toHaveValue(200)
+
+      // Below $1 → clamps to $1.
+      fireEvent.change(limitInput('K'), { target: { value: '0' } })
+      expect(limitInput('K')).toHaveValue(1)
+
+      // Clearing an input drops its key entirely.
+      fireEvent.change(limitInput('RB'), { target: { value: '' } })
+      expect(limitInput('RB')).toHaveValue(null)
+      expect(persistedLimits()).toEqual({ QB: 200, K: 1 })
+    })
+  })
 })

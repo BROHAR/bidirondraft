@@ -60,6 +60,20 @@ export class BaseStrategy {
     return currentCount >= limit
   }
 
+  // User-configured "don't pay more than $X for a <position>" ceiling. Human
+  // team only — AI opponents always get Infinity so their behavior (and the
+  // seeded-test RNG sequence) is untouched. A player value adjustment trumps
+  // the limit: any multiplier != 1.0 means the user priced this player
+  // individually, so the positional blanket doesn't apply.
+  getPositionalBidCap(player) {
+    if (!this.team?.isHuman) return Infinity
+    const cap = this.team.config?.positionalSpendLimits?.[player.position]
+    if (!Number.isFinite(cap) || cap < 1) return Infinity
+    const pin = this.team.playerValueAdjustments?.get(player.id)
+    if (pin !== undefined && pin !== 1.0) return Infinity
+    return Math.max(1, Math.round(cap))
+  }
+
   shouldBid(player, currentBid, availablePlayers) {
     if (!this.team) return false
 
@@ -68,6 +82,12 @@ export class BaseStrategy {
 
     // Check do-not-draft list
     if (this.team.doNotDraftList.has(player.id)) return false
+
+    // Positional spend limit: any further bid would land at currentBid+1 or
+    // more, so drop out exactly at the cap. Checked before the endgame-floor
+    // early return below — the floor must not keep the team bidding past a
+    // user-set ceiling.
+    if (currentBid >= this.getPositionalBidCap(player)) return false
 
     // Apply position limits - AI teams rarely draft more than 1 TE/K/DST unless late
     if (this.shouldApplyPositionLimits(player)) {
@@ -660,6 +680,10 @@ export class BaseStrategy {
     if (cheapFloor) {
       bidAmount = Math.min(bidAmount, Math.max(cheapFloor, endgameFloor))
     }
+
+    // Positional spend limit is a hard ceiling — it clamps even the
+    // sanctioned endgame/cheap floors above.
+    bidAmount = Math.min(bidAmount, this.getPositionalBidCap(player))
 
     // Only a genuine over-cap warrants the diagnostic. Bids within a sanctioned
     // floor — the endgame spend floor or the cheap-player $3 floor above (which

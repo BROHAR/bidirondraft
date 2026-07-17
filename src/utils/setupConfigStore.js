@@ -24,6 +24,7 @@ export function defaultDraftConfig() {
     rosterPositions: { ...DEFAULT_CONFIGS.standard.rosterPositions },
     autoPilotEnabled: false,
     autoPilotStrategy: 'Balanced',
+    positionalSpendLimits: {},
     aiTeamStrategies: [],
     aiTeamHomeTeams: [],
   }
@@ -52,6 +53,20 @@ function intInRange(value, min, max, fallback) {
   return Number.isInteger(value) && value >= min && value <= max ? value : fallback
 }
 
+// Positional spend limits are absolute dollars keyed by position; only known
+// positions with a sane integer value survive a load, everything else drops.
+const LIMIT_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
+
+function sanitizeSpendLimits(value) {
+  if (!value || typeof value !== 'object') return {}
+  const limits = {}
+  for (const pos of LIMIT_POSITIONS) {
+    const cap = value[pos]
+    if (Number.isInteger(cap) && cap >= 1 && cap <= 100000) limits[pos] = cap
+  }
+  return limits
+}
+
 export function loadSetupState() {
   const defaults = defaultSetupState()
   if (typeof window === 'undefined' || !window.localStorage) return defaults
@@ -77,6 +92,7 @@ export function loadSetupState() {
         rosterPositions: savedConfig.rosterPositions && typeof savedConfig.rosterPositions === 'object'
           ? { ...savedConfig.rosterPositions }
           : d.rosterPositions,
+        positionalSpendLimits: sanitizeSpendLimits(savedConfig.positionalSpendLimits),
         aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
       },

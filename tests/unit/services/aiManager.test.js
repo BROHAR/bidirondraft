@@ -104,6 +104,40 @@ describe('AIManager.processAIBidding', () => {
     }
   })
 
+  describe('positional spend limits in the aggressive opener', () => {
+    // The opener bypasses shouldBid/calculateBidAmount, so it must consult
+    // getPositionalBidCap itself — both when selecting the best team and when
+    // sizing the bid. Real cap behavior lives in BaseStrategy; these tests
+    // verify the aiManager wiring against stubs.
+    function cappedStub(adjustedValue, cap) {
+      return { ...stubStrategy(adjustedValue), getPositionalBidCap: () => cap }
+    }
+
+    it('never opens above the capped team\'s positional limit', () => {
+      team.remainingBudget = 200
+      team.draftStrategy = cappedStub(80, 10)
+      for (let i = 0; i < 50; i++) {
+        const bid = manager.processAIBidding([team], player, 0, [player], 0, 20000, null, true)
+        if (bid) expect(bid.amount).toBeLessThanOrEqual(10)
+      }
+    })
+
+    it('skips a limit-blocked team in favor of the next-best bidder', () => {
+      // currentBid 30 sits above the capped team's $10 limit but below the
+      // rival's $40 valuation — the capped team must not be selected (a
+      // non-improving opener bid would end the auction prematurely).
+      team.draftStrategy = { ...cappedStub(80, 10), shouldBid: () => false }
+      const rival = new Team('t2', 'Rival', false, config)
+      rival.draftStrategy = stubStrategy(40)
+      for (let i = 0; i < 50; i++) {
+        const bid = manager.processAIBidding([team, rival], player, 30, [player], 0, 20000, null, true)
+        expect(bid).not.toBeNull()
+        expect(bid.team.id).toBe('t2')
+        expect(bid.amount).toBeGreaterThan(30)
+      }
+    })
+  })
+
   describe('aggressive early opener', () => {
     // The aggressive path bypasses the stochastic shouldBid chain and bids the
     // player up immediately, capped at the picked team's adjustedValue. It

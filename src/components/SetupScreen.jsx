@@ -52,6 +52,9 @@ const LAUNCH_MODES = [
 // Draft-count choices for the Meta Sim (drafts run per strategy).
 const DRAFT_COUNT_OPTIONS = [10, 20, 30, 40, 50]
 
+// Positions that accept an Auto-Pilot max-spend limit.
+const LIMIT_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
+
 // The wizard steps, in order. `step` state is 1-based.
 const STEPS = [
   { num: 1, label: 'League Settings' },
@@ -158,6 +161,16 @@ function SetupScreen() {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handlePositionalLimitChange = (position, raw) => {
+    setConfig(prev => {
+      const next = { ...(prev.positionalSpendLimits || {}) }
+      const n = parseInt(raw, 10)
+      if (raw === '' || !Number.isFinite(n)) delete next[position]
+      else next[position] = Math.max(1, Math.min(prev.budgetPerTeam, n))
+      return { ...prev, positionalSpendLimits: next }
+    })
   }
 
   const handleAiStrategyChange = (positionIndex, value) => {
@@ -642,6 +655,30 @@ function SetupScreen() {
                     )}
                   </div>
                   <small>Fine-tune individual player values to match your preferences</small>
+                </div>
+
+                <div className="form-group">
+                  <label>Positional Limits</label>
+                  <div className="positional-limits-grid">
+                    {LIMIT_POSITIONS.map(pos => (
+                      <label key={pos} className="positional-limit-field">
+                        <span className="positional-limit-pos">{pos}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={config.budgetPerTeam}
+                          placeholder="—"
+                          aria-label={`Max spend for ${pos}`}
+                          value={config.positionalSpendLimits?.[pos] ?? ''}
+                          onChange={(e) => handlePositionalLimitChange(pos, e.target.value)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <small>
+                    Max $ Auto-Pilot will pay at each position. Blank = no limit.
+                    Player value adjustments override these. Applies to meta sims too.
+                  </small>
                 </div>
               </div>
             )}

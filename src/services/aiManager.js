@@ -167,7 +167,13 @@ export class AIManager {
       let bestValue = currentBid
       for (const team of aiTeams) {
         if (!team.draftStrategy) continue
-        const v = team.draftStrategy.getAdjustedPlayerValue(currentPlayer, availablePlayers)
+        // Cap by the team's positional spend limit (human autopilot only) so a
+        // limit-blocked team is never *selected* — returning a non-improving
+        // bid here would break resolveAuctionSync's loop and end the auction.
+        const v = Math.min(
+          team.draftStrategy.getAdjustedPlayerValue(currentPlayer, availablePlayers),
+          team.draftStrategy.getPositionalBidCap?.(currentPlayer) ?? Infinity
+        )
         if (v > bestValue) {
           bestTeam = team
           bestValue = v
@@ -201,7 +207,14 @@ export class AIManager {
           ? Math.round(bestTeam.draftStrategy.getEndgameSpendFloor(currentPlayer, availablePlayers))
           : 0
         if (endgameFloor > cappedTarget) cappedTarget = endgameFloor
-        const amount = Math.min(bestTeam.maxBid, Math.max(cappedTarget, currentBid + 1))
+        // Positional spend limit clamps last: the endgame-floor lift above must
+        // not push the opener past a user-set ceiling. Selection already
+        // required capped value > currentBid, so the result still improves.
+        const amount = Math.min(
+          bestTeam.maxBid,
+          bestTeam.draftStrategy.getPositionalBidCap?.(currentPlayer) ?? Infinity,
+          Math.max(cappedTarget, currentBid + 1)
+        )
 
         return {
           team: bestTeam,

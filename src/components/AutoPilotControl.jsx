@@ -126,6 +126,16 @@ function AutoPilotControl() {
             </small>
           </div>
         )}
+
+        {autoPilotEnabled && Object.keys(humanTeam.config?.positionalSpendLimits || {}).length > 0 && (
+          <div className="value-adjustments-info">
+            <small>
+              Limits: {Object.entries(humanTeam.config.positionalSpendLimits)
+                .map(([pos, cap]) => `${pos} ≤ $${cap}`)
+                .join(' · ')}
+            </small>
+          </div>
+        )}
       </div>
 
       {autoPilotEnabled && (draftState === 'NOMINATING' || draftState === 'BIDDING') && (

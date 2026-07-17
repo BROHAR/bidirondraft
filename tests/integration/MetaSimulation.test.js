@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { runMetaSimulation, runMetaSimulationAsync, STRATEGY_DISPLAY } from '../../src/utils/metaSimulation.js'
+import { runMetaSimulation, runMetaSimulationAsync, runSingleDraft, STRATEGY_DISPLAY } from '../../src/utils/metaSimulation.js'
 import { random, resetRng } from '../../src/utils/rng.js'
 import playersData from '../../src/data/players.json'
 
@@ -137,6 +137,25 @@ describe('runMetaSimulation (user-perspective integration)', () => {
     expect(byName['Meta Zero RB']).toBeDefined()
     expect(byName['Meta Zero RB'].samples).toBe(2)
     expect(byName['custom:meta-zero']).toBeUndefined()
+  }, 60000)
+
+  it('honors positional spend limits for the user seat and still fills the roster', () => {
+    const config = baseConfig({ positionalSpendLimits: { RB: 10, K: 1, DST: 1 } })
+    const totalSpots = Object.values(config.rosterPositions).reduce((s, c) => s + c, 0)
+    for (const seed of [4500, 4501, 4502]) {
+      const { teams } = runSingleDraft(config, playersData, seed)
+      const user = teams.find(t => t.isHuman)
+      expect(user).toBeDefined()
+      // Every capped position stays at or under its limit...
+      for (const p of user.roster) {
+        const cap = config.positionalSpendLimits[p.position]
+        if (cap) {
+          expect(p.purchasePrice, `${p.position} ${p.name} at seed ${seed}`).toBeLessThanOrEqual(cap)
+        }
+      }
+      // ...and the limits don't strand the roster short (K/DST at $1 still fill).
+      expect(user.roster.length, `roster size at seed ${seed}`).toBe(totalSpots)
+    }
   }, 60000)
 
   it('records no user rows when there is no human seat', () => {
