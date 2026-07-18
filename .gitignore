@@ -16,3 +16,8 @@ scripts/taco-audit.out.txt
 reddit-post-draft.md
 roadmap.md
 promo-posts.md
+
+# Real league draft results (personal team names) — an anonymized copy is
+# committed at tests/fixtures/2025_draft_results.csv as the golden fixture
+data/2025_draft_results.csv
+data/*.html

@@ -40,6 +40,10 @@ export function defaultSetupState() {
   return {
     config: defaultDraftConfig(),
     aiBidderProfilesEnabled: false,
+    // Whether launches apply the imported league profile (the profile itself
+    // persists separately in leagueProfileStore) — lets users A/B a draft
+    // with/without their league's tendencies without re-importing.
+    leagueProfileEnabled: false,
     metaDraftsPerStrategy: 10,
     launchMode: 'live',
   }
@@ -97,6 +101,7 @@ export function loadSetupState() {
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
       },
       aiBidderProfilesEnabled: !!parsed.aiBidderProfilesEnabled,
+      leagueProfileEnabled: !!parsed.leagueProfileEnabled,
       metaDraftsPerStrategy: Number.isFinite(parsed.metaDraftsPerStrategy)
         ? parsed.metaDraftsPerStrategy
         : defaults.metaDraftsPerStrategy,
@@ -115,6 +120,7 @@ export function saveSetupState(state) {
     const payload = {
       config: state.config,
       aiBidderProfilesEnabled: !!state.aiBidderProfilesEnabled,
+      leagueProfileEnabled: !!state.leagueProfileEnabled,
       metaDraftsPerStrategy: state.metaDraftsPerStrategy,
       launchMode: LAUNCH_MODES.includes(state.launchMode) ? state.launchMode : 'live',
     }

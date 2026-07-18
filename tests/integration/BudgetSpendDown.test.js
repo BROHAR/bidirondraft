@@ -96,4 +96,33 @@ describe('Budget spend-down — teams do not strand budget', () => {
       }, 30000) // 3 full simulated drafts; large-league/$1000 configs exceed the 5s default
     }
   }
+
+  // An active imported-league profile (hoarding at the clamp ceiling plus
+  // value reshaping) must not break the spend invariants — the factors are
+  // bounded and pre-anchor precisely so the money still clears.
+  it('$200, 12-team league with an active hoarding league profile', () => {
+    const leagueProfile = {
+      version: 1,
+      positionFactors: { QB: 1.16, RB: 1.1, WR: 0.9, TE: 0.97, K: 1.0, DST: 1.0 },
+      tierFactors: [
+        { min: 35, factor: 1.1 }, { min: 20, factor: 0.95 }, { min: 10, factor: 1.0 },
+        { min: 4, factor: 1.02 }, { min: 0, factor: 1.0 },
+      ],
+      lateInflation: 1.5,
+    }
+    let fullSpend = 0
+    let total = 0
+    for (const seed of SEEDS) {
+      const teams = runSimulatedDraft({ ...makeConfig(12, 200), leagueProfile }, seed)
+      for (const team of teams) {
+        total++
+        if (team.remainingBudget <= 200 * FULL_SPEND_PCT) fullSpend++
+        expect(
+          team.remainingBudget,
+          `${team.name} (seed ${seed}) kept $${team.remainingBudget} with active profile`
+        ).toBeLessThanOrEqual(200 * MAX_LEFTOVER_PCT)
+      }
+    }
+    expect(fullSpend / total).toBeGreaterThanOrEqual(MIN_FULL_SPEND_SHARE)
+  }, 30000)
 })

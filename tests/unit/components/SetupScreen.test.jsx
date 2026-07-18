@@ -172,6 +172,75 @@ describe('SetupScreen wizard', () => {
     expect(baseValueOf(secondWr.name)).toBe('$25')
   })
 
+  describe('league profile import', () => {
+    const CSV_HEADER = 'Pick,Player,NFL Team,Position,Salary,Fantasy Team'
+
+    // Two 12-pick teams: Alpha (LateRoundQB-shaped), Beta (ZeroRB-shaped).
+    function sampleCsv() {
+      const rows = [CSV_HEADER]
+      let pick = 1
+      const add = (pos, price, team) => rows.push(`${pick},P${pick++},KC,${pos},${price},${team}`)
+      add('QB', 2, 'Alpha'); add('QB', 1, 'Alpha')
+      add('RB', 40, 'Alpha'); add('RB', 36, 'Alpha'); add('WR', 30, 'Alpha')
+      add('WR', 26, 'Alpha'); add('TE', 14, 'Alpha'); add('WR', 12, 'Alpha')
+      add('RB', 9, 'Alpha'); add('WR', 1, 'Alpha'); add('K', 1, 'Alpha'); add('DEF', 1, 'Alpha')
+      add('WR', 45, 'Beta'); add('WR', 40, 'Beta'); add('WR', 35, 'Beta')
+      add('TE', 25, 'Beta'); add('RB', 10, 'Beta'); add('RB', 8, 'Beta')
+      add('RB', 5, 'Beta'); add('QB', 12, 'Beta'); add('WR', 6, 'Beta')
+      add('TE', 4, 'Beta'); add('K', 1, 'Beta'); add('DEF', 1, 'Beta')
+      return rows.join('\n')
+    }
+
+    function importProfile() {
+      fireEvent.click(screen.getByRole('button', { name: /import last year/i }))
+      fireEvent.change(screen.getByPlaceholderText(/Patrick Mahomes/), { target: { value: sampleCsv() } })
+      fireEvent.click(screen.getByRole('button', { name: /parse draft/i }))
+      fireEvent.click(screen.getByRole('radio', { name: 'This is me: Alpha' }))
+      fireEvent.click(screen.getByRole('button', { name: /apply league profile/i }))
+    }
+
+    it('applying an import seat-maps personas, enables both toggles, and persists', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      importProfile()
+
+      // Both toggles flip on; the profile summary chips render.
+      expect(screen.getByRole('switch', { name: /use my league's draft history/i })).toBeChecked()
+      expect(screen.getByRole('switch', { name: /match my league's bidders/i })).toBeChecked()
+      expect(screen.getByText(/24 picks/)).toBeInTheDocument()
+
+      // Seat mapping: human at seat 1, Beta (the one non-user imported team)
+      // lands at seat 2; remaining seats stay Mixed.
+      const saved = JSON.parse(window.localStorage.getItem('adraft.setupConfig.v1'))
+      expect(saved.config.aiTeamStrategies[1]).toBe('ZeroRB')
+      expect(saved.config.aiTeamStrategies[2]).toBe('Mixed')
+      expect(saved.leagueProfileEnabled).toBe(true)
+
+      // The profile itself persists in its own store.
+      expect(JSON.parse(window.localStorage.getItem('adraft.leagueProfile.v1')).parsedCount).toBe(24)
+    })
+
+    it('launch config carries the profile only while the toggle is on', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      importProfile()
+
+      fireEvent.click(screen.getByRole('button', { name: /start draft →/i }))
+      expect(initializeDraft.mock.calls[0][0].leagueProfile).toMatchObject({ version: 1, parsedCount: 24 })
+
+      // Toggle off → next launch sends null.
+      fireEvent.click(screen.getByRole('switch', { name: /use my league's draft history/i }))
+      fireEvent.click(screen.getByRole('button', { name: /start draft →/i }))
+      expect(initializeDraft.mock.calls[1][0].leagueProfile).toBeNull()
+    })
+
+    it('the history toggle is disabled until a profile exists', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      expect(screen.getByRole('switch', { name: /use my league's draft history/i })).toBeDisabled()
+    })
+  })
+
   describe('positional limits', () => {
     const limitInput = (pos) => screen.getByRole('spinbutton', { name: `Max spend for ${pos}` })
     const persistedLimits = () =>

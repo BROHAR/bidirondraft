@@ -1,0 +1,171 @@
+Pick,Player,NFL Team,Position,Salary,Fantasy Team
+1,Patrick Mahomes,KC,QB,8,Team A
+2,Ja'Marr Chase,Cin,WR,70,Team B
+3,Christian McCaffrey,SF,RB,56,Team B
+4,Justin Jefferson,Min,WR,63,Team C
+5,Bijan Robinson,Atl,RB,66,Team D
+6,Brandon Aubrey,Dal,K,4,Team E
+7,Saquon Barkley,Phi,RB,62,Team A
+8,Garrett Wilson,NYJ,WR,23,Team A
+9,Jahmyr Gibbs,Det,RB,61,Team C
+10,Jakobi Meyers,Jax,WR,6,Team E
+11,Ashton Jeanty,LV,RB,51,Team E
+12,CeeDee Lamb,Dal,WR,62,Team F
+13,Lamar Jackson,Bal,QB,32,Team C
+14,Jayden Daniels,Was,QB,27,Team D
+15,Nico Collins,Hou,WR,50,Team B
+16,Evan McPherson,Cin,K,3,Team C
+17,Puka Nacua,LAR,WR,41,Team G
+18,De'Von Achane,Mia,RB,39,Team H
+19,Amon-Ra St. Brown,Det,WR,51,Team E
+20,DJ Moore,Buf,WR,14,Team E
+21,Chase Brown,Cin,RB,38,Team I
+22,Malik Nabers,NYG,WR,55,Team D
+23,A.J. Brown,NE,WR,31,Team J
+24,Trey McBride,Ari,TE,29,Team F
+25,Derrick Henry,Bal,RB,46,Team G
+26,Cameron Dicker,LAC,K,1,Team D
+27,Brian Thomas Jr.,Jax,WR,43,Team J
+28,Marvin Harrison Jr.,Ari,WR,19,Team C
+29,Drake London,Atl,WR,39,Team I
+30,Broncos,Den,DEF,3,Team E
+31,Jake Ferguson,Dal,TE,4,Team G
+32,DeVonta Smith,Phi,WR,13,Team A
+33,Jonathan Taylor,Ind,RB,33,Team A
+34,Jalen Hurts,Phi,QB,29,Team H
+35,Josh Jacobs,GB,RB,40,Team I
+36,Packers,GB,DEF,2,Team F
+37,Chiefs,KC,DEF,2,Team C
+38,Zay Flowers,Bal,WR,12,Team H
+39,Bucky Irving,TB,RB,42,Team J
+40,Joe Burrow,Cin,QB,22,Team I
+41,Dak Prescott,Dal,QB,8,Team E
+42,Tee Higgins,Cin,WR,28,Team A
+43,Josh Allen,Buf,QB,30,Team F
+44,Brock Bowers,LV,TE,36,Team H
+45,Ladd McConkey,LAC,WR,31,Team G
+46,Tyler Bass,Buf,K,2,Team E
+47,Alvin Kamara,NO,RB,18,Team A
+48,Breece Hall,NYJ,RB,15,Team F
+49,George Kittle,SF,TE,18,Team E
+50,Bo Nix,Den,QB,10,Team E
+51,Brock Purdy,SF,QB,4,Team G
+52,Sam LaPorta,Det,TE,14,Team E
+53,T.J. Hockenson,Min,TE,5,Team B
+54,Jaxon Smith-Njigba,Sea,WR,24,Team I
+55,Kyren Williams,LAR,RB,30,Team H
+56,Omarion Hampton,LAC,RB,23,Team J
+57,Mike Evans,SF,WR,15,Team I
+58,Tony Pollard,Ten,RB,11,Team G
+59,James Cook III,Buf,RB,14,Team D
+60,TreVeyon Henderson,NE,RB,14,Team H
+61,Travis Hunter,Jax,WR,7,Team C
+62,Mark Andrews,Bal,TE,6,Team A
+63,Kyler Murray,Min,QB,2,Team C
+64,Chuba Hubbard,Car,RB,15,Team H
+65,Kenneth Walker III,KC,RB,17,Team G
+66,Younghoe Koo,NYG,K,2,Team F
+67,Tyreek Hill,Mia,WR,20,Team D
+68,Eagles,Phi,DEF,3,Team E
+69,Terry McLaurin,Was,WR,19,Team F
+70,RJ Harvey,Den,RB,12,Team G
+71,Tetairoa McMillan,Car,WR,10,Team J
+72,James Conner,Ari,RB,15,Team F
+73,D'Andre Swift,Chi,RB,13,Team G
+74,Jacory Croskey-Merritt,Was,RB,15,Team J
+75,Davante Adams,LAR,WR,7,Team B
+76,Ravens,Bal,DEF,2,Team I
+77,Zach Charbonnet,Sea,RB,3,Team C
+78,Jaylen Waddle,Den,WR,5,Team J
+79,George Pickens,Dal,WR,9,Team E
+80,Tank Bigsby,Phi,RB,1,Team E
+81,Xavier Worthy,KC,WR,16,Team H
+82,DK Metcalf,Pit,WR,12,Team J
+83,Rome Odunze,Chi,WR,6,Team F
+84,Tucker Kraft,GB,TE,4,Team I
+85,Jameson Williams,Det,WR,7,Team I
+86,Texans,Hou,DEF,1,Team D
+87,Tua Tagovailoa,Atl,QB,1,Team F
+88,David Montgomery,Hou,RB,3,Team G
+89,Courtland Sutton,Den,WR,6,Team D
+90,Jordan Mason,Min,RB,4,Team J
+91,Isiah Pacheco,Det,RB,8,Team G
+92,Travis Kelce,KC,TE,4,Team J
+93,Vikings,Min,DEF,1,Team H
+94,Bhayshul Tuten,Jax,RB,5,Team J
+95,Calvin Ridley,Ten,WR,1,Team B
+96,Ricky Pearsall,SF,WR,4,Team F
+97,Chris Olave,NO,WR,1,Team F
+98,Baker Mayfield,TB,QB,2,Team E
+99,Tyrone Tracy Jr.,NYG,RB,1,Team C
+100,Aaron Jones Sr.,Min,RB,3,Team G
+101,Rashee Rice,KC,WR,2,Team D
+102,Kaleb Johnson,Pit,RB,4,Team F
+103,C.J. Stroud,Hou,QB,2,Team F
+104,Jordan Love,GB,QB,1,Team J
+105,Jaylen Warren,Pit,RB,2,Team G
+106,David Njoku,LAC,TE,2,Team F
+107,Jake Bates,Det,K,1,Team F
+108,Emeka Egbuka,TB,WR,2,Team E
+109,Evan Engram,Den,TE,1,Team C
+110,Braelon Allen,NYJ,RB,2,Team G
+111,Stefon Diggs,NE,WR,1,Team G
+112,Jerry Jeudy,Cle,WR,2,Team E
+113,Keon Coleman,Buf,WR,1,Team H
+114,Drake Maye,NE,QB,1,Team J
+115,J.K. Dobbins,Den,RB,1,Team B
+116,Travis Etienne Jr.,NO,RB,1,Team D
+117,Deebo Samuel,Was,WR,3,Team F
+118,Matthew Golden,GB,WR,1,Team I
+119,Jordan Addison,Min,WR,1,Team C
+120,Jauan Jennings,Min,WR,2,Team I
+121,Chase McLaughlin,TB,K,1,Team A
+122,Jayden Reed,GB,WR,1,Team H
+123,Khalil Shakir,Buf,WR,1,Team J
+124,Justin Fields,KC,QB,1,Team B
+125,Justin Herbert,LAC,QB,1,Team D
+126,Cam Skattebo,NYG,RB,1,Team I
+127,Rhamondre Stevenson,NE,RB,1,Team C
+128,Lions,Det,DEF,1,Team G
+129,Steelers,Pit,DEF,1,Team A
+130,Chris Godwin Jr.,TB,WR,1,Team H
+131,Quinshon Judkins,Cle,RB,1,Team J
+132,Caleb Williams,Chi,QB,1,Team B
+133,Tyler Warren,Ind,TE,1,Team D
+134,Austin Ekeler,Was,RB,1,Team I
+135,Josh Downs,Ind,WR,1,Team C
+136,Chargers,LAC,DEF,1,Team G
+137,Michael Pittman Jr.,Pit,WR,1,Team A
+138,Rashid Shaheed,Sea,WR,1,Team H
+139,Bills,Buf,DEF,1,Team J
+140,Javonte Williams,Dal,RB,1,Team B
+141,Cooper Kupp,Sea,WR,1,Team D
+142,Joe Mixon,Hou,RB,1,Team I
+143,Dallas Goedert,Phi,TE,1,Team C
+144,Kyle Pitts Sr.,Atl,TE,1,Team A
+145,Brian Robinson,Atl,RB,1,Team H
+146,Harrison Butker,KC,K,1,Team J
+147,Dalton Kincaid,Buf,TE,1,Team B
+148,Nick Chubb,Hou,RB,1,Team D
+149,Darnell Mooney,NYG,WR,1,Team I
+150,Jared Goff,Det,QB,1,Team C
+151,Cedric Tillman,Cle,WR,1,Team A
+152,Jake Elliott,Phi,K,1,Team H
+153,Dylan Sampson,Cle,RB,1,Team B
+154,Ollie Gordon II,Mia,RB,1,Team D
+155,Josh Palmer,Buf,WR,1,Team I
+156,J.J. McCarthy,Min,QB,1,Team C
+157,Wan'Dale Robinson,Ten,WR,1,Team A
+158,Michael Penix Jr.,Atl,QB,1,Team H
+159,Rashod Bateman,Bal,WR,1,Team B
+160,Najee Harris,LAC,RB,1,Team D
+161,Ka'imi Fairbairn,Hou,K,1,Team I
+162,Tyler Allgeier,Ari,RB,1,Team A
+163,Ray Davis,Buf,RB,1,Team H
+164,Jerome Ford,Was,RB,1,Team B
+165,Colston Loveland,Chi,TE,1,Team D
+166,Trey Benson,Ari,RB,1,Team A
+167,Rachaad White,Was,RB,1,Team B
+168,Keenan Allen,LAC,WR,1,Team A
+169,Jets,NYJ,DEF,1,Team B
+170,Chris Boswell,Pit,K,1,Team B

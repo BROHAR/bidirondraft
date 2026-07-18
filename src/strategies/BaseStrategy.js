@@ -60,6 +60,18 @@ export class BaseStrategy {
     return currentCount >= limit
   }
 
+  // Imported-league hoarding factor (config.leagueProfile.lateInflation).
+  // Returns exactly 1.0 unless a valid profile is active — the neutral path
+  // must be byte-identical (seeded integration tests) and NEVER calls
+  // random(). Applies to every team running this stack, human autopilot
+  // included: it models the market ("money survives to the endgame in my
+  // league"), not a bidder quirk, and exempting the human seat would let
+  // meta sims exploit an asymmetry no real drafter has.
+  getLeagueLateInflation() {
+    const v = this.team?.config?.leagueProfile?.lateInflation
+    return (typeof v === 'number' && Number.isFinite(v) && v >= 0.8 && v <= 1.5) ? v : 1.0
+  }
+
   // User-configured "don't pay more than $X for a <position>" ceiling. Human
   // team only — AI opponents always get Infinity so their behavior (and the
   // seeded-test RNG sequence) is untouched. A player value adjustment trumps
@@ -269,6 +281,17 @@ export class BaseStrategy {
 
     finalValue *= combinedBoost
 
+    // Hoarding leagues (lateInflation > 1) pay over the curve late. The lift
+    // sits BEFORE the ceilings so maxBid/1.35x book still bound it; the
+    // matching early damp is applied after the ceilings below (a reduction is
+    // safe anywhere, and applying it here would be masked whenever the tier
+    // cap binds). Guarded so the neutral path (no imported profile) executes
+    // no arithmetic at all.
+    const lateInflation = this.getLeagueLateInflation()
+    if (lateInflation !== 1.0 && draftProgress >= 0.6) {
+      finalValue *= Math.min(1.25, 1 + 0.5 * (lateInflation - 1))
+    }
+
     // Apply bid ceiling, scaled by the same combined boost so a boosted bid
     // can still reach its target rather than being undone by the cap, and by
     // signatureBoost so a strategy's identity premium (Taco home/top-QB) can
@@ -291,6 +314,13 @@ export class BaseStrategy {
     // branch above; this only bites when the data is wrong.
     if (player.position === 'K' || player.position === 'DST') {
       finalValue = Math.min(finalValue, Math.max(1, Math.round(baseValue * 1.1)), this.sd(KDST_VALUE_CAP))
+    }
+
+    // Hoarding-league early damp (see the lateInflation lift above): money
+    // survives the early phase, so early prices run under the curve. Applied
+    // after the ceilings so a binding tier cap can't mask it.
+    if (lateInflation !== 1.0 && draftProgress < 0.3) {
+      finalValue *= Math.max(0.85, 1 - 0.35 * (lateInflation - 1))
     }
 
     // End-of-draft forced spend, applied AFTER the defensive ceilings — the
@@ -643,10 +673,22 @@ export class BaseStrategy {
     const playersDrafted = this.team?.roster?.length || 0
     const draftProgress = Math.min(playersDrafted / Math.max(1, totalSpots), 1)
     const fatigueBonus = draftProgress * 0.05
+    let skip
     if (this.getPacingRatio() > 1.5) {
-      return Math.max(0.04, baseSkip + fatigueBonus - 0.07)
+      skip = Math.max(0.04, baseSkip + fatigueBonus - 0.07)
+    } else {
+      skip = Math.min(0.25, baseSkip + fatigueBonus)
     }
-    return Math.min(0.25, baseSkip + fatigueBonus)
+    // Hoarding leagues sit out early auctions more. Threshold-only change vs
+    // the caller's existing random() draw — no draws added or removed, so
+    // seeded RNG streams stay aligned even with an active profile. Personas
+    // that override this method with constants (ValueHunter etc.) don't get
+    // this bump; the adjusted-value damp above covers them.
+    const lateInflation = this.getLeagueLateInflation()
+    if (lateInflation > 1.0 && draftProgress < 0.3) {
+      skip = Math.min(0.35, skip + Math.min(0.08, 0.2 * (lateInflation - 1)))
+    }
+    return skip
   }
 
   calculateBidAmount(player, currentBid, adjustedValue, availablePlayers = []) {

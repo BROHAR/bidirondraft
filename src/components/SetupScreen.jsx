@@ -18,6 +18,9 @@ import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
 import { shouldShowPrompt } from '../utils/subscribeStore'
 import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
+import LeagueImportModal from './LeagueImportModal'
+import { loadLeagueProfile, saveLeagueProfile, clearLeagueProfile } from '../utils/leagueProfileStore'
+import { buildLeagueProfileDeltas } from '../utils/leagueProfile'
 import '../styles/components/metaSimulation.css'
 
 // The three ways to run a configured league. Presented as pick-one cards in
@@ -87,6 +90,9 @@ function SetupScreen() {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [customStrategies, setCustomStrategies] = useState(() => loadCustomStrategies())
   const [showStrategyModal, setShowStrategyModal] = useState(false)
+  const [leagueProfile, setLeagueProfile] = useState(() => loadLeagueProfile())
+  const [leagueProfileEnabled, setLeagueProfileEnabled] = useState(persisted.leagueProfileEnabled)
+  const [showLeagueImportModal, setShowLeagueImportModal] = useState(false)
 
   useEffect(() => {
     if (config.autoPilotEnabled) setSimulateError(null)
@@ -103,8 +109,8 @@ function SetupScreen() {
 
   // Persist the draft config + toggles so they survive refresh and new drafts.
   useEffect(() => {
-    saveSetupState({ config, aiBidderProfilesEnabled, metaDraftsPerStrategy, launchMode })
-  }, [config, aiBidderProfilesEnabled, metaDraftsPerStrategy, launchMode])
+    saveSetupState({ config, aiBidderProfilesEnabled, leagueProfileEnabled, metaDraftsPerStrategy, launchMode })
+  }, [config, aiBidderProfilesEnabled, leagueProfileEnabled, metaDraftsPerStrategy, launchMode])
 
   const customizedPlayersData = useMemo(
     () => applyOverrides(playersData, playerOverrides),
@@ -124,18 +130,28 @@ function SetupScreen() {
     [config.scoringFormat, config.numberOfTeams, config.rosterPositions]
   )
 
-  // Value-adjustment modal input: format-adjusted book, except players whose
-  // value the user overrode — overrides are authoritative (the engine snaps
-  // them back after its own format adjustment too).
+  // Imported-league market deltas (same additive $200-space convention as
+  // formatDeltas) — shown in the modals only while the profile toggle is on,
+  // matching what the engine will apply at launch.
+  const leagueDeltas = useMemo(
+    () => (leagueProfileEnabled && leagueProfile
+      ? buildLeagueProfileDeltas(playersData.players, leagueProfile)
+      : new Map()),
+    [leagueProfileEnabled, leagueProfile]
+  )
+
+  // Value-adjustment modal input: format- and league-adjusted book, except
+  // players whose value the user overrode — overrides are authoritative (the
+  // engine snaps them back after its own adjustments too).
   const valueModalPlayers = useMemo(
     () => customizedPlayersData.players.map(player => {
-      const delta = formatDeltas.get(player.id)
-      if (delta === undefined) return player
+      const delta = (formatDeltas.get(player.id) || 0) + (leagueDeltas.get(player.id) || 0)
+      if (delta === 0) return player
       const o = playerOverrides[player.id]
       if (o && typeof o.estimatedValue === 'number') return player
       return { ...player, estimatedValue: Math.max(1, Math.round(player.estimatedValue + delta)) }
     }),
-    [customizedPlayersData, formatDeltas, playerOverrides]
+    [customizedPlayersData, formatDeltas, leagueDeltas, playerOverrides]
   )
 
   // The presence of a SUPERFLEX roster slot is what makes a league superflex —
@@ -171,6 +187,36 @@ function SetupScreen() {
       else next[position] = Math.max(1, Math.min(prev.budgetPerTeam, n))
       return { ...prev, positionalSpendLimits: next }
     })
+  }
+
+  // Apply an imported league profile: persist it, enable it, and seat-map the
+  // detected teams' personas onto the AI bidder dropdowns — non-user imported
+  // teams fill seats 1..N (skipping the human seat) in imported order. The
+  // existing per-seat dropdowns are the override surface.
+  const handleLeagueProfileApply = (profile) => {
+    saveLeagueProfile(profile)
+    setLeagueProfile(profile)
+    setLeagueProfileEnabled(true)
+    setShowLeagueImportModal(false)
+
+    const importedTeams = (profile.teams || []).filter(t => !t.isUser)
+    const aiTeamStrategies = []
+    const aiTeamHomeTeams = []
+    let next = 0
+    for (let seat = 1; seat <= config.numberOfTeams; seat++) {
+      if (seat === config.humanDraftPosition) continue
+      const team = importedTeams[next++]
+      aiTeamStrategies[seat - 1] = team ? team.persona : 'Mixed'
+      aiTeamHomeTeams[seat - 1] = team?.homeTeam || ''
+    }
+    setConfig(prev => ({ ...prev, aiTeamStrategies, aiTeamHomeTeams }))
+    setAiBidderProfilesEnabled(true)
+  }
+
+  const handleLeagueProfileRemove = () => {
+    clearLeagueProfile()
+    setLeagueProfile(null)
+    setLeagueProfileEnabled(false)
   }
 
   const handleAiStrategyChange = (positionIndex, value) => {
@@ -262,6 +308,7 @@ function SetupScreen() {
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
       customStrategies,
+      leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerValueAdjustments: playerValueAdjustments,
       playerOverrides
     }
@@ -289,6 +336,7 @@ function SetupScreen() {
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
       customStrategies,
+      leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerValueAdjustments,
       playerOverrides
     }, customizedPlayersData)
@@ -316,6 +364,7 @@ function SetupScreen() {
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
       customStrategies,
+      leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerOverrides
     }, customizedPlayersData, {
       // Rate every built-in AND every custom strategy for the user's seat.
@@ -689,6 +738,65 @@ function SetupScreen() {
               <button
                 type="button"
                 role="switch"
+                aria-checked={leagueProfileEnabled}
+                aria-label="Use My League's Draft History"
+                className={`toggle-switch ${leagueProfileEnabled ? 'on' : ''}`}
+                disabled={!leagueProfile}
+                onClick={() => setLeagueProfileEnabled(!leagueProfileEnabled)}
+              >
+                <span className="toggle-knob" aria-hidden="true" />
+              </button>
+              <div className="toggle-text">
+                <div className="toggle-title">Use My League&apos;s Draft History</div>
+                <div className="toggle-sub">
+                  Import last year&apos;s auction results to tune prices and detect each bidder&apos;s persona
+                </div>
+              </div>
+            </div>
+
+            <div className="section-body league-profile-body">
+              {leagueProfile ? (
+                <>
+                  <div className="league-profile-summary">
+                    <span className="league-profile-chip">
+                      {leagueProfile.parsedCount} picks · {leagueProfile.importedAt?.slice(0, 10)}
+                    </span>
+                    {['QB', 'RB', 'WR', 'TE'].map(pos => {
+                      const f = leagueProfile.positionFactors?.[pos] ?? 1.0
+                      if (f === 1.0) return null
+                      const pct = Math.round((f - 1) * 100)
+                      return (
+                        <span key={pos} className="league-profile-chip">
+                          {pos} {pct > 0 ? '+' : ''}{pct}%
+                        </span>
+                      )
+                    })}
+                    {leagueProfile.lateInflation !== 1.0 && (
+                      <span className="league-profile-chip">Late inflation {leagueProfile.lateInflation}×</span>
+                    )}
+                  </div>
+                  <div className="league-profile-actions">
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowLeagueImportModal(true)}>
+                      Re-import
+                    </button>
+                    <button type="button" className="btn btn-outline" onClick={handleLeagueProfileRemove}>
+                      Remove
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button type="button" className="btn btn-secondary" onClick={() => setShowLeagueImportModal(true)}>
+                  Import Last Year&apos;s Draft…
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="advanced-config-section">
+            <div className="toggle-row">
+              <button
+                type="button"
+                role="switch"
                 aria-checked={aiBidderProfilesEnabled}
                 aria-label="Match My League's Bidders"
                 className={`toggle-switch ${aiBidderProfilesEnabled ? 'on' : ''}`}
@@ -830,6 +938,13 @@ function SetupScreen() {
         onClose={() => setShowStrategyModal(false)}
         customStrategies={customStrategies}
         onChange={setCustomStrategies}
+      />
+
+      <LeagueImportModal
+        isOpen={showLeagueImportModal}
+        onClose={() => setShowLeagueImportModal(false)}
+        existingProfile={leagueProfile}
+        onApply={handleLeagueProfileApply}
       />
     </div>
   )

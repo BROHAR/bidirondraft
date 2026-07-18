@@ -8,6 +8,7 @@ import { BidValidator } from './bidValidator.js'
 import { workerTimers } from './workerTimers.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 import { applyFormatValueAdjustment } from '../utils/formatValueAdjustment.js'
+import { applyLeagueProfileAdjustment } from '../utils/leagueProfile.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
 // SUPERFLEX, and BENCH are intentionally excluded — they can be filled by
@@ -72,6 +73,11 @@ export class DraftEngine {
     // calibration below (the budget anchor re-normalizes the total, so only
     // per-player relative shifts survive — which is exactly what this applies).
     applyFormatValueAdjustment(players, config)
+
+    // Imported-league market shape (config.leagueProfile): positional and
+    // tier-curve deltas, also pre-anchor so only the relative shape survives.
+    // Strict no-op when no profile is set.
+    applyLeagueProfileAdjustment(players, config)
 
     // League-size calibration in two passes:
     //   1. One-sided budget anchor: if the top-(totalSpots) of the pool sums

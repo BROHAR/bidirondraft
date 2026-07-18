@@ -510,6 +510,116 @@
   }
 }
 
+/* --- League profile import (Use My League's Draft History) ---------------- */
+.league-profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.league-profile-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.league-profile-chip {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  border: 1px solid var(--line);
+  padding: 2px var(--space-2);
+  white-space: nowrap;
+}
+
+.league-profile-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* --- League import modal --------------------------------------------------- */
+.league-import-modal {
+  max-width: 720px;
+  width: min(720px, 92vw);
+}
+
+.league-import-header-example {
+  display: block;
+  padding: var(--space-2);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.league-import-textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: var(--fs-sm);
+  resize: vertical;
+}
+
+.league-import-summary {
+  font-size: var(--fs-sm);
+  color: var(--fg2);
+  margin-bottom: var(--space-3);
+}
+
+.league-import-note {
+  font-size: var(--fs-sm);
+  color: var(--fg2);
+  margin-top: var(--space-2);
+}
+
+.league-import-teams {
+  overflow-x: auto;
+}
+
+.league-import-teams table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.league-import-teams th,
+.league-import-teams td {
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.league-import-team-name {
+  max-width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-import-persona {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.confidence-badge {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  padding: 1px var(--space-1);
+  border: 1px solid var(--line);
+}
+
+.confidence-high { color: var(--green-500, #3fb950); border-color: currentColor; }
+.confidence-medium { color: var(--fg2); }
+.confidence-low { color: var(--fg3, var(--fg2)); opacity: 0.7; }
+
 /* --- Auto-Pilot "required for Simulate" annotation ----------------------- */
 .section-toggle input[type="checkbox"]:disabled {
   cursor: not-allowed;

@@ -460,6 +460,86 @@ describe('BaseStrategy', () => {
     })
   })
 
+  describe('league profile pacing (lateInflation)', () => {
+    const NEUTRAL_TIERS = [
+      { min: 35, factor: 1.0 }, { min: 20, factor: 1.0 }, { min: 10, factor: 1.0 },
+      { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
+    ]
+
+    function makeProfiledStrategy(lateInflation) {
+      const cfg = lateInflation === undefined
+        ? config
+        : { ...config, leagueProfile: { version: 1, positionFactors: {}, tierFactors: NEUTRAL_TIERS, lateInflation } }
+      const t = new Team('lp', 'LP', false, cfg)
+      const s = new TestStrategy()
+      t.setStrategy(s)
+      return { team: t, strategy: s }
+    }
+
+    it('getLeagueLateInflation is exactly 1.0 without a profile and clamps garbage', () => {
+      expect(makeProfiledStrategy(undefined).strategy.getLeagueLateInflation()).toBe(1.0)
+      expect(makeProfiledStrategy(1.3).strategy.getLeagueLateInflation()).toBe(1.3)
+      expect(makeProfiledStrategy(9).strategy.getLeagueLateInflation()).toBe(1.0)
+      expect(makeProfiledStrategy(NaN).strategy.getLeagueLateInflation()).toBe(1.0)
+      expect(makeProfiledStrategy('1.3').strategy.getLeagueLateInflation()).toBe(1.0)
+    })
+
+    it('a neutral profile (1.0) produces identical valuations to no profile', () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const wr = makePlayer('WR', 30, 'wr_ctl')
+      const a = makeProfiledStrategy(undefined).strategy.getAdjustedPlayerValue(wr, [wr])
+      const b = makeProfiledStrategy(1.0).strategy.getAdjustedPlayerValue(wr, [wr])
+      expect(b).toBe(a)
+    })
+
+    it('lateInflation > 1 dampens early valuations and lifts late ones', () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const wr = makePlayer('WR', 30, 'wr_pace')
+
+      const control = makeProfiledStrategy(undefined)
+      const hoarding = makeProfiledStrategy(1.3)
+
+      // Early (empty roster, progress 0): hoarding league values lower.
+      expect(hoarding.strategy.getAdjustedPlayerValue(wr, [wr]))
+        .toBeLessThan(control.strategy.getAdjustedPlayerValue(wr, [wr]))
+
+      // Late (9/15 filled, progress 0.6). Neutralize the endgame spend floor
+      // and tier cap on both sides — they legitimately dominate a flush team
+      // and would mask the signal this test isolates.
+      for (const s of [control.strategy, hoarding.strategy]) {
+        vi.spyOn(s, 'getEndgameSpendFloor').mockReturnValue(0)
+        vi.spyOn(s, 'getMaxBidForPlayer').mockReturnValue(100)
+      }
+      for (let i = 0; i < 9; i++) {
+        control.team.roster.push(makePlayer('RB', 1, `c${i}`))
+        hoarding.team.roster.push(makePlayer('RB', 1, `h${i}`))
+      }
+      // On-pace budgets: a flush team's pacing boost would drive both sides
+      // into the 1.35x ceiling, hiding the lift.
+      control.team.remainingBudget = 40
+      hoarding.team.remainingBudget = 40
+      const late = hoarding.strategy.getAdjustedPlayerValue(wr, [wr])
+      expect(late).toBeGreaterThan(control.strategy.getAdjustedPlayerValue(wr, [wr]))
+      // The lift is still bounded by the 1.35x book defensive ceiling.
+      expect(late).toBeLessThanOrEqual(Math.round(30 * 1.35))
+    })
+
+    it('lateInflation > 1 raises early skip probability, bounded at 0.35', () => {
+      const control = makeProfiledStrategy(undefined)
+      const hoarding = makeProfiledStrategy(1.3)
+      const extreme = makeProfiledStrategy(1.5)
+      const controlSkip = control.strategy.getSkipProbability()
+      expect(hoarding.strategy.getSkipProbability()).toBeCloseTo(controlSkip + 0.06, 5)
+      expect(extreme.strategy.getSkipProbability()).toBeCloseTo(controlSkip + 0.08, 5)
+      expect(extreme.strategy.getSkipProbability()).toBeLessThanOrEqual(0.35)
+
+      // Late in the draft the bump is off entirely.
+      for (let i = 0; i < 9; i++) hoarding.team.roster.push(makePlayer('RB', 1, `r${i}`))
+      for (let i = 0; i < 9; i++) control.team.roster.push(makePlayer('RB', 1, `s${i}`))
+      expect(hoarding.strategy.getSkipProbability()).toBe(control.strategy.getSkipProbability())
+    })
+  })
+
   describe('positional spend limits', () => {
     function makeLimitedTeam(limits, isHuman = true) {
       const t = new Team('h1', 'Human', isHuman, { ...config, positionalSpendLimits: limits })
