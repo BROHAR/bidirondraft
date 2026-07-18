@@ -77,10 +77,12 @@ describe('LeagueImportModal', () => {
     fireEvent.click(apply)
     expect(onApply).toHaveBeenCalledTimes(1)
     const profile = onApply.mock.calls[0][0]
-    expect(profile.version).toBe(1)
+    expect(profile.version).toBe(2)
     expect(profile.parsedCount).toBe(24)
     expect(profile.positionFactors).toBeDefined()
-    expect(profile.tierFactors.length).toBe(5)
+    for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DST']) {
+      expect(profile.tierFactors[pos].length).toBe(6)
+    }
     expect(profile.teams.map(t => t.name)).toEqual(['Alpha', 'Beta'])
     expect(profile.teams[0].isUser).toBe(true)
     expect(profile.teams[1]).toMatchObject({ isUser: false, persona: 'ZeroRB' })

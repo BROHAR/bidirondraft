@@ -101,13 +101,16 @@ describe('Budget spend-down — teams do not strand budget', () => {
   // value reshaping) must not break the spend invariants — the factors are
   // bounded and pre-anchor precisely so the money still clears.
   it('$200, 12-team league with an active hoarding league profile', () => {
+    const tiers = topFactor => [
+      { min: 50, factor: topFactor }, { min: 35, factor: topFactor }, { min: 20, factor: 0.95 },
+      { min: 10, factor: 1.0 }, { min: 4, factor: 1.02 }, { min: 0, factor: 1.0 },
+    ]
     const leagueProfile = {
-      version: 1,
+      version: 2,
       positionFactors: { QB: 1.16, RB: 1.1, WR: 0.9, TE: 0.97, K: 1.0, DST: 1.0 },
-      tierFactors: [
-        { min: 35, factor: 1.1 }, { min: 20, factor: 0.95 }, { min: 10, factor: 1.0 },
-        { min: 4, factor: 1.02 }, { min: 0, factor: 1.0 },
-      ],
+      tierFactors: {
+        QB: tiers(1.1), RB: tiers(0.7), WR: tiers(1.4), TE: tiers(1.0), K: tiers(1.0), DST: tiers(1.0),
+      },
       lateInflation: 1.5,
     }
     let fullSpend = 0

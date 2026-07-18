@@ -226,7 +226,7 @@ describe('SetupScreen wizard', () => {
       importProfile()
 
       fireEvent.click(screen.getByRole('button', { name: /start draft →/i }))
-      expect(initializeDraft.mock.calls[0][0].leagueProfile).toMatchObject({ version: 1, parsedCount: 24 })
+      expect(initializeDraft.mock.calls[0][0].leagueProfile).toMatchObject({ version: 2, parsedCount: 24 })
 
       // Toggle off → next launch sends null.
       fireEvent.click(screen.getByRole('switch', { name: /use my league's draft history/i }))

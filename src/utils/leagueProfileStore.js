@@ -10,6 +10,7 @@ import {
   TIER_FACTOR_RANGE,
   LATE_INFLATION_RANGE,
   TIER_MINS,
+  TIER_POSITIONS,
 } from './leagueProfile'
 import { BUILTIN_STRATEGIES } from '../strategies/registry'
 
@@ -32,13 +33,21 @@ export function sanitizeLeagueProfile(raw) {
     positionFactors[pos] = clampFactor(raw.positionFactors?.[pos], POSITION_FACTOR_RANGE)
   }
 
-  // Rebuild the tier list from the canonical bucket mins so extra/missing/
-  // misordered entries can't corrupt the descending lookup in tierFactorFor.
-  const savedTiers = Array.isArray(raw.tierFactors) ? raw.tierFactors : []
-  const tierFactors = TIER_MINS.map(min => {
-    const saved = savedTiers.find(t => t && t.min === min)
-    return { min, factor: min === 0 ? 1.0 : clampFactor(saved?.factor, TIER_FACTOR_RANGE) }
-  })
+  // Rebuild each position's tier list from the canonical bucket mins so
+  // extra/missing/misordered entries can't corrupt the descending lookup in
+  // tierFactorFor. K/DST are forced fully neutral, matching the fitter.
+  const tierFactors = {}
+  for (const pos of TIER_POSITIONS) {
+    const savedTiers = Array.isArray(raw.tierFactors?.[pos]) ? raw.tierFactors[pos] : []
+    const neutral = pos === 'K' || pos === 'DST'
+    tierFactors[pos] = TIER_MINS.map(min => {
+      const saved = savedTiers.find(t => t && t.min === min)
+      return {
+        min,
+        factor: min === 0 || neutral ? 1.0 : clampFactor(saved?.factor, TIER_FACTOR_RANGE),
+      }
+    })
+  }
 
   const teams = (Array.isArray(raw.teams) ? raw.teams : [])
     .filter(t => t && typeof t.name === 'string' && t.name.length > 0)

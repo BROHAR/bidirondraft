@@ -14,7 +14,10 @@
 
 import { REFERENCE_BUDGET } from './budgetScaling'
 
-export const PROFILE_VERSION = 1
+// v2: tierFactors went from one global curve to per-position curves, so a
+// "won't pay up for elite RBs" league doesn't get diluted by full-price elite
+// WRs sharing the bucket. v1 profiles sanitize to null (re-import).
+export const PROFILE_VERSION = 2
 
 // Shrinkage toward neutral and clamps applied at fit time (re-applied by the
 // store's sanitizer so hand-edited localStorage can't smuggle wild factors).
@@ -23,14 +26,24 @@ export const POSITION_FACTOR_RANGE = [0.6, 1.6]
 export const TIER_FACTOR_RANGE = [0.7, 1.4]
 export const LATE_INFLATION_RANGE = [0.8, 1.5]
 
-// Tier buckets by rank-fair value (descending). The bottom bucket is always
-// neutral: sub-$4 prices are $1-3 noise with no fittable signal.
-export const TIER_MINS = [35, 20, 10, 4, 0]
+// Tier buckets by rank-fair value (descending). The $50+ elite bucket exists
+// so "won't pay up for the BEST players at a position" fits separately from
+// the merely-expensive tier below it. The bottom bucket is always neutral:
+// sub-$4 prices are $1-3 noise with no fittable signal.
+export const TIER_MINS = [50, 35, 20, 10, 4, 0]
+
+export const TIER_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 
 const MIN_POSITION_SAMPLES = 3
-const MIN_TIER_SAMPLES = 4
+// Per-position tier cells are small (a draft has ~5 elite RBs), so the
+// minimum is lower than the position one; shrinkage still guards overfit.
+const MIN_TIER_SAMPLES = 3
 const MIN_TRAJECTORY_SAMPLES = 5   // per third, rank-fair ≥ $5
 const MIN_PICKS_FOR_CLASSIFY = 8
+
+function neutralTiers() {
+  return TIER_MINS.map(min => ({ min, factor: 1.0 }))
+}
 
 function shrinkAndClamp(f, [lo, hi]) {
   const shrunk = 1 + SHRINK * (f - 1)
@@ -83,22 +96,32 @@ export function fitLeagueProfile(records, players, { leagueBudget = REFERENCE_BU
     }
   }
 
-  // --- Tier factors: rank-matched curve comparison -------------------------
-  // Position-residual prices (normPrice / posFactor) so positional inflation
-  // isn't double-counted in the tier curve.
-  const tierFactors = TIER_MINS.map(min => ({ min, factor: 1.0 }))
-  {
-    const bucketOf = v => tierFactors.find(t => v >= t.min)
-    const sums = new Map(tierFactors.map(t => [t.min, { price: 0, fair: 0, n: 0 }]))
-    for (const r of byPrice) {
-      const fair = rankFair.get(r)
-      const residualPrice = norm(r.price) / (positionFactors[r.position] || 1.0)
-      const b = sums.get(bucketOf(fair).min)
-      b.price += residualPrice
+  // --- Tier factors: per-position rank-matched curve comparison ------------
+  // Rank-matching happens WITHIN each position (the i-th priciest RB purchase
+  // vs the i-th highest RB book value), so "elite RBs go cheap while elite
+  // WRs fetch full price" fits as distinct curves instead of averaging out in
+  // a shared bucket. Position-residual prices (normPrice / posFactor) keep
+  // the position factor's overall level from double-counting into the curve.
+  // K/DST always neutral (book clamped $1-3); sparse cells stay neutral.
+  const tierFactors = {}
+  for (const pos of TIER_POSITIONS) tierFactors[pos] = neutralTiers()
+  for (const pos of ['QB', 'RB', 'WR', 'TE']) {
+    const posRecords = records.filter(r => r.position === pos).sort((a, b) => b.price - a.price)
+    if (posRecords.length === 0) continue
+    const posBook = players
+      .filter(p => p.position === pos)
+      .map(p => p.estimatedValue)
+      .sort((a, b) => b - a)
+    const sums = new Map(TIER_MINS.map(min => [min, { price: 0, fair: 0, n: 0 }]))
+    posRecords.forEach((r, i) => {
+      const fair = posBook[Math.min(i, posBook.length - 1)] ?? 1
+      const bucketMin = TIER_MINS.find(min => fair >= min)
+      const b = sums.get(bucketMin)
+      b.price += norm(r.price) / (positionFactors[pos] || 1.0)
       b.fair += fair
       b.n++
-    }
-    for (const t of tierFactors) {
+    })
+    for (const t of tierFactors[pos]) {
       if (t.min === 0) continue          // bottom bucket always neutral
       const b = sums.get(t.min)
       if (b.n >= MIN_TIER_SAMPLES && b.fair > 0) {
@@ -163,6 +186,7 @@ export function fitLeagueProfile(records, players, { leagueBudget = REFERENCE_BU
 // ---------------------------------------------------------------------------
 
 function tierFactorFor(tierFactors, bookValue) {
+  if (!Array.isArray(tierFactors)) return 1.0
   for (const t of tierFactors) if (bookValue >= t.min) return t.factor
   return 1.0
 }
@@ -172,11 +196,13 @@ function tierFactorFor(tierFactors, bookValue) {
 // renormalizes the level and only the fitted shape survives.
 export function buildLeagueProfileDeltas(players, profile) {
   const deltas = new Map()
-  if (!profile || !profile.positionFactors || !Array.isArray(profile.tierFactors)) return deltas
+  if (!profile || !profile.positionFactors || !profile.tierFactors || typeof profile.tierFactors !== 'object') {
+    return deltas
+  }
   for (const p of players) {
     const book = p.estimatedValue
     const posF = profile.positionFactors[p.position] ?? 1.0
-    const tierF = tierFactorFor(profile.tierFactors, book)
+    const tierF = tierFactorFor(profile.tierFactors[p.position], book)
     const delta = ((posF - 1) + (tierF - 1)) * book
     if (delta !== 0) deltas.set(p.id, delta)
   }

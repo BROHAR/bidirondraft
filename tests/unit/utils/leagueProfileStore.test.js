@@ -8,18 +8,27 @@ import {
 
 const KEY = 'adraft.leagueProfile.v1'
 
+const neutralTiers = () => [
+  { min: 50, factor: 1.0 }, { min: 35, factor: 1.0 }, { min: 20, factor: 1.0 },
+  { min: 10, factor: 1.0 }, { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
+]
+
 function validProfile(overrides = {}) {
   return {
-    version: 1,
+    version: 2,
     importedAt: '2026-07-18T00:00:00.000Z',
     source: 'csv',
     leagueBudget: 200,
     parsedCount: 170,
     positionFactors: { QB: 1.16, RB: 0.99, WR: 0.97, TE: 0.97, K: 1.0, DST: 1.0 },
-    tierFactors: [
-      { min: 35, factor: 1.02 }, { min: 20, factor: 0.97 }, { min: 10, factor: 1.0 },
-      { min: 4, factor: 1.02 }, { min: 0, factor: 1.0 },
-    ],
+    tierFactors: {
+      QB: neutralTiers(),
+      RB: [
+        { min: 50, factor: 0.9 }, { min: 35, factor: 0.93 }, { min: 20, factor: 0.97 },
+        { min: 10, factor: 1.0 }, { min: 4, factor: 1.02 }, { min: 0, factor: 1.0 },
+      ],
+      WR: neutralTiers(), TE: neutralTiers(), K: neutralTiers(), DST: neutralTiers(),
+    },
     lateInflation: 1.18,
     teams: [
       { name: 'Alpha', isUser: true, persona: 'StarsAndScrubs', confidence: 'high', spend: 200, picks: 17, homeTeam: null },
@@ -64,19 +73,30 @@ describe('leagueProfileStore', () => {
     expect(p.lateInflation).toBe(1.5)
   })
 
-  it('rebuilds tier buckets canonically, forcing the bottom bucket neutral', () => {
+  it('rebuilds tier buckets canonically per position, forcing bottom and K/DST neutral', () => {
     const p = sanitizeLeagueProfile(validProfile({
-      tierFactors: [
-        { min: 0, factor: 3.0 },              // bottom must stay 1.0
-        { min: 35, factor: 2.5 },             // clamps to 1.4
-        { min: 999, factor: 1.2 },            // unknown bucket dropped
-        // 20/10/4 buckets missing → neutral
-      ],
+      tierFactors: {
+        RB: [
+          { min: 0, factor: 3.0 },              // bottom must stay 1.0
+          { min: 35, factor: 2.5 },             // clamps to 1.4
+          { min: 999, factor: 1.2 },            // unknown bucket dropped
+          // 20/10/4 buckets missing → neutral
+        ],
+        K: [{ min: 35, factor: 1.3 }],          // K is always forced neutral
+        // other positions missing entirely → neutral
+      },
     }))
-    expect(p.tierFactors).toEqual([
-      { min: 35, factor: 1.4 }, { min: 20, factor: 1.0 }, { min: 10, factor: 1.0 },
-      { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
+    expect(p.tierFactors.RB).toEqual([
+      { min: 50, factor: 1.0 }, { min: 35, factor: 1.4 }, { min: 20, factor: 1.0 },
+      { min: 10, factor: 1.0 }, { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
     ])
+    for (const pos of ['QB', 'WR', 'TE', 'K', 'DST']) {
+      for (const t of p.tierFactors[pos]) expect(t.factor).toBe(1.0)
+    }
+  })
+
+  it('rejects v1 profiles (global tier curve) so users re-import', () => {
+    expect(sanitizeLeagueProfile({ ...validProfile(), version: 1 })).toBeNull()
   })
 
   it('coerces unknown personas and confidences on teams', () => {

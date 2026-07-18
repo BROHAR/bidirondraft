@@ -461,15 +461,10 @@ describe('BaseStrategy', () => {
   })
 
   describe('league profile pacing (lateInflation)', () => {
-    const NEUTRAL_TIERS = [
-      { min: 35, factor: 1.0 }, { min: 20, factor: 1.0 }, { min: 10, factor: 1.0 },
-      { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
-    ]
-
     function makeProfiledStrategy(lateInflation) {
       const cfg = lateInflation === undefined
         ? config
-        : { ...config, leagueProfile: { version: 1, positionFactors: {}, tierFactors: NEUTRAL_TIERS, lateInflation } }
+        : { ...config, leagueProfile: { version: 2, positionFactors: {}, tierFactors: {}, lateInflation } }
       const t = new Team('lp', 'LP', false, cfg)
       const s = new TestStrategy()
       t.setStrategy(s)

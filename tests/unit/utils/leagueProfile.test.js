@@ -38,7 +38,9 @@ describe('fitLeagueProfile', () => {
     const { players, records } = neutralScenario()
     const profile = fitLeagueProfile(records, players, { leagueBudget: 200 })
     expect(profile.positionFactors).toEqual({ QB: 1.0, RB: 1.0, WR: 1.0, TE: 1.0, K: 1.0, DST: 1.0 })
-    for (const t of profile.tierFactors) expect(t.factor).toBe(1.0)
+    for (const pos of Object.keys(profile.tierFactors)) {
+      for (const t of profile.tierFactors[pos]) expect(t.factor).toBe(1.0)
+    }
     expect(profile.lateInflation).toBe(1.0)
     expect(profile.parsedCount).toBe(16)
   })
@@ -91,19 +93,42 @@ describe('fitLeagueProfile', () => {
     expect(profile.positionFactors.QB).toBe(1.0) // 1 QB pick < 3 samples
   })
 
-  it('fits a rank-matched tier factor for an overpaying top tier', () => {
+  it('fits a rank-matched tier factor for an overpaying elite tier', () => {
     // Single position → position factor neutral; isolates the tier math.
-    const values = [60, 50, 45, 40, 30, 28, 25, 22]
+    const values = [60, 56, 54, 52, 30, 28, 25, 22]
     const players = values.map(v => poolPlayer('WR', v))
     const records = values.map((v, i) =>
       rec('WR', i < 4 ? Math.round(v * 1.2) : v))
     const profile = fitLeagueProfile(records, players, { leagueBudget: 200 })
-    const top = profile.tierFactors.find(t => t.min === 35)
-    const second = profile.tierFactors.find(t => t.min === 20)
-    // Top bucket: prices [72,60,54,48]=234 vs rank-fair [60,50,45,40]=195 → 1.2 → shrunk 1.1.
-    expect(top.factor).toBe(1.1)
-    expect(second.factor).toBe(1.0)
-    expect(profile.tierFactors.find(t => t.min === 0).factor).toBe(1.0)
+    const elite = profile.tierFactors.WR.find(t => t.min === 50)
+    const mid = profile.tierFactors.WR.find(t => t.min === 20)
+    // Elite bucket: prices [72,67,65,62]=266 vs rank-fair [60,56,54,52]=222 → 1.198 → shrunk 1.1.
+    expect(elite.factor).toBe(1.1)
+    expect(mid.factor).toBe(1.0)
+    expect(profile.tierFactors.WR.find(t => t.min === 0).factor).toBe(1.0)
+    // Positions with no picks stay fully neutral.
+    for (const t of profile.tierFactors.RB) expect(t.factor).toBe(1.0)
+  })
+
+  it('fits distinct tier curves per position (cheap elite RBs, full-price elite WRs)', () => {
+    const values = [60, 55, 52, 45, 40, 38]
+    const players = [
+      ...values.map(v => poolPlayer('RB', v)),
+      ...values.map(v => poolPlayer('WR', v)),
+    ]
+    const records = [
+      // League pays 80% for its elite RBs but full price for elite WRs.
+      ...values.map(v => rec('RB', Math.round(v * 0.8))),
+      ...values.map(v => rec('WR', v)),
+    ]
+    const profile = fitLeagueProfile(records, players, { leagueBudget: 200 })
+    const rbElite = profile.tierFactors.RB.find(t => t.min === 50).factor
+    const wrElite = profile.tierFactors.WR.find(t => t.min === 50).factor
+    expect(rbElite).toBeLessThan(1.0)
+    expect(rbElite).toBeLessThan(wrElite)
+    // No QB/TE picks → those curves stay neutral.
+    for (const t of profile.tierFactors.QB) expect(t.factor).toBe(1.0)
+    for (const t of profile.tierFactors.TE) expect(t.factor).toBe(1.0)
   })
 
   it('detects late inflation from the spend trajectory', () => {
@@ -137,23 +162,26 @@ describe('fitLeagueProfile', () => {
 })
 
 describe('buildLeagueProfileDeltas / applyLeagueProfileAdjustment', () => {
+  const tiers = topFactor => [
+    { min: 50, factor: topFactor }, { min: 35, factor: topFactor }, { min: 20, factor: 1.0 },
+    { min: 10, factor: 1.0 }, { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
+  ]
   const profile = {
-    version: 1,
+    version: 2,
     positionFactors: { QB: 1.0, RB: 1.3, WR: 1.0, TE: 1.0, K: 1.0, DST: 1.0 },
-    tierFactors: [
-      { min: 35, factor: 1.1 }, { min: 20, factor: 1.0 }, { min: 10, factor: 1.0 },
-      { min: 4, factor: 1.0 }, { min: 0, factor: 1.0 },
-    ],
+    tierFactors: {
+      QB: tiers(1.0), RB: tiers(1.1), WR: tiers(0.9), TE: tiers(1.0), K: tiers(1.0), DST: tiers(1.0),
+    },
     lateInflation: 1.0,
   }
 
-  it('composes position and tier factors additively', () => {
+  it('composes position and per-position tier factors additively', () => {
     const rb = poolPlayer('RB', 40)  // (0.3 + 0.1) * 40 = 16
-    const wr = poolPlayer('WR', 40)  // (0 + 0.1) * 40 = 4
+    const wr = poolPlayer('WR', 40)  // (0 + -0.1) * 40 = -4 — WR curve differs from RB's
     const cheap = poolPlayer('WR', 10) // neutral bucket, neutral position → no delta
     const deltas = buildLeagueProfileDeltas([rb, wr, cheap], profile)
     expect(deltas.get(rb.id)).toBeCloseTo(16, 5)
-    expect(deltas.get(wr.id)).toBeCloseTo(4, 5)
+    expect(deltas.get(wr.id)).toBeCloseTo(-4, 5)
     expect(deltas.has(cheap.id)).toBe(false)
   })
 
