@@ -26,6 +26,7 @@ import {
   buildPositionalRadar,
   getPowerRankings,
   buildDreamTeam,
+  getKeeperPicks,
 } from '../utils/draftAnalysis.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 import RadarChart, { AXIS_FULL_LABEL } from './RadarChart.jsx'
@@ -100,7 +101,7 @@ function buildRosterSlots(team, rosterPositions) {
 
 // ---- Tab 1: Your Roster ------------------------------------------------
 
-function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replacementLevels }) {
+function RosterTab({ humanTeam, rosterPositions, draftHistory, keeperPicks = [], config, replacementLevels }) {
   const starters = useMemo(() => getStartingLineup(humanTeam, rosterPositions), [humanTeam, rosterPositions])
   const starterIds = useMemo(() => new Set(starters.map(p => p.id)), [starters])
   const bench = humanTeam.roster.filter(p => !starterIds.has(p.id))
@@ -120,21 +121,26 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
     return fair !== Math.round(pick.player.estimatedValue) ? fair : null
   }
 
+  // "Your" deals include keepers — a discounted keeper is a real edge you
+  // hold, even though league-wide market boards exclude administered prices.
+  const myPicksAll = useMemo(() => [
+    ...keeperPicks.filter(p => p.team === humanTeam.name),
+    ...draftHistory.filter(p => p.team === humanTeam.name),
+  ], [draftHistory, keeperPicks, humanTeam.name])
+
   const myBestValues = useMemo(() => {
-    const myPicks = draftHistory.filter(p => p.team === humanTeam.name)
-    return [...myPicks]
+    return [...myPicksAll]
       .map(p => ({ ...p, valueDiff: p.player.estimatedValue - p.price }))
       .sort((a, b) => b.valueDiff - a.valueDiff)
       .slice(0, 3)
-  }, [draftHistory, humanTeam.name])
+  }, [myPicksAll])
 
   const myOverpays = useMemo(() => {
-    const myPicks = draftHistory.filter(p => p.team === humanTeam.name)
-    return [...myPicks]
+    return [...myPicksAll]
       .map(p => ({ ...p, valueDiff: p.player.estimatedValue - p.price }))
       .sort((a, b) => a.valueDiff - b.valueDiff)
       .slice(0, 3)
-  }, [draftHistory, humanTeam.name])
+  }, [myPicksAll])
 
   const bs = budgetScaleFor(config?.budgetPerTeam)
   const posRows = POSITION_ORDER.map(pos => {
@@ -244,7 +250,10 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
                   <span className={`slot-label slot-${slot.slotLabel}`}>{slot.slotLabel}</span>
                   {slot.player ? (
                     <>
-                      <span className="rs-name">{slot.player.name}</span>
+                      <span className="rs-name">
+                        {slot.player.name}
+                        {slot.player.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
+                      </span>
                       <span className="rs-team">{slot.player.team}</span>
                       <span className="rs-bye">Bye {slot.player.byeWeek}</span>
                       <span className={`pos-badge ${slot.player.position}`}>{slot.player.position}</span>
@@ -271,9 +280,12 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
             {myBestValues.map((pick, i) => (
               <div key={i} className="so-item">
                 <div>
-                  <div className="so-player">{pick.player.name}</div>
+                  <div className="so-player">
+                    {pick.player.name}
+                    {pick.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
+                  </div>
                   <div className="so-team">
-                    {pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue}
+                    {pick.player.position} · ${pick.price} {pick.isKeeper ? 'kept' : 'paid'} (est. ${pick.player.estimatedValue}
                     {roomFair(pick) !== null ? ` · room fair $${roomFair(pick)}` : ''})
                   </div>
                 </div>
@@ -287,9 +299,12 @@ function RosterTab({ humanTeam, rosterPositions, draftHistory, config, replaceme
             {myOverpays.filter(p => p.valueDiff < 0).map((pick, i) => (
               <div key={i} className="so-item">
                 <div>
-                  <div className="so-player">{pick.player.name}</div>
+                  <div className="so-player">
+                    {pick.player.name}
+                    {pick.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
+                  </div>
                   <div className="so-team">
-                    {pick.player.position} · ${pick.price} paid (est. ${pick.player.estimatedValue}
+                    {pick.player.position} · ${pick.price} {pick.isKeeper ? 'kept' : 'paid'} (est. ${pick.player.estimatedValue}
                     {roomFair(pick) !== null ? ` · room fair $${roomFair(pick)}` : ''})
                   </div>
                 </div>
@@ -777,10 +792,13 @@ function ValueAnalysisTab({ draftHistory, allTeams, humanTeam, replacementLevels
 
 // ---- Tab 4: Budget Flow ------------------------------------------------
 
-function BudgetFlowTab({ humanTeam, allTeams, draftHistory, config }) {
+function BudgetFlowTab({ humanTeam, allTeams, draftHistory, keeperPicks = [], config }) {
+  // Keeper spend comes off the budget before pick #1, so the timeline starts
+  // with keeper entries — otherwise the running "left" figures wouldn't
+  // reconcile with the team's actual remaining budget.
   const timeline = useMemo(
-    () => getHumanPicksTimeline(draftHistory, humanTeam.name, config.budgetPerTeam),
-    [draftHistory, humanTeam.name, config.budgetPerTeam]
+    () => getHumanPicksTimeline([...keeperPicks, ...draftHistory], humanTeam.name, config.budgetPerTeam),
+    [draftHistory, keeperPicks, humanTeam.name, config.budgetPerTeam]
   )
   const leaguePtsPerDollar = useMemo(() => getLeagueAvgPointsPerDollar(draftHistory), [draftHistory])
 
@@ -816,6 +834,7 @@ function BudgetFlowTab({ humanTeam, allTeams, draftHistory, config }) {
               <div key={i} className="timeline-pick">
                 <div className="timeline-player">
                   {pt.player.name}
+                  {pt.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
                   <span style={{ color: 'var(--fg3)', marginLeft: 6 }}>({pt.player.position})</span>
                 </div>
                 <div className="timeline-price">${pt.price}</div>
@@ -1124,7 +1143,10 @@ function TeamRosterModal({ team, rosterPositions, onClose }) {
                     <span className={`slot-label slot-${slot.slotLabel}`}>{slot.slotLabel}</span>
                     {slot.player ? (
                       <>
-                        <span className="rs-name">{slot.player.name}</span>
+                        <span className="rs-name">
+                          {slot.player.name}
+                          {slot.player.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
+                        </span>
                         <span className="rs-team">{slot.player.team}</span>
                         <span className="rs-bye">Bye {slot.player.byeWeek}</span>
                         <span className={`pos-badge ${slot.player.position}`}>{slot.player.position}</span>
@@ -1148,7 +1170,7 @@ function TeamRosterModal({ team, rosterPositions, onClose }) {
 
 // ---- Tab 6: Draft Board ------------------------------------------------
 
-function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLevels }) {
+function DraftBoardTab({ draftHistory, keeperPicks = [], allTeams, rosterPositions, replacementLevels }) {
   const [sortBy, setSortBy] = useState('cost')
 
   const orderedPicks = useMemo(() => {
@@ -1158,13 +1180,18 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
         new Set(getStartingLineup(team, rosterPositions).map(p => p.id)),
       ])
     )
-    return draftHistory.map((pick, index) => ({
+    const decorate = (pick, nominationIndex) => ({
       ...pick,
-      nominationIndex: index + 1,
+      nominationIndex,
       valueDiff: pick.player.estimatedValue - pick.price,
       isStarter: starterIdsByTeam.get(pick.team)?.has(pick.player.id) ?? false,
-    }))
-  }, [draftHistory, allTeams, rosterPositions])
+    })
+    // Keepers precede the auction, so they lead the nomination view (no index).
+    return [
+      ...keeperPicks.map(pick => decorate(pick, null)),
+      ...draftHistory.map((pick, index) => decorate(pick, index + 1)),
+    ]
+  }, [draftHistory, keeperPicks, allTeams, rosterPositions])
 
   const teamColumns = useMemo(() => {
     return allTeams.map(team => {
@@ -1175,7 +1202,7 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
       const benchPts = totalPts - starterPts
       const stratName = teamStrategyLabel(team)
 
-      const picks = draftHistory
+      const picks = [...keeperPicks, ...draftHistory]
         .filter(p => p.team === team.name)
         .map(p => ({ ...p, valueDiff: p.player.estimatedValue - p.price, isStarter: starterIds.has(p.player.id) }))
 
@@ -1198,7 +1225,7 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
 
       return { team, picks: sorted, starterPts, totalPts, benchPts, stratName }
     })
-  }, [draftHistory, allTeams, sortBy, rosterPositions])
+  }, [draftHistory, keeperPicks, allTeams, sortBy, rosterPositions])
 
   const maxPicks = Math.max(...teamColumns.map(tc => tc.picks.length), 0)
 
@@ -1239,9 +1266,13 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
                 </tr>
               </thead>
               <tbody>
-                {orderedPicks.map(pick => (
-                  <tr key={pick.nominationIndex}>
-                    <td className="va-pick-idx">{pick.nominationIndex}</td>
+                {orderedPicks.map((pick, i) => (
+                  <tr key={pick.isKeeper ? `k-${i}` : pick.nominationIndex}>
+                    <td className="va-pick-idx">
+                      {pick.isKeeper
+                        ? <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>
+                        : pick.nominationIndex}
+                    </td>
                     <td className="nom-player">{pick.player.name}</td>
                     <td><span className={`pos-badge ${pick.player.position}`}>{pick.player.position}</span></td>
                     <td className="nom-nfl">{pick.player.team || ''}</td>
@@ -1288,7 +1319,10 @@ function DraftBoardTab({ draftHistory, allTeams, rosterPositions, replacementLev
                     key={i}
                     className={`db-cell${pick.isStarter ? ' db-starter' : ' db-bench'}${isBenchStart ? ' db-bench-start' : ''}`}
                   >
-                    <div className="db-name">{pick.player.name}</div>
+                    <div className="db-name">
+                      {pick.player.name}
+                      {pick.isKeeper && <span className="keeper-badge" title="Keeper — retained pre-draft">K</span>}
+                    </div>
                     <div className="db-meta">
                       <span className={`pos-badge ${pick.player.position}`}>{pick.player.position}</span>
                       <span className="db-price">${pick.price}</span>
@@ -1591,6 +1625,11 @@ export default function PostDraftAnalysis({ onViewDraft }) {
   const humanTeam = teams.find(t => t.isHuman)
   const rp = config.rosterPositions
 
+  // Keeper roster entries in pick form — passed to the per-team tabs so
+  // keepers show alongside auction picks. Market-wide aggregates keep using
+  // the raw (auction-only) draftHistory.
+  const keeperPicks = useMemo(() => getKeeperPicks(teams), [teams])
+
   const replacementInfo = useMemo(() => {
     const allPlayers = [...availablePlayers, ...teams.flatMap(t => t.roster)]
     return getReplacementLevels(allPlayers, rp, config.numberOfTeams)
@@ -1710,6 +1749,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
             humanTeam={humanTeam}
             rosterPositions={rp}
             draftHistory={draftHistory}
+            keeperPicks={keeperPicks}
             config={config}
             replacementLevels={replacementLevels}
           />
@@ -1737,6 +1777,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
             humanTeam={humanTeam}
             allTeams={teams}
             draftHistory={draftHistory}
+            keeperPicks={keeperPicks}
             config={config}
           />
         )}
@@ -1768,6 +1809,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
         {activeTab === 7 && (
           <DraftBoardTab
             draftHistory={draftHistory}
+            keeperPicks={keeperPicks}
             allTeams={teams}
             rosterPositions={rp}
             replacementLevels={replacementLevels}

@@ -9,6 +9,7 @@ import { workerTimers } from './workerTimers.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 import { applyFormatValueAdjustment } from '../utils/formatValueAdjustment.js'
 import { applyLeagueProfileAdjustment } from '../utils/leagueProfile.js'
+import { resolveKeepers, applyResolvedKeepers } from '../utils/keepers.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
 // SUPERFLEX, and BENCH are intentionally excluded — they can be filled by
@@ -95,13 +96,30 @@ export class DraftEngine {
     const TOP_TIER_SIZE = 60
     const TILT_PER_TEAM = 0.08    // 8% per team off baseline (~16% from 12→14, matches user's "10-15% shave")
 
-    const totalAuctionBudget = teams.length * config.budgetPerTeam
+    // Keeper netting: kept players never hit the auction and their prices are
+    // already spent, so the anchor must balance the money actually in the room
+    // against the players actually for sale. This is where keeper inflation
+    // comes from — cheap keepers shrink the pool more than the budget, so the
+    // anchor scales the remaining board up (and vice versa). Resolution is
+    // tolerant of stale entries; with no keepers everything below is
+    // byte-identical to the redraft path.
+    const resolvedKeepers = resolveKeepers(config, teams, players)
+    const keeperIds = new Set(resolvedKeepers.map(k => k.player.id))
+    const keeperSpendTotal = resolvedKeepers.reduce((s, k) => s + k.price, 0)
+
+    const totalAuctionBudget = teams.length * config.budgetPerTeam - keeperSpendTotal
     const rosterSize = Object.values(config.rosterPositions || {})
       .reduce((s, c) => s + c, 0)
-    const totalSpots = teams.length * rosterSize
+    const totalSpots = teams.length * rosterSize - resolvedKeepers.length
 
     if (players.length > 0) {
-      const sorted = [...players].sort((a, b) => b.estimatedValue - a.estimatedValue)
+      // Kept players are excluded from the tilt/anchor inputs but still receive
+      // the baseScale multiplication below, so their book values stay in the
+      // same dollar space as the auction pool for display and analysis.
+      const auctionPool = keeperIds.size > 0
+        ? players.filter(p => !keeperIds.has(p.id))
+        : players
+      const sorted = [...auctionPool].sort((a, b) => b.estimatedValue - a.estimatedValue)
 
       // Stage 2 first (top-60 tilt): top tier inflates in small leagues,
       // deflates in big. Apply before Stage 1 so the budget anchor accounts
@@ -144,7 +162,7 @@ export class DraftEngine {
       // the worst on the board. projectedPoints does have meaningful spread
       // within position, so we use it to tier the top 3 of each so they land
       // at $2–3 in auction (matching real-draft pricing).
-      this.applyKDstTiering(players, budgetScaleFor(config.budgetPerTeam))
+      this.applyKDstTiering(auctionPool, budgetScaleFor(config.budgetPerTeam))
 
       // User-customized values are authoritative — snap back after calibration
       // so the auction displays exactly what the user typed.
@@ -159,18 +177,24 @@ export class DraftEngine {
       }
     }
 
+    // Move keepers onto rosters (purchasePrice / roster.push / budget deduct /
+    // pool removal — the same four mutations completeBidding performs) now
+    // that their estimatedValue has been through the full calibration above.
+    // Returns `players` untouched when there are no keepers.
+    const availablePool = applyResolvedKeepers(resolvedKeepers, players)
+
     this.nominationOrder = this.generateNominationOrder(teams, config.rosterPositions)
     this.currentNominatorIndex = 0
-    
+
     // Assign AI strategies to teams
-    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, players, config.aiTeamHomeTeams, config.customStrategies)
-    
+    this.aiManager.assignStrategies(teams, config.aiTeamStrategies, availablePool, config.aiTeamHomeTeams, config.customStrategies)
+
     // Initialize auto-pilot for human team if enabled
     this.initializeAutoPilot(teams, config)
-    
+
     this.store.setState((draft) => {
       draft.teams = teams
-      draft.availablePlayers = players
+      draft.availablePlayers = availablePool
       draft.config = { ...draft.config, ...config }
     })
     

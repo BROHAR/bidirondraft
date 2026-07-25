@@ -86,6 +86,13 @@
   border-radius: 4px;
 }
 
+/* Keeper entries — retained pre-draft, shown below pick #1. */
+.pick-chip--keeper {
+  color: var(--amber-500, #d29922);
+  border: 1px solid currentColor;
+  background: none;
+}
+
 .pick-team-chip {
   font-family: var(--font-body);
   font-size: 10px;

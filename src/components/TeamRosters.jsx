@@ -200,6 +200,7 @@ function TeamRosters() {
                         <div className="roster-player">
                           <div className="player-name">
                             {player.name}
+                            {player.isKeeper && <span className="keeper-badge" title="Keeper">K</span>}
                             {isFlexSlot && <span className="slot-role">{slot}</span>}
                           </div>
                           <div className="player-info">

@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIGS } from '../models/DraftConfig'
+import { sanitizeKeepers, DEFAULT_MAX_KEEPERS, MAX_KEEPERS_LIMIT } from './keepers'
 
 // Persists the SetupScreen's draft configuration to localStorage so it survives
 // a page refresh or starting a new draft. Mirrors playerOverrides.js: guarded,
@@ -27,6 +28,8 @@ export function defaultDraftConfig() {
     positionalSpendLimits: {},
     aiTeamStrategies: [],
     aiTeamHomeTeams: [],
+    keepers: [],
+    maxKeepersPerTeam: DEFAULT_MAX_KEEPERS,
   }
 }
 
@@ -99,6 +102,10 @@ export function loadSetupState() {
         positionalSpendLimits: sanitizeSpendLimits(savedConfig.positionalSpendLimits),
         aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
+        // Keeper entries for seats beyond the loaded team count are dropped —
+        // they'd only resurface as launch-blocking validation errors.
+        keepers: sanitizeKeepers(savedConfig.keepers, numberOfTeams),
+        maxKeepersPerTeam: intInRange(savedConfig.maxKeepersPerTeam, 0, MAX_KEEPERS_LIMIT, d.maxKeepersPerTeam),
       },
       aiBidderProfilesEnabled: !!parsed.aiBidderProfilesEnabled,
       leagueProfileEnabled: !!parsed.leagueProfileEnabled,

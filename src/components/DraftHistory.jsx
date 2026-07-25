@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
-import { getValueLabel, getVariancePosition } from '../utils/draftAnalysis'
+import { getValueLabel, getVariancePosition, getKeeperPicks } from '../utils/draftAnalysis'
 import { budgetScaleFor } from '../utils/budgetScaling'
 
 function formatDelta(cls, deltaDollars) {
@@ -11,31 +11,45 @@ function formatDelta(cls, deltaDollars) {
 }
 
 function DraftHistory() {
-  const { draftHistory, config } = useDraftStore()
+  const { draftHistory, teams, config } = useDraftStore()
   const bs = budgetScaleFor(config?.budgetPerTeam)
+
+  // Keepers render as pre-draft entries pinned below pick #1 (the list is
+  // newest-first). They're kept out of draftHistory itself so the auction
+  // stats below stay market-only.
+  const keeperPicks = useMemo(() => getKeeperPicks(teams), [teams])
+  const allPicks = useMemo(
+    () => [...draftHistory.slice().reverse(), ...keeperPicks],
+    [draftHistory, keeperPicks]
+  )
 
   return (
     <div className="card draft-history">
       <div className="history-header">
-        <h3>Draft History ({draftHistory.length} picks)</h3>
+        <h3>
+          Draft History ({draftHistory.length} picks
+          {keeperPicks.length > 0 ? ` · ${keeperPicks.length} keepers` : ''})
+        </h3>
       </div>
 
       <div className="draft-picks">
-        {draftHistory.length === 0 ? (
+        {allPicks.length === 0 ? (
           <div className="no-picks">
             <p>No players drafted yet</p>
           </div>
         ) : (
           <div className="picks-list">
-            {draftHistory.slice().reverse().map((pick, index) => {
-              const pickNumber = draftHistory.length - index
+            {allPicks.map((pick, index) => {
+              const pickNumber = pick.isKeeper ? null : draftHistory.length - index
               const { text, cls, pct, deltaDollars } = getValueLabel(pick.player.estimatedValue, pick.price, bs)
               const markerLeft = getVariancePosition(pct)
 
               return (
-                <div key={`${pick.player.id}-${pick.timestamp}`} className={`draft-pick draft-pick--${cls}`}>
+                <div key={`${pick.player.id}-${pick.timestamp ?? 'keeper'}`} className={`draft-pick draft-pick--${cls}`}>
                   <div className="pick-top-row">
-                    <span className="pick-chip">#{pickNumber}</span>
+                    <span className={`pick-chip${pick.isKeeper ? ' pick-chip--keeper' : ''}`}>
+                      {pick.isKeeper ? 'KEEPER' : `#${pickNumber}`}
+                    </span>
                     <span className="pick-team-chip">{pick.team}</span>
                   </div>
 

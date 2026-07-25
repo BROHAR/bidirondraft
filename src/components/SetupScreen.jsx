@@ -19,6 +19,7 @@ import { shouldShowPrompt } from '../utils/subscribeStore'
 import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
 import LeagueImportModal from './LeagueImportModal'
+import KeeperModal from './KeeperModal'
 import { loadLeagueProfile, saveLeagueProfile, clearLeagueProfile } from '../utils/leagueProfileStore'
 import { buildLeagueProfileDeltas } from '../utils/leagueProfile'
 import '../styles/components/metaSimulation.css'
@@ -68,7 +69,18 @@ const STEPS = [
 function SetupScreen() {
   const { initializeDraft, simulateDraft, runMetaSimulation } = useDraftStore()
   // Restore the persisted setup config (survives refresh / new draft).
-  const persisted = useMemo(() => loadSetupState(), [])
+  // Keeper entries whose player no longer exists in the pool (projection
+  // refresh dropped them) are pruned here — the engine would skip them
+  // silently, which would leave the keeping team's budget wrong vs intent.
+  const persisted = useMemo(() => {
+    const state = loadSetupState()
+    const poolIds = new Set(playersData.players.map(p => p.id))
+    const kept = (state.config.keepers || []).filter(k => poolIds.has(k.playerId))
+    if (kept.length !== (state.config.keepers || []).length) {
+      state.config = { ...state.config, keepers: kept }
+    }
+    return state
+  }, [])
   const [config, setConfig] = useState(persisted.config)
 
   // Wizard position (1-3). Ephemeral — always starts on step 1.
@@ -93,6 +105,7 @@ function SetupScreen() {
   const [leagueProfile, setLeagueProfile] = useState(() => loadLeagueProfile())
   const [leagueProfileEnabled, setLeagueProfileEnabled] = useState(persisted.leagueProfileEnabled)
   const [showLeagueImportModal, setShowLeagueImportModal] = useState(false)
+  const [showKeeperModal, setShowKeeperModal] = useState(false)
 
   useEffect(() => {
     if (config.autoPilotEnabled) setSimulateError(null)
@@ -166,6 +179,10 @@ function SetupScreen() {
   // DraftConfig.validate); drives the inline counter's colour in step 1.
   const totalRosterSize = Object.values(config.rosterPositions).reduce((sum, count) => sum + count, 0)
   const rosterValid = totalRosterSize >= 10 && totalRosterSize <= 20
+
+  // Keeper summary for the step-1 box label.
+  const keeperCount = config.keepers?.length || 0
+  const keeperSpend = (config.keepers || []).reduce((s, k) => s + k.price, 0)
 
   // Simulate auto-drafts the human seat too, so it needs Auto-Pilot. Meta
   // force-enables it internally, so only Simulate constrains the UI here.
@@ -572,6 +589,31 @@ function SetupScreen() {
               )}
             </div>
           </div>
+
+          <div className="customize-box">
+            <div className="customize-box-text">
+              <span className="customize-box-title">Keeper League</span>
+              <small>Set the players each team keeps from last season. Keepers skip the auction, fill roster slots, and their price comes off that team&apos;s budget — remaining player values adjust to the money left in the room.</small>
+            </div>
+            <div className="customize-box-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowKeeperModal(true)}
+              >
+                Keepers ({keeperCount}{keeperCount > 0 ? ` · $${keeperSpend}` : ''}) →
+              </button>
+              {keeperCount > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setConfig(prev => ({ ...prev, keepers: [] }))}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         )}
 
@@ -946,6 +988,20 @@ function SetupScreen() {
         existingProfile={leagueProfile}
         onApply={handleLeagueProfileApply}
       />
+
+      {/* Mounted only while open so its working copy re-seeds from config
+          each time (unlike the other modals, it stages edits locally). */}
+      {showKeeperModal && (
+        <KeeperModal
+          isOpen
+          onClose={() => setShowKeeperModal(false)}
+          config={config}
+          players={valueModalPlayers}
+          leagueProfile={leagueProfile}
+          onApply={({ keepers, maxKeepersPerTeam }) =>
+            setConfig(prev => ({ ...prev, keepers, maxKeepersPerTeam }))}
+        />
+      )}
     </div>
   )
 }

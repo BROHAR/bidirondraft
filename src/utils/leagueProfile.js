@@ -166,6 +166,15 @@ export function fitLeagueProfile(records, players, { leagueBudget = REFERENCE_BU
     source,
     leagueBudget: budget,
     parsedCount: records.length,
+    // Slim copy of the raw picks so downstream features (keeper selection)
+    // can offer "from last year's draft" without re-importing the CSV.
+    // Optional on older stored profiles — consumers must tolerate absence.
+    picks: records.map(r => ({
+      name: r.name,
+      position: r.position,
+      price: r.price,
+      fantasyTeam: r.fantasyTeam,
+    })),
     positionFactors,
     tierFactors,
     lateInflation,

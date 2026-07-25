@@ -28,6 +28,7 @@ import {
   buildPositionalRadar,
   getPowerRankings,
   buildDreamTeam,
+  getKeeperPicks,
 } from '../../../src/utils/draftAnalysis.js'
 
 function makePlayer(overrides = {}) {
@@ -1013,5 +1014,48 @@ describe('buildDreamTeam (budget-constrained)', () => {
     const res = buildDreamTeam([team], [], { QB: 1, RB: 1, BENCH: 2 }, 7)
     expect(res.starterBudget).toBe(5)
     expect(res.overBudget).toBe(true)
+  })
+})
+
+describe('getKeeperPicks', () => {
+  it('reshapes keeper roster entries into pick form, priciest first', () => {
+    const teams = [
+      {
+        name: 'Team 1',
+        roster: [
+          { id: 'a', name: 'Kept Star', position: 'RB', purchasePrice: 35, isKeeper: true },
+          { id: 'b', name: 'Auction Guy', position: 'WR', purchasePrice: 20 },
+        ],
+      },
+      {
+        name: 'Team 2',
+        roster: [
+          { id: 'c', name: 'Kept Cheap', position: 'QB', purchasePrice: 5, isKeeper: true },
+        ],
+      },
+    ]
+    const picks = getKeeperPicks(teams)
+    expect(picks).toHaveLength(2)
+    expect(picks[0]).toMatchObject({ team: 'Team 1', price: 35, nominator: 'Keeper', isKeeper: true })
+    expect(picks[0].player.id).toBe('a')
+    expect(picks[1]).toMatchObject({ team: 'Team 2', price: 5 })
+  })
+
+  it('returns [] for keeper-free rosters', () => {
+    expect(getKeeperPicks([{ name: 'T', roster: [{ id: 'x', purchasePrice: 3 }] }])).toEqual([])
+  })
+})
+
+describe('getHumanPicksTimeline with keepers', () => {
+  it('deducts keeper spend before auction picks and flags keeper points', () => {
+    const history = [
+      { team: 'Me', price: 30, player: { id: 'k1', name: 'Kept' }, isKeeper: true },
+      { team: 'Other', price: 50, player: { id: 'o1', name: 'Not mine' } },
+      { team: 'Me', price: 20, player: { id: 'a1', name: 'Won' } },
+    ]
+    const timeline = getHumanPicksTimeline(history, 'Me', 200)
+    expect(timeline).toHaveLength(2)
+    expect(timeline[0]).toMatchObject({ remaining: 170, isKeeper: true })
+    expect(timeline[1]).toMatchObject({ remaining: 150, isKeeper: false })
   })
 })

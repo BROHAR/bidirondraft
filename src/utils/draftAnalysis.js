@@ -237,6 +237,30 @@ export function getPositionSpendingByGroup(team) {
   return groups
 }
 
+// Keeper roster entries reshaped into draftHistory pick form so per-team
+// report surfaces (draft board columns, budget timeline, your-picks lists)
+// can show them alongside auction picks. League-wide market aggregates
+// (market averages, league pts/$, best-values/overpays boards) intentionally
+// do NOT include these — keeper prices are administered, not market prices,
+// and a discounted keeper would otherwise dominate every "steal" list.
+export function getKeeperPicks(teams) {
+  const picks = []
+  for (const team of teams) {
+    for (const p of team.roster) {
+      if (p.isKeeper) {
+        picks.push({
+          player: p,
+          team: team.name,
+          nominator: 'Keeper',
+          price: p.purchasePrice || 0,
+          isKeeper: true,
+        })
+      }
+    }
+  }
+  return picks.sort((a, b) => b.price - a.price)
+}
+
 // Returns array of { pickIndex, remaining, player?, price? } for human team picks
 export function getHumanPicksTimeline(draftHistory, humanTeamName, initialBudget) {
   let remaining = initialBudget
@@ -244,7 +268,7 @@ export function getHumanPicksTimeline(draftHistory, humanTeamName, initialBudget
   draftHistory.forEach((pick, i) => {
     if (pick.team === humanTeamName) {
       remaining -= pick.price
-      points.push({ pickIndex: i + 1, remaining, player: pick.player, price: pick.price })
+      points.push({ pickIndex: i + 1, remaining, player: pick.player, price: pick.price, isKeeper: !!pick.isKeeper })
     }
   })
   return points

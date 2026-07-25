@@ -6,7 +6,7 @@ Fantasy football auction draft simulator (React 19 + Vite + Zustand 5). Tests vi
 
 - `npm run dev` — Vite dev server
 - `npm run build` — production build
-- `npm run test:run` — full Vitest suite (375 tests, ~10s); `npm run test` for watch mode
+- `npm run test:run` — full Vitest suite (745 tests, ~40s); `npm run test` for watch mode
 - `npm run lint` — ESLint
 
 ### ESLint

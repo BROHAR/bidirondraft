@@ -185,6 +185,19 @@
   padding: 1px 4px;
 }
 
+/* Keeper marker — player was retained pre-draft, not won at auction.
+   Used across rosters, draft history, and the post-draft report. */
+.keeper-badge {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: var(--ls-wide);
+  color: var(--amber-500, #d29922);
+  border: 1px solid currentColor;
+  padding: 1px 4px;
+  margin-left: 5px;
+  white-space: nowrap;
+}
+
 .roster-player .player-name {
   font-family: var(--font-body);
   font-size: var(--fs-base);

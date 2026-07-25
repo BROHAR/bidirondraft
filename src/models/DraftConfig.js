@@ -1,3 +1,5 @@
+import { validateKeepers, DEFAULT_MAX_KEEPERS } from '../utils/keepers.js'
+
 export class DraftConfig {
   constructor(options = {}) {
     this.numberOfTeams = options.numberOfTeams || 12
@@ -9,6 +11,12 @@ export class DraftConfig {
     this.minBidIncrement = options.minBidIncrement || 1
     this.scoringFormat = options.scoringFormat || 'halfPPR'
     this.aiTeamStrategies = options.aiTeamStrategies || []
+    // Keeper league support: pre-draft player retentions (see utils/keepers.js
+    // for the entry shape). Empty array = standard redraft league.
+    this.keepers = Array.isArray(options.keepers) ? options.keepers : []
+    this.maxKeepersPerTeam = Number.isInteger(options.maxKeepersPerTeam)
+      ? options.maxKeepersPerTeam
+      : DEFAULT_MAX_KEEPERS
 
     this.rosterPositions = {
       QB: 1,
@@ -45,7 +53,10 @@ export class DraftConfig {
     if (this.totalRosterSize < 10 || this.totalRosterSize > 20) {
       errors.push('Total roster size must be between 10 and 20 players')
     }
-    
+
+    errors.push(...validateKeepers(this))
+
+
     return {
       isValid: errors.length === 0,
       errors
