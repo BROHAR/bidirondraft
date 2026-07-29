@@ -80,29 +80,41 @@ export class DraftEngine {
     // Strict no-op when no profile is set.
     applyLeagueProfileAdjustment(players, config)
 
-    // League-size calibration in two passes:
-    //   1. One-sided budget anchor: if the top-(totalSpots) of the pool sums
-    //      to LESS than the total auction budget (typical in larger leagues
-    //      where the player file's expert-ranked top-N is light), scale every
-    //      player up proportionally so teams have value to bid on. Never
-    //      deflates — small leagues whose pool already exceeds the budget
-    //      keep their book values (Dart $5, Metcalf $3, etc.).
-    //   2. Top-60 tilt: smaller leagues further INFLATE the top tier (deep
-    //      waiver = cheaper bench → more budget concentrates on stars),
-    //      larger leagues DEFLATE it (shallow waiver = costlier bench → less
-    //      budget for stars). No redistribution to the rest tier — Stage 1
-    //      already established a sane floor for the bench.
-    const REFERENCE_TEAMS = 12
-    const TOP_TIER_SIZE = 60
-    const TILT_PER_TEAM = 0.08    // 8% per team off baseline (~16% from 12→14, matches user's "10-15% shave")
+    // League calibration: one adaptive power-law reshape,
+    //
+    //   calibrated = a × book^gamma
+    //
+    // `a` (level) is solved so the top-(totalSpots) players — the ones that
+    // will actually be drafted — sum to the money actually in the room, so
+    // realized auction prices track estimatedValue on average (sum(book) ≈
+    // budget; the old inflate-only anchor left small leagues ~14% over the
+    // money in the room, which forced systematic below-estimate sales — studs
+    // held near book and the squeeze dumped the mid-tier to $1, the reported
+    // "Breece/Davante for $1" problem).
+    //
+    // `gamma` (shape) bends the curve by how far the level had to stretch:
+    // when the book falls short of the budget (12+ team leagues — the bundled
+    // book's top-150 sums to ~$2000, i.e. a 10-team book — and keeper leagues,
+    // where cheap keepers remove more value than money), gamma drops below 1
+    // so the surplus flows to the mid/late tiers instead of multiplying the
+    // stars. A uniform anchor put +18% on a 12-team league's top nominations
+    // and 2x+ on keeper leagues' — users reported early rounds as drastically
+    // inflated — while real rooms pay near book for elites and spread surplus
+    // money across the middle. When the book EXCEEDS the money (8-team
+    // leagues), gamma rises above 1: stars hold value, the deep tail collapses
+    // toward $1 — the same star-concentration the old top-60 tilt encoded,
+    // which this replaces. gamma is derived in $200-reference space so pure
+    // budget scaling ($1000 leagues) stays a uniform multiply, and clamped so
+    // extreme keeper configs flatten the curve only so far.
+    const GAMMA_COEFF = 0.5   // fraction of the level-stretch that becomes shape
+    const GAMMA_MIN = 0.62    // heavy-keeper flattening floor
+    const GAMMA_MAX = 1.25    // small-league sharpening ceiling
 
     // Keeper netting: kept players never hit the auction and their prices are
-    // already spent, so the anchor must balance the money actually in the room
-    // against the players actually for sale. This is where keeper inflation
-    // comes from — cheap keepers shrink the pool more than the budget, so the
-    // anchor scales the remaining board up (and vice versa). Resolution is
-    // tolerant of stale entries; with no keepers everything below is
-    // byte-identical to the redraft path.
+    // already spent, so the calibration must balance the money actually in the
+    // room against the players actually for sale. This is where keeper
+    // inflation comes from. Resolution is tolerant of stale entries; with no
+    // keepers everything below is byte-identical to the redraft path.
     const resolvedKeepers = resolveKeepers(config, teams, players)
     const keeperIds = new Set(resolvedKeepers.map(k => k.player.id))
     const keeperSpendTotal = resolvedKeepers.reduce((s, k) => s + k.price, 0)
@@ -113,43 +125,30 @@ export class DraftEngine {
     const totalSpots = teams.length * rosterSize - resolvedKeepers.length
 
     if (players.length > 0) {
-      // Kept players are excluded from the tilt/anchor inputs but still receive
-      // the baseScale multiplication below, so their book values stay in the
-      // same dollar space as the auction pool for display and analysis.
+      // Kept players are excluded from the calibration inputs but still receive
+      // the transform below, so their book values stay in the same dollar
+      // space as the auction pool for display and analysis.
       const auctionPool = keeperIds.size > 0
         ? players.filter(p => !keeperIds.has(p.id))
         : players
       const sorted = [...auctionPool].sort((a, b) => b.estimatedValue - a.estimatedValue)
 
-      // Stage 2 first (top-60 tilt): top tier inflates in small leagues,
-      // deflates in big. Apply before Stage 1 so the budget anchor accounts
-      // for the value Stage 2 removed/added; otherwise the post-tilt pool
-      // sums below total budget and teams leave money unspent.
-      const topTilt = 1.0 + TILT_PER_TEAM * (REFERENCE_TEAMS - teams.length)
-      if (Math.abs(topTilt - 1.0) > 1e-9) {
-        const top = sorted.slice(0, Math.min(TOP_TIER_SIZE, sorted.length))
-        for (const p of top) p.estimatedValue *= topTilt
-      }
-
-      // Stage 1 (budget anchor): scale the pool so the top-(totalSpots) — the
-      // players that will actually be drafted — sums to the total auction
-      // budget. Bidirectional: large leagues that fall short are inflated,
-      // small leagues whose post-tilt top-N exceeds the budget are deflated.
-      // Anchoring BOTH ways keeps sum(book) ≈ budget so realized auction prices
-      // track estimatedValue on average. The previous inflate-only version left
-      // small leagues (e.g. 10-team) with total book ~14% above the money in
-      // the room, which forces systematic below-estimate sales — studs hold
-      // near book and the squeeze dumps onto the mid-tier, which then sells for
-      // $1 (the reported "Breece/Davante for $1" problem). The Math.max(1, …)
-      // floor below keeps $1 players at $1 after any deflation. The Stage-2
-      // tilt still shapes the curve (stars relatively pricier in small leagues);
-      // this only normalizes the absolute level to the budget.
       if (totalSpots > 0) {
         const topN = sorted.slice(0, Math.min(totalSpots, sorted.length))
-        const currentTopNSum = topN.reduce((s, p) => s + p.estimatedValue, 0)
-        if (currentTopNSum > 0) {
-          const baseScale = totalAuctionBudget / currentTopNSum
-          for (const p of players) p.estimatedValue *= baseScale
+        const rawTopNSum = topN.reduce((s, p) => s + p.estimatedValue, 0)
+        if (rawTopNSum > 0) {
+          // Shape from the reference-space stretch (budget-scale factored out),
+          // level from the real-dollar budget.
+          const refScale = totalAuctionBudget /
+            (budgetScaleFor(config.budgetPerTeam) * rawTopNSum)
+          const gamma = Math.min(GAMMA_MAX,
+            Math.max(GAMMA_MIN, 1 - GAMMA_COEFF * (refScale - 1)))
+          const powSum = topN.reduce(
+            (s, p) => s + Math.pow(Math.max(1, p.estimatedValue), gamma), 0)
+          const level = totalAuctionBudget / powSum
+          for (const p of players) {
+            p.estimatedValue = level * Math.pow(Math.max(1, p.estimatedValue), gamma)
+          }
         }
       }
 
