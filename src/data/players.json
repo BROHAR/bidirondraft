@@ -194,7 +194,7 @@
         "ppr": 270.9
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_032",
@@ -278,7 +278,7 @@
         "ppr": 294.4
       },
       "byeWeek": 6,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_011",
@@ -586,7 +586,7 @@
         "ppr": 243.3
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_027",
@@ -600,7 +600,7 @@
         "ppr": 220.1
       },
       "byeWeek": 7,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_034",
@@ -852,7 +852,7 @@
         "ppr": 217.3
       },
       "byeWeek": 10,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_031",
@@ -1020,7 +1020,7 @@
         "ppr": 192.8
       },
       "byeWeek": 11,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_038",
@@ -1048,7 +1048,7 @@
         "ppr": 162.6
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": "O"
     },
     {
       "id": "player_068",
@@ -1090,7 +1090,7 @@
         "ppr": 202.7
       },
       "byeWeek": 13,
-      "injuryStatus": "Q"
+      "injuryStatus": "O"
     },
     {
       "id": "player_051",
@@ -1132,7 +1132,7 @@
         "ppr": 189.2
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_128",
@@ -1160,7 +1160,7 @@
         "ppr": 187.9
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_145",
@@ -1174,7 +1174,7 @@
         "ppr": 291.1
       },
       "byeWeek": 14,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_352",
@@ -1202,7 +1202,7 @@
         "ppr": 166.1
       },
       "byeWeek": 8,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_222",
@@ -1342,7 +1342,7 @@
         "ppr": 296.8
       },
       "byeWeek": 10,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_105",
@@ -1692,7 +1692,7 @@
         "ppr": 173
       },
       "byeWeek": 5,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_253",
@@ -1776,7 +1776,7 @@
         "ppr": 71.8
       },
       "byeWeek": 7,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_170",
@@ -1972,7 +1972,7 @@
         "ppr": 162.1
       },
       "byeWeek": 13,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_123",
@@ -2014,7 +2014,7 @@
         "ppr": 138.6
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_287",
@@ -2056,7 +2056,7 @@
         "ppr": 271.9
       },
       "byeWeek": 13,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_183",
@@ -2392,7 +2392,7 @@
         "ppr": 102.6
       },
       "byeWeek": 8,
-      "injuryStatus": ""
+      "injuryStatus": "O"
     },
     {
       "id": "player_115",
@@ -2812,7 +2812,7 @@
         "ppr": 64.8
       },
       "byeWeek": 8,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_290",
@@ -3358,7 +3358,7 @@
         "ppr": 43.8
       },
       "byeWeek": 11,
-      "injuryStatus": ""
+      "injuryStatus": "O"
     },
     {
       "id": "player_324",
@@ -3442,7 +3442,7 @@
         "ppr": 114.3
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_391",
@@ -3484,7 +3484,7 @@
         "ppr": 65.3
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_345",
@@ -3722,7 +3722,7 @@
         "ppr": 33.6
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_435",
@@ -3932,7 +3932,7 @@
         "ppr": 7.3
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_393",
@@ -4758,7 +4758,7 @@
         "ppr": 11.2
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": "O"
     },
     {
       "id": "player_660",
@@ -5038,7 +5038,7 @@
         "ppr": 8.8
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_476",
@@ -5136,7 +5136,7 @@
         "ppr": 8.8
       },
       "byeWeek": 14,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_475",
@@ -5290,7 +5290,7 @@
         "ppr": 7.8
       },
       "byeWeek": 9,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_102",
@@ -5416,7 +5416,7 @@
         "ppr": 0
       },
       "byeWeek": 6,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_504",
@@ -6010,14 +6010,14 @@
       "id": "player_732",
       "name": "Lucas Havrisik",
       "position": "K",
-      "team": "GB",
+      "team": "FA",
       "estimatedValue": 1,
       "projectedPoints": {
         "standard": 0,
         "halfPPR": 0,
         "ppr": 0
       },
-      "byeWeek": 11,
+      "byeWeek": 0,
       "injuryStatus": ""
     },
     {
@@ -6200,7 +6200,7 @@
         "ppr": 80.8
       },
       "byeWeek": 6,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_320",
@@ -6228,7 +6228,7 @@
         "ppr": 67.4
       },
       "byeWeek": 8,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_322",
@@ -6256,7 +6256,7 @@
         "ppr": 61.5
       },
       "byeWeek": 5,
-      "injuryStatus": ""
+      "injuryStatus": "O"
     },
     {
       "id": "player_314",
@@ -6536,7 +6536,7 @@
         "ppr": 118.5
       },
       "byeWeek": 11,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_336",
@@ -6704,7 +6704,7 @@
         "ppr": 8.4
       },
       "byeWeek": 8,
-      "injuryStatus": "Q"
+      "injuryStatus": ""
     },
     {
       "id": "player_403",
@@ -7152,7 +7152,7 @@
         "ppr": 34.6
       },
       "byeWeek": 5,
-      "injuryStatus": ""
+      "injuryStatus": "Q"
     },
     {
       "id": "player_441",
@@ -7180,7 +7180,7 @@
         "ppr": 32.8
       },
       "byeWeek": 11,
-      "injuryStatus": "Q"
+      "injuryStatus": "O"
     },
     {
       "id": "player_550",
@@ -7446,7 +7446,7 @@
         "ppr": 11
       },
       "byeWeek": 7,
-      "injuryStatus": "Q"
+      "injuryStatus": "O"
     },
     {
       "id": "player_689",
@@ -7516,7 +7516,7 @@
         "ppr": 9.3
       },
       "byeWeek": 6,
-      "injuryStatus": ""
+      "injuryStatus": "O"
     },
     {
       "id": "player_208",
