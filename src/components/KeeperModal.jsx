@@ -56,7 +56,7 @@ function KeeperModal({ isOpen, onClose, config, players, leagueProfile, onApply 
 
   const seatLabel = s => (s === config.humanDraftPosition
     ? `${config.humanTeamName || 'Your Team'} (you)`
-    : `Position ${s}`)
+    : (config.aiTeamNames?.[s - 1]?.trim() || `Position ${s}`))
 
   const searchMatches = search.trim().length >= 2
     ? players

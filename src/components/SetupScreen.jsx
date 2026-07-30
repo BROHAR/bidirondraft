@@ -219,14 +219,18 @@ function SetupScreen() {
     const importedTeams = (profile.teams || []).filter(t => !t.isUser)
     const aiTeamStrategies = []
     const aiTeamHomeTeams = []
+    const aiTeamNames = []
     let next = 0
     for (let seat = 1; seat <= config.numberOfTeams; seat++) {
       if (seat === config.humanDraftPosition) continue
       const team = importedTeams[next++]
       aiTeamStrategies[seat - 1] = team ? team.persona : 'Mixed'
       aiTeamHomeTeams[seat - 1] = team?.homeTeam || ''
+      // Imported leagues carry real team names — seat them alongside the
+      // personas so the room reads like the user's actual league.
+      aiTeamNames[seat - 1] = team?.name || ''
     }
-    setConfig(prev => ({ ...prev, aiTeamStrategies, aiTeamHomeTeams }))
+    setConfig(prev => ({ ...prev, aiTeamStrategies, aiTeamHomeTeams, aiTeamNames }))
     setAiBidderProfilesEnabled(true)
   }
 
@@ -252,6 +256,14 @@ function SetupScreen() {
       const next = [...(prev.aiTeamHomeTeams || [])]
       next[positionIndex] = value
       return { ...prev, aiTeamHomeTeams: next }
+    })
+  }
+
+  const handleAiTeamNameChange = (positionIndex, value) => {
+    setConfig(prev => {
+      const next = [...(prev.aiTeamNames || [])]
+      next[positionIndex] = value
+      return { ...prev, aiTeamNames: next }
     })
   }
 
@@ -324,6 +336,7 @@ function SetupScreen() {
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      aiTeamNames: aiBidderProfilesEnabled ? config.aiTeamNames : [],
       customStrategies,
       leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerValueAdjustments: playerValueAdjustments,
@@ -352,6 +365,7 @@ function SetupScreen() {
       ...config,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      aiTeamNames: aiBidderProfilesEnabled ? config.aiTeamNames : [],
       customStrategies,
       leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerValueAdjustments,
@@ -380,6 +394,7 @@ function SetupScreen() {
       autoPilotEnabled: true,
       aiTeamStrategies: aiBidderProfilesEnabled ? config.aiTeamStrategies : [],
       aiTeamHomeTeams: aiBidderProfilesEnabled ? config.aiTeamHomeTeams : [],
+      aiTeamNames: aiBidderProfilesEnabled ? config.aiTeamNames : [],
       customStrategies,
       leagueProfile: leagueProfileEnabled ? leagueProfile : null,
       playerOverrides
@@ -848,7 +863,7 @@ function SetupScreen() {
               </button>
               <div className="toggle-text">
                 <div className="toggle-title">Match My League&apos;s Bidders</div>
-                <div className="toggle-sub">Pin a strategy to any AI team — the rest stay Mixed</div>
+                <div className="toggle-sub">Name your opponents and pin a strategy to any AI team — the rest stay Mixed</div>
               </div>
             </div>
 
@@ -859,10 +874,21 @@ function SetupScreen() {
                     .filter(p => p !== config.humanDraftPosition)
                     .map(p => (
                       <div key={p} className="advanced-config-row">
-                        <label htmlFor={`ai-strategy-${p}`}>Team {p}</label>
+                        <label htmlFor={`ai-name-${p}`}>Seat {p}</label>
                         <div className="advanced-config-selects">
+                          <input
+                            id={`ai-name-${p}`}
+                            type="text"
+                            className="ai-team-name-input"
+                            placeholder={`Team ${p}`}
+                            maxLength={24}
+                            aria-label={`Name for seat ${p}`}
+                            value={config.aiTeamNames?.[p - 1] || ''}
+                            onChange={(e) => handleAiTeamNameChange(p - 1, e.target.value)}
+                          />
                           <select
                             id={`ai-strategy-${p}`}
+                            aria-label={`Strategy for seat ${p}`}
                             value={config.aiTeamStrategies[p - 1] || 'Mixed'}
                             onChange={(e) => handleAiStrategyChange(p - 1, e.target.value)}
                           >

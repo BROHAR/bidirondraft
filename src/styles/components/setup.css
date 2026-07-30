@@ -447,6 +447,31 @@
   min-width: 0;
 }
 
+/* Opponent name input — matches the row's select chrome; plain fg color so
+   the editable name reads distinctly from the money-green strategy value. */
+.ai-team-name-input {
+  min-width: 0;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg1);
+  background: #0b0d2a;
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
+  outline: none;
+}
+
+.ai-team-name-input:focus {
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6),
+              0 0 0 2px var(--gold-500);
+}
+
+.ai-team-name-input::placeholder {
+  color: var(--fg3);
+}
+
 .advanced-config-row label {
   font-family: var(--font-display);
   font-size: var(--fs-sm);

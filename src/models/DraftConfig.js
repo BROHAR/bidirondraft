@@ -11,6 +11,9 @@ export class DraftConfig {
     this.minBidIncrement = options.minBidIncrement || 1
     this.scoringFormat = options.scoringFormat || 'halfPPR'
     this.aiTeamStrategies = options.aiTeamStrategies || []
+    // Custom AI opponent names, seat-indexed (position − 1) like
+    // aiTeamStrategies. Blank/missing seats fall back to "Team N".
+    this.aiTeamNames = Array.isArray(options.aiTeamNames) ? options.aiTeamNames : []
     // Keeper league support: pre-draft player retentions (see utils/keepers.js
     // for the entry shape). Empty array = standard redraft league.
     this.keepers = Array.isArray(options.keepers) ? options.keepers : []

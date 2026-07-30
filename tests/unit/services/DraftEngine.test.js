@@ -298,6 +298,35 @@ describe('DraftEngine', () => {
       expect(teams[2].isHuman).toBe(true)
       expect(teams[0].isHuman).toBe(false)
     })
+
+    it('applies custom AI opponent names by seat', () => {
+      const teams = engine.createTeams({
+        ...defaultConfig,
+        aiTeamNames: [undefined, 'The Ringers', '  Taco Corp  ', ''],
+      })
+      expect(teams[1].name).toBe('The Ringers')
+      expect(teams[2].name).toBe('Taco Corp')    // trimmed
+      expect(teams[3].name).toBe('Team 4')       // blank → default
+    })
+
+    it('never renames the human seat from aiTeamNames', () => {
+      const teams = engine.createTeams({
+        ...defaultConfig,
+        aiTeamNames: ['Impostor', 'B', 'C', 'D'],
+      })
+      expect(teams[0].name).toBe('My Team')
+    })
+
+    it('dedupes colliding names deterministically', () => {
+      const teams = engine.createTeams({
+        ...defaultConfig,
+        aiTeamNames: [undefined, 'My Team', 'Ringers', 'Ringers'],
+      })
+      expect(teams[0].name).toBe('My Team')       // human keeps theirs
+      expect(teams[1].name).toBe('My Team (2)')   // collision with human
+      expect(teams[2].name).toBe('Ringers')
+      expect(teams[3].name).toBe('Ringers (2)')   // collision with seat 3
+    })
   })
 
   describe('generateNominationOrder', () => {

@@ -66,6 +66,19 @@ describe('setupConfigStore', () => {
     expect(loaded.config.aiTeamHomeTeams).toEqual([])
   })
 
+  it('sanitizes AI team names: trims, caps length, drops non-strings', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: {
+        aiTeamNames: ['  The Ringers  ', 42, null, 'x'.repeat(60)],
+      },
+    }))
+    const loaded = loadSetupState()
+    expect(loaded.config.aiTeamNames).toEqual(['The Ringers', '', '', 'x'.repeat(24)])
+    // Corrupt/legacy value falls back to empty.
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { aiTeamNames: 'oops' } }))
+    expect(loadSetupState().config.aiTeamNames).toEqual([])
+  })
+
   it('defaults positionalSpendLimits to an empty object', () => {
     expect(defaultDraftConfig().positionalSpendLimits).toEqual({})
     // Configs saved before the field existed load with the default.

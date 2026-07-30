@@ -28,6 +28,7 @@ export function defaultDraftConfig() {
     positionalSpendLimits: {},
     aiTeamStrategies: [],
     aiTeamHomeTeams: [],
+    aiTeamNames: [],
     keepers: [],
     maxKeepersPerTeam: DEFAULT_MAX_KEEPERS,
   }
@@ -63,6 +64,17 @@ function intInRange(value, min, max, fallback) {
 // Positional spend limits are absolute dollars keyed by position; only known
 // positions with a sane integer value survive a load, everything else drops.
 const LIMIT_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
+
+// Custom AI opponent names, indexed by seat (position − 1). Only strings
+// survive; trimmed and length-capped so a corrupt value can't blow up team
+// headers. Empty string = seat keeps its "Team N" default.
+export const MAX_TEAM_NAME_LENGTH = 24
+
+function sanitizeTeamNames(value) {
+  if (!Array.isArray(value)) return []
+  return value.slice(0, 20).map(v =>
+    typeof v === 'string' ? v.trim().slice(0, MAX_TEAM_NAME_LENGTH) : '')
+}
 
 function sanitizeSpendLimits(value) {
   if (!value || typeof value !== 'object') return {}
@@ -102,6 +114,7 @@ export function loadSetupState() {
         positionalSpendLimits: sanitizeSpendLimits(savedConfig.positionalSpendLimits),
         aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
+        aiTeamNames: sanitizeTeamNames(savedConfig.aiTeamNames),
         // Keeper entries for seats beyond the loaded team count are dropped —
         // they'd only resurface as launch-blocking validation errors.
         keepers: sanitizeKeepers(savedConfig.keepers, numberOfTeams),

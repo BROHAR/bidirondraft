@@ -223,15 +223,34 @@ export class DraftEngine {
 
   createTeams(config) {
     const teams = []
-    
+
+    // Names must be unique: draftHistory picks, post-draft analysis, and
+    // keeper attribution all match teams by name string, so a duplicate
+    // (user names two seats "Ringers", or names one after their own team)
+    // would merge two rosters in every report. Deterministic " (2)" suffixes
+    // keep the collision harmless without any RNG draw.
+    const usedNames = new Set()
+    const uniqueName = (name) => {
+      let candidate = name
+      for (let n = 2; usedNames.has(candidate); n++) candidate = `${name} (${n})`
+      usedNames.add(candidate)
+      return candidate
+    }
+
     for (let i = 0; i < config.numberOfTeams; i++) {
       const isHuman = (i + 1) === config.humanDraftPosition
-      const teamName = isHuman ? config.humanTeamName : `Team ${i + 1}`
-      
+      // AI seats take the user-provided opponent name (config.aiTeamNames,
+      // seat-indexed like aiTeamStrategies); blank/missing falls back to the
+      // classic "Team N".
+      const customName = !isHuman && typeof config.aiTeamNames?.[i] === 'string'
+        ? config.aiTeamNames[i].trim()
+        : ''
+      const teamName = uniqueName(isHuman ? config.humanTeamName : (customName || `Team ${i + 1}`))
+
       const team = new Team(`team_${i + 1}`, teamName, isHuman, config)
       teams.push(team)
     }
-    
+
     return teams
   }
 
