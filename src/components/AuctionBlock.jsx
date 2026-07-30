@@ -63,9 +63,12 @@ function AuctionBlock() {
     }, 1000)
   }, [isSkipping, draftState, skipPlayerAction])
 
-  // Paused: indicate the pause status rather than falling through to the
-  // generic "Waiting for nomination..." state below.
-  if (draftState === 'PAUSED') {
+  // Paused mid-auction keeps the full auction view below (frozen, controls
+  // disabled) — hiding the player on the block made pausing to think about a
+  // bid useless. Only a pause with nothing on the block (during nomination)
+  // gets the bare placeholder.
+  const isPaused = draftState === 'PAUSED'
+  if (isPaused && !currentPlayer) {
     return (
       <div className="card auction-block">
         <div className="auction-waiting">
@@ -137,7 +140,7 @@ function AuctionBlock() {
     )
   }
 
-  if (draftState !== 'BIDDING' || !currentPlayer) {
+  if ((draftState !== 'BIDDING' && !isPaused) || !currentPlayer) {
     return (
       <div className="card auction-block">
         <div className="auction-waiting">
@@ -169,15 +172,19 @@ function AuctionBlock() {
     <div className="card auction-block">
       <div className="auction-header">
         <h3>Current Auction</h3>
-        <div className="timer">
-          <div
-            className={`timer-circle ${timeRemaining <= 5 ? 'urgent' : ''}`}
-            role="timer"
-            aria-label={`${timeRemaining} seconds remaining`}
-          >
-            {timeRemaining}
+        {isPaused ? (
+          <div className="pause-chip" role="status">PAUSED</div>
+        ) : (
+          <div className="timer">
+            <div
+              className={`timer-circle ${timeRemaining <= 5 ? 'urgent' : ''}`}
+              role="timer"
+              aria-label={`${timeRemaining} seconds remaining`}
+            >
+              {timeRemaining}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="player-on-block">
@@ -285,32 +292,32 @@ function AuctionBlock() {
           <button
             className="btn btn-success"
             onClick={() => handleBid(1)}
-            disabled={currentBid + 1 > getMaxBid()}
-            title={currentBid + 1 > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
+            disabled={isPaused || currentBid + 1 > getMaxBid()}
+            title={isPaused ? 'Draft is paused' : currentBid + 1 > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +$1 (${currentBid + 1})
           </button>
           <button
             className="btn btn-success"
             onClick={() => handleBid(midStep)}
-            disabled={currentBid + midStep > getMaxBid()}
-            title={currentBid + midStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
+            disabled={isPaused || currentBid + midStep > getMaxBid()}
+            title={isPaused ? 'Draft is paused' : currentBid + midStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +${midStep} (${currentBid + midStep})
           </button>
           <button
             className="btn btn-success"
             onClick={() => handleBid(bigStep)}
-            disabled={currentBid + bigStep > getMaxBid()}
-            title={currentBid + bigStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
+            disabled={isPaused || currentBid + bigStep > getMaxBid()}
+            title={isPaused ? 'Draft is paused' : currentBid + bigStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
             +${bigStep} (${currentBid + bigStep})
           </button>
           <button
             className="btn btn-danger"
             onClick={() => handleBid(getMaxBid() - currentBid)}
-            disabled={getMaxBid() <= currentBid}
-            title={getMaxBid() <= currentBid ? 'The bid already meets or exceeds your max' : undefined}
+            disabled={isPaused || getMaxBid() <= currentBid}
+            title={isPaused ? 'Draft is paused' : getMaxBid() <= currentBid ? 'The bid already meets or exceeds your max' : undefined}
           >
             Max Bid (${getMaxBid()})
           </button>
@@ -321,12 +328,12 @@ function AuctionBlock() {
         <button
           className="btn btn-secondary skip-btn"
           onClick={handleSkipPlayer}
-          disabled={isSkipping}
-          title="Let AI teams bid this out quickly without your participation"
+          disabled={isPaused || isSkipping}
+          title={isPaused ? 'Draft is paused' : 'Let AI teams bid this out quickly without your participation'}
         >
           {isSkipping ? 'Skipping...' : 'Skip Player'}
         </button>
-        <small>Let AI teams handle this auction</small>
+        <small>{isPaused ? 'Resume the draft to continue bidding' : 'Let AI teams handle this auction'}</small>
       </div>
 
     </div>
