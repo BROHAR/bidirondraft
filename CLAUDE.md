@@ -49,6 +49,23 @@ Rules:
 - Common tags: `new-feature`, `ai`, `draft-room`, `reports`, `mobile`, `accessibility`, `setup`, `keepers`, `autopilot`. Reuse existing tags before inventing new ones.
 - `tests/unit/updatesLog.test.js` validates the schema and newest-first ordering — run `npm run test:run` after editing.
 
+## Auction Dispatch voice — `content/blog/*.md`
+
+Every Dispatch post is written in the house voice below. It was modeled on the tone of fantasy analysts JJ Zachariason, Justin Boone, and Andy Holloway — conversational-analytical, numbers-grounded, leaguemate-to-leaguemate — then adapted to BIDIRON's angle: the author is **the person who built the simulator and watches thousands of AI drafts**.
+
+**Voice parameters:**
+
+- **Person**: first-person singular ("I built", "I watch", "my sims"), never corporate "we". Address the reader as "you", like a leaguemate, not an audience.
+- **Authority source**: observed simulation behavior and specific numbers, not credentials. Real figures beat adjectives ("the room burned 93% of its money by the halfway point" > "teams overspend early"). Max ~2 stats per paragraph, rounded the way you'd say them aloud.
+- **Takes**: state them flat, no throat-clearing. Hedge only genuine uncertainty. Admit mistakes and surprises ("I believed it too, so I coded it. It loses constantly.") — being wrong on the record is part of the voice.
+- **Rhythm**: mostly short-to-medium sentences with deliberate variety; fragments are fine; starting with And/But/So is fine. Paragraphs 1–4 sentences. One-sentence paragraphs for emphasis, sparingly.
+- **Humor**: dry and league-life-observational (group chats, the buddy who overpays for his defense). Self-deprecating over clever. Never forced; two laughs per article is plenty.
+- **Structure**: headers are plain statements, not "Habit one: Title-Case Aphorism". Do NOT end every section with a mic-drop line — one per article, max.
+- **Banned AI-isms**: perfectly parallel triads; "It's not X. It's Y." more than once per piece; em-dash chains (guideline: ≤1 em-dash per paragraph); "Here's the thing"; "Let's dive in"; "in today's landscape"; rhetorical question followed by its own tidy answer as a repeated device; every noun getting exactly two adjectives.
+- **Jargon**: plain talk. League terms (book value, stars and scrubs, price enforcement) get a half-sentence gloss on first use, in passing, not a definition paragraph.
+
+Reference implementation: `content/blog/auction-drafts-beat-snake-drafts.md`. New posts should read like the same person wrote them.
+
 ## "update players" — refresh the player pool
 
 When the user asks to "update players", "refresh players", "refresh projections", or similar:
