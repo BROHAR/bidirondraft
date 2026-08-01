@@ -28,6 +28,40 @@ export class ValueHunter extends BaseStrategy {
     }
   }
 
+  // Market late-lift for hoarding leagues (imported profile lateInflation > 1):
+  // the market clears late auctions above book by design, mirroring the lift
+  // BaseStrategy applies per-team. Gated on LEAGUE-wide progress via a
+  // pool-size snapshot — the base gates on each team's own roster progress,
+  // which a slot-disciplined hunter lags, so the base lift never fires for it
+  // while the field's already has. Neutral leagues return 1.0 untouched.
+  marketLateLift(availablePlayers) {
+    const lateInflation = this.getLeagueLateInflation()
+    if (lateInflation === 1.0) return 1.0
+    this._initialPoolSize ??= availablePlayers?.length || 0
+    const rc = this.team.config?.rosterPositions || {}
+    const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
+    const totalPicks = totalSpots * (this.team.config?.numberOfTeams || 12)
+    const drafted = Math.max(0, this._initialPoolSize - (availablePlayers?.length || 0))
+    if (totalPicks <= 0 || drafted / totalPicks < 0.55) return 1.0
+    return Math.min(1.25, 1 + 0.5 * (lateInflation - 1))
+  }
+
+  getAdjustedPlayerValue(player, availablePlayers = []) {
+    const base = super.getAdjustedPlayerValue(player, availablePlayers)
+    // In hoarding leagues the base per-team machinery misreads a
+    // slot-disciplined roster: progress lags (no late lift) and pacing looks
+    // under (0.92 damp), dragging adjusted BELOW book exactly when the market
+    // clears above it. Since both the evaluate gate and calculateBidAmount
+    // cap at adjustedValue, the hunter got walled out of every late auction
+    // and stranded budget (roster full, $22 left). Floor willingness at the
+    // market's lifted book so it can keep buying real players late.
+    const lift = this.marketLateLift(availablePlayers)
+    if (lift !== 1.0 && base > 0 && player.estimatedValue >= this.sd(4)) {
+      return Math.max(base, Math.round(player.estimatedValue * lift))
+    }
+    return base
+  }
+
   evaluateBid(player, currentBid, adjustedValue, availablePlayers) {
     const book = player.estimatedValue
 
@@ -54,11 +88,14 @@ export class ValueHunter extends BaseStrategy {
     // survive to the endgame and bleed away as $6-9 floor dumps on $4-book
     // scrubs (~-6 each). The anchor overpay is the cheaper way to be
     // cash-poor when the scraps harvest begins.
-    const ceiling = book < this.sd(6)
+    let ceiling = book < this.sd(6)
       ? Math.max(book, this.sd(2))
       : book >= this.sd(30)
         ? book * (1.06 + random() * 0.09)
         : book * (MAX_BOOK_PREMIUM_MIN + random() * MAX_BOOK_PREMIUM_JITTER)
+    // Track the hoarding-league market lift (1.0 in neutral leagues) so the
+    // walk-away follows what late auctions actually clear at.
+    ceiling *= this.marketLateLift(availablePlayers)
     if (currentBid >= Math.min(ceiling, adjustedValue * 1.10)) return false
 
     // Discount measured against BOOK, not adjustedValue — measuring against

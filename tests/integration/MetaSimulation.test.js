@@ -86,9 +86,14 @@ describe('runMetaSimulation (user-perspective integration)', () => {
     const totalGames = result.winningComposition.winRateByStrategy.reduce((s, r) => s + r.games, 0)
     expect(totalGames).toBe(totalDrafts * 12)
 
-    // Blueprints: 1-5 real winning builds for the field's winningest strategy.
+    // Blueprints: 1-5 real winning builds for the report's leading strategy —
+    // the highest scorecard-ranked strategy that won at least one league
+    // (wins > 0 in winRateByStrategy implies its winner blueprint was
+    // collected, so the featured pick is reconstructible here).
     const bp = result.blueprints
-    expect(bp.strategyName).toBe(result.winningComposition.winRateByStrategy[0].strategyName)
+    const winsByName = new Map(result.winningComposition.winRateByStrategy.map(r => [r.strategyName, r.wins]))
+    const expectedFeatured = result.ranking.find(name => (winsByName.get(name) || 0) > 0)
+    expect(bp.strategyName).toBe(expectedFeatured)
     expect(bp.teams.length).toBeGreaterThanOrEqual(1)
     expect(bp.teams.length).toBeLessThanOrEqual(5)
     const first = bp.teams[0]
