@@ -112,7 +112,7 @@ a:hover { color: var(--gold); }
 }
 
 .post-list ul { list-style: none; }
-.post-list li + li { margin-top: 1.5rem; }
+.post-list > ul > li + li { margin-top: 1.5rem; }
 
 .post-card {
   background: var(--panel);
@@ -216,7 +216,7 @@ a:hover { color: var(--gold); }
 
 /* ---------- Updates ---------- */
 .update-list { list-style: none; }
-.update-list li + li { margin-top: 1.75rem; }
+.update-list > li + li { margin-top: 1.75rem; }
 .update {
   border-left: 4px solid var(--gold-dark);
   padding-left: 1.25rem;
