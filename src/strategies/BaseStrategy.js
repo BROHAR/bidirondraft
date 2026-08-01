@@ -147,7 +147,10 @@ export class BaseStrategy {
     const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
     const draftProgress = this.team.roster.length / Math.max(1, totalSpots)
     const pacingRatio = this.getPacingRatio()
-    if (pacingRatio > 1.3 && draftProgress > 0.35 && currentBid < adjustedValue) {
+    // Progress gate raised 0.35 -> 0.5 in step with the pacing-boost gate:
+    // forcing flush teams into mid-draft auctions burned the league's money
+    // before the late-mid board came up.
+    if (pacingRatio > 1.3 && draftProgress > 0.5 && currentBid < adjustedValue) {
       return true
     }
 
@@ -174,7 +177,18 @@ export class BaseStrategy {
     if (baseValue < this.sd(4)) {
       // Add small random variance but keep it very low
       const variance = (random() - 0.5) * this.sd(0.5) // +/- $0.25
-      const capped = Math.max(1, Math.min(this.sd(3), Math.round(baseValue + variance)))
+      // Phase-aware ceiling: while a team's roster is mostly open (front half
+      // of its draft), bench fodder is worth $1-2, not $3 — twelve teams each
+      // paying ~$1.5 over book for scrubs early drained ~$100+/draft of
+      // league money and was a major cause of the late-board collapse where
+      // $10-20 book players sold for $1 (measured $1-4 tier at 1.45x book in
+      // the first half). Late, the $3 cap returns so scrub auctions still
+      // clear, and the endgame floor exception is untouched.
+      const rc = this.team.config?.rosterPositions || {}
+      const totalSpots = Object.values(rc).reduce((s, c) => s + c, 0)
+      const early = this.team.roster.length / Math.max(1, totalSpots) < 0.5
+      const scrubCap = early ? this.sd(2) : this.sd(3)
+      const capped = Math.max(1, Math.min(scrubCap, Math.round(baseValue + variance)))
       return Math.max(capped, Math.round(this.getEndgameSpendFloor(player, availablePlayers)))
     }
 
@@ -262,9 +276,14 @@ export class BaseStrategy {
     const draftProgress = this.team.roster.length / Math.max(1, totalSpotsAll)
     const pacingRatio = this.getPacingRatio()
     let pacingBoost = 1.0
-    if (draftProgress >= 0.3) {
+    // Gate moved 0.3 -> 0.45 and cap trimmed 1.50 -> 1.30: flush teams were
+    // burning their surplus in the 30-50% window (measured 1.19x book there),
+    // exhausting league money before the $10-20 book players hit the block
+    // at 60-80% (sold for $1). Later, gentler burn leaves that money for the
+    // late-mid board; the endgame spend floor still guarantees full spend.
+    if (draftProgress >= 0.45) {
       if (pacingRatio > 1.0) {
-        pacingBoost = Math.min(1.50, pacingRatio)
+        pacingBoost = Math.min(1.30, pacingRatio)
       } else if (pacingRatio < 0.7) {
         pacingBoost = 0.92
       }
@@ -457,17 +476,26 @@ export class BaseStrategy {
     // wide variance — overpay drama on sleepers is intentional.
     let multiplier
     if (player.estimatedValue >= this.sd(50)) {
-      // Elite: ~book value (0-5% over).
-      multiplier = 1.00 + random() * 0.05
+      // Elite: ~book value. Centered slightly BELOW book (0.97-1.03) because
+      // the realized contested price is the max order statistic of ~12 draws
+      // times the urgency boost — a 1.00-1.05 band realized at ~1.06-1.08,
+      // and that systematic early premium is exactly the money missing when
+      // the $10-20 book players hit the block late (sold for $1).
+      multiplier = 0.97 + random() * 0.06
     } else if (player.estimatedValue >= this.sd(30)) {
-      // High: ~book value (0-5% over).
-      multiplier = 1.00 + random() * 0.05
+      // High: same reasoning as elite.
+      multiplier = 0.97 + random() * 0.06
     } else if (player.estimatedValue >= this.sd(15)) {
-      // Mid: increased variance (0-25% over)
-      multiplier = 1.00 + random() * 0.25
+      // Mid: moderate variance (0-15% over). Was 0-25%: with ~12 bidders the
+      // realized price tracks the max order statistic, so the wide band made
+      // mid players routinely clear 1.2-1.3x book (measured 1.27x in the
+      // 30-40% phase), draining budgets that should have reached the
+      // late-mid board ($10-20 book players were closing at $1).
+      multiplier = 1.00 + random() * 0.15
     } else if (player.estimatedValue >= this.sd(5)) {
-      // Low-mid: moderate variance (0-20% over)
-      multiplier = 1.00 + random() * 0.20
+      // Low-mid: moderate variance (0-12% over). Was 0-20%, same rationale —
+      // this tier measured 1.34x book in the first half.
+      multiplier = 1.00 + random() * 0.12
     } else {
       // Very low value players: still cap at $3 but with some variance
       return Math.min(this.sd(3) + random() * this.budgetScale, player.estimatedValue * (1.15 + random() * 0.25))
@@ -506,16 +534,21 @@ export class BaseStrategy {
     // small — combined with pacingBoost via Math.max in getAdjustedPlayerValue,
     // so this caps the single-source urgency contribution.
     if (!this.hasOpenStartingSlot(player.position)) return 1.0
-    if (!availablePlayers || availablePlayers.length === 0) return 1.03
+    if (!availablePlayers || availablePlayers.length === 0) return 1.02
     const samePos = availablePlayers
       .filter(p => p.position === player.position && p.id !== player.id)
       .sort((a, b) => b.estimatedValue - a.estimatedValue)
     const nextBest = samePos[0]
-    if (!nextBest || player.estimatedValue <= 0) return 1.03
+    if (!nextBest || player.estimatedValue <= 0) return 1.02
     const tierDrop = (player.estimatedValue - nextBest.estimatedValue) / player.estimatedValue
-    if (tierDrop > 0.30) return 1.12
-    if (tierDrop > 0.15) return 1.06
-    return 1.03
+    // Magnitudes trimmed (1.12/1.06/1.03 -> 1.08/1.04/1.02): urgency
+    // multiplies the per-player bid cap for every team with the slot open —
+    // early in a draft that is ALL twelve teams, so it acted as a uniform
+    // early price lift rather than a tiebreaker, feeding the late-board
+    // money collapse.
+    if (tierDrop > 0.30) return 1.08
+    if (tierDrop > 0.15) return 1.04
+    return 1.02
   }
 
   getPacingRatio() {
@@ -558,7 +591,7 @@ export class BaseStrategy {
   }
 
   getEarlyDraftMultiplier() {
-    return 1.0 + random() * 0.10 // 1.0x to 1.1x (lowered to curb early-draft inflation)
+    return 1.0 + random() * 0.06 // 1.0x to 1.06x (lowered again to curb early-draft inflation)
   }
 
   getPositionNeedMultiplier(position) {
@@ -851,11 +884,16 @@ export class BaseStrategy {
     
     // If we have top 150 players available, use normal nomination logic with them
     if (top150Players.length > 0) {
-      // Strategy 1: Nominate player we want from top 150 (40% chance)
+      // Strategy 1: Nominate player we want from top 150 (40% chance).
+      // Clamped to the top-8 wanted by value (the list is value-sorted):
+      // a uniform pick across all ~80 wanted players sprayed nominations
+      // over the whole value range, which left $10-20 book players
+      // surfacing at pick 120+ after the league's money was gone — the
+      // "Skattebo for $1" late-board bargains.
       if (random() < 0.4) {
         const wantedPlayers = top150Players.filter(p => this.shouldNominate(p, availablePlayers))
         if (wantedPlayers.length > 0) {
-          return wantedPlayers[Math.floor(random() * wantedPlayers.length)]
+          return wantedPlayers[Math.floor(random() * Math.min(8, wantedPlayers.length))]
         }
       }
       

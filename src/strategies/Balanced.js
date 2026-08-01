@@ -45,10 +45,14 @@ export class Balanced extends BaseStrategy {
     const rand = random()
     
     if (rand < 0.35) {
-      // Nominate someone we want
-      const wantedPlayers = availablePlayers.filter(p => this.shouldNominate(p))
+      // Nominate someone we want — biased to the best remaining (top-8 by
+      // value) so real players hit the block while the league still has
+      // money; a uniform pick fed the late-board $1-bargain problem.
+      const wantedPlayers = availablePlayers
+        .filter(p => this.shouldNominate(p))
+        .sort((a, b) => b.estimatedValue - a.estimatedValue)
       if (wantedPlayers.length > 0) {
-        return wantedPlayers[Math.floor(random() * wantedPlayers.length)]
+        return wantedPlayers[Math.floor(random() * Math.min(8, wantedPlayers.length))]
       }
     } else if (rand < 0.7) {
       // Price enforce

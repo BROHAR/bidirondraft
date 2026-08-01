@@ -227,63 +227,63 @@ describe('BaseStrategy', () => {
       expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.0)
     })
 
-    it('returns 1.12 when tier drop is greater than 30%', () => {
+    it('returns 1.08 when tier drop is greater than 30%', () => {
       const player = makePlayer('QB', 50, 'qb1')
       const others = [makePlayer('QB', 30, 'qb2')] // drop = 0.40
-      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.12)
+      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.08)
     })
 
-    it('returns 1.06 when tier drop is between 15% and 30%', () => {
+    it('returns 1.04 when tier drop is between 15% and 30%', () => {
       const player = makePlayer('QB', 50, 'qb1')
       const others = [makePlayer('QB', 40, 'qb2')] // drop = 0.20
-      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.06)
+      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.04)
     })
 
-    it('returns 1.03 when tier drop is small (no meaningful gap)', () => {
+    it('returns 1.02 when tier drop is small (no meaningful gap)', () => {
       const player = makePlayer('QB', 50, 'qb1')
       const others = [makePlayer('QB', 48, 'qb2')] // drop = 0.04
-      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.03)
+      expect(strategy.getStarterUrgencyBoost(player, others)).toBe(1.02)
     })
 
-    it('returns 1.03 when no available players list is provided', () => {
+    it('returns 1.02 when no available players list is provided', () => {
       const player = makePlayer('QB', 50, 'qb1')
-      expect(strategy.getStarterUrgencyBoost(player, [])).toBe(1.03)
+      expect(strategy.getStarterUrgencyBoost(player, [])).toBe(1.02)
     })
   })
 
   describe('getAdjustedPlayerValue boost ceilings', () => {
-    it('caps pacing boost at 1.50x even when pacingRatio is extreme', () => {
+    it('caps pacing boost at 1.30x even when pacingRatio is extreme', () => {
       vi.spyOn(strategy, 'getPacingRatio').mockReturnValue(5.0)
       vi.spyOn(strategy, 'getStarterUrgencyBoost').mockReturnValue(1.0)
-      // Push draftProgress past 0.3 so the pacing branch is reachable
-      for (let i = 0; i < 6; i++) team.roster.push(makePlayer('K', 1, `k${i}`))
+      // Push draftProgress past the 0.45 gate so the pacing branch is reachable
+      for (let i = 0; i < 7; i++) team.roster.push(makePlayer('K', 1, `k${i}`))
 
       const player = makePlayer('QB', 50, 'qb_target')
       vi.spyOn(Math, 'random').mockReturnValue(0)
 
       const adj = strategy.getAdjustedPlayerValue(player, [player])
-      // pacingBoost = min(1.50, 5.0) = 1.50; urgencyBoost = 1.0 (stubbed).
-      // baseValue × 1.50 = 75, clamped by the defensive ceiling to
-      // 50 × 1.35 = 67.5 → 68. Old uncapped logic would multiply by 5.0 → 250+.
-      expect(adj).toBeLessThanOrEqual(68)
-      expect(adj).toBeGreaterThanOrEqual(55) // confirms boost is actually applied
+      // pacingBoost = min(1.30, 5.0) = 1.30; urgencyBoost = 1.0 (stubbed).
+      // Elite max-bid cap at min roll (0.97 × 50 = 48.5) × 1.30 ≈ 63 binds
+      // below baseValue × 1.30 = 65. Old uncapped logic would multiply by 5.0.
+      expect(adj).toBeLessThanOrEqual(65)
+      expect(adj).toBeGreaterThanOrEqual(60) // confirms boost is actually applied
     })
 
     it('combines pacing and urgency via max(), not product', () => {
       // Ratio 1.25 keeps the combined result below the 1.35x defensive
       // ceiling so the max-vs-product distinction stays observable:
-      // max(1.25, 1.12) = 1.25 → 50 × 1.25 ≈ 63, while a product
-      // (1.25 × 1.12 = 1.40) would be clamped at 50 × 1.35 = 67.5 → 68.
+      // max(1.25, 1.08) = 1.25 → capped at 48.5 × 1.25 ≈ 61, while a product
+      // (1.25 × 1.08 = 1.35) would land ≈ 65.
       vi.spyOn(strategy, 'getPacingRatio').mockReturnValue(1.25)
-      for (let i = 0; i < 6; i++) team.roster.push(makePlayer('K', 1, `k${i}`))
+      for (let i = 0; i < 7; i++) team.roster.push(makePlayer('K', 1, `k${i}`))
 
-      // QB slot open + tier drop > 30% triggers urgency 1.12
+      // QB slot open + tier drop > 30% triggers urgency 1.08
       const player = makePlayer('QB', 50, 'qb_target')
       const others = [makePlayer('QB', 30, 'qb_step_down')]
       vi.spyOn(Math, 'random').mockReturnValue(0)
 
       const adj = strategy.getAdjustedPlayerValue(player, [player, ...others])
-      expect(adj).toBeLessThanOrEqual(63)
+      expect(adj).toBeLessThanOrEqual(61)
     })
 
     it('defensive cap clamps adjustedValue to 1.35x book even with maxed multipliers', () => {
