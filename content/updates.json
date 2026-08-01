@@ -1,8 +1,98 @@
 [
   {
     "date": "2026-08-01",
-    "title": "The Auction Dispatch launches",
-    "summary": "BIDIRON's blog goes live with strategy writing on auction drafting, plus this running changelog of simulator updates.",
-    "tags": ["site"]
+    "title": "No more late-draft fire sales",
+    "summary": "Fixed a realism problem where the room spent almost all its money early and stars still on the board sold for pocket change late in the draft. AI teams now pace their spending and bring good players up for auction while there's still money to pay for them, so late-round prices track what players are actually worth.",
+    "tags": ["ai", "draft-room"]
+  },
+  {
+    "date": "2026-08-01",
+    "title": "Value Hunter and Hero RB got major overhauls",
+    "summary": "Two AI opponents were rebuilt from the ground up. Value Hunter now buys a couple of fairly-priced anchors early, stays disciplined, and cleans up in the $1-3 bargain phase at the end — it actually finishes drafts with surplus value now. Hero RB reliably lands a true stud running back before pivoting its remaining budget to receivers, instead of hoarding mid-priced RBs.",
+    "tags": ["ai"]
+  },
+  {
+    "date": "2026-07-29",
+    "title": "Name the teams you bid against",
+    "summary": "You can now give each AI opponent a custom name in setup, and those names follow them everywhere — the bid ticker, rosters, draft history, and every post-draft report. If you import your league's draft, the names are pre-filled from your real league mates.",
+    "tags": ["new-feature", "draft-room"]
+  },
+  {
+    "date": "2026-07-29",
+    "title": "Pausing no longer hides the auction",
+    "summary": "Pausing mid-bid used to blank out the whole auction, which made pausing to think about a bid pointless. Now the player on the block, the current bid, and the Bid Advisor all stay visible while paused — only the clock stops.",
+    "tags": ["draft-room"]
+  },
+  {
+    "date": "2026-07-29",
+    "title": "Fairer prices in big leagues and keeper leagues",
+    "summary": "Early-round bidding was badly inflated in 12+ team leagues and keeper leagues — the extra money in the room was all landing on the first stars nominated. Prices are now recalibrated so the surplus spreads across the middle and late rounds instead, and early sales in big leagues came down to realistic levels.",
+    "tags": ["draft-room", "ai"]
+  },
+  {
+    "date": "2026-07-25",
+    "title": "Keeper league support",
+    "summary": "You can now set up keepers before the draft: pick each team's kept players and prices, or pull them straight from last year's imported draft with common pricing rules (same price, +$5, or +10%). Keepers show up on rosters and reports with a K badge, and remaining player values adjust to the money actually left in the room.",
+    "tags": ["new-feature", "keepers"]
+  },
+  {
+    "date": "2026-07-18",
+    "title": "Import last year's draft to recreate your league",
+    "summary": "Upload a CSV of last season's auction results and the app learns how your league actually pays — which positions go for a premium, whether elite players at each position get bid up or come cheap, and who hoards cash. Each of your league mates is matched to the closest AI personality and seated in your draft room automatically.",
+    "tags": ["new-feature", "ai"]
+  },
+  {
+    "date": "2026-07-17",
+    "title": "Spending limits for Auto-Pilot",
+    "summary": "You can now cap what Auto-Pilot pays per position — for example RB at most $70, or never more than $1 on a kicker — so it drafts within your plan even when you're not clicking the buttons.",
+    "tags": ["new-feature", "autopilot"]
+  },
+  {
+    "date": "2026-07-17",
+    "title": "Player values match your scoring format",
+    "summary": "Dollar values now adjust to your league's scoring. Pass-catching backs and high-volume receivers are worth more in PPR and less in standard, and the AI bidders, Bid Advisor, and reports all use the format-adjusted numbers automatically.",
+    "tags": ["draft-room"]
+  },
+  {
+    "date": "2026-07-11",
+    "title": "Sign up for news and updates",
+    "summary": "Added an email signup so you can hear when new features land — find it in the title-screen footer or after finishing a draft. Your address is stored privately by the app itself, not handed to a third-party service.",
+    "tags": ["new-feature"]
+  },
+  {
+    "date": "2026-07-05",
+    "title": "Draft room polish: clearer bidding and no lost drafts",
+    "summary": "A big round of quality-of-life fixes: a SOLD! banner announces every winning bid, a gold chip shows when you hold the high bid, disabled buttons explain why, and the app warns you before closing a tab mid-draft. Under the hood, the auction engine was hardened so restarts and last-second bids can never corrupt a draft, and post-draft report numbers now stay accurate at any league budget.",
+    "tags": ["draft-room", "reports"]
+  },
+  {
+    "date": "2026-07-04",
+    "title": "Easier to read, easier to tap",
+    "summary": "Accessibility pass across the app: text colors were brightened to meet contrast standards, tiny labels got bigger, buttons grew to comfortable touch-target sizes on phones, animations respect your reduced-motion setting, and timers are properly announced to screen readers.",
+    "tags": ["accessibility", "mobile"]
+  },
+  {
+    "date": "2026-07-04",
+    "title": "Draft setup is now a 3-step wizard",
+    "summary": "Draft Config was redesigned from one dense page into a guided three-step flow — league settings, then how you want to draft (live, simulate, or meta-simulate), then AI and strategy options — with inline validation so mistakes are caught before you launch.",
+    "tags": ["new-feature", "setup"]
+  },
+  {
+    "date": "2026-07-03",
+    "title": "Meta Simulation: Winners, Blueprints, and Dream Teams",
+    "summary": "The meta simulation report gained three new tabs that study the whole league, not just your seat: what the average winning roster looks like and which strategies win most, real example rosters from the top strategy, and the best-value dream lineup each leading strategy could build at the prices it typically pays.",
+    "tags": ["reports", "new-feature"]
+  },
+  {
+    "date": "2026-07-03",
+    "title": "The whole app works on your phone",
+    "summary": "Full mobile support: the draft room gets a bottom tab bar (Auction / Players / Teams / More) with the countdown always visible in the header, the title and setup screens fit small screens, and the post-draft and meta reports reflow so tables scroll instead of overflowing.",
+    "tags": ["mobile"]
+  },
+  {
+    "date": "2026-07-02",
+    "title": "Build your own AI strategy",
+    "summary": "New custom strategy builder: design your own bidding personality — and assign it to AI opponents or your own Auto-Pilot. Custom strategies work everywhere built-in ones do, including simulations and meta simulations, and they're saved between sessions.",
+    "tags": ["new-feature", "ai"]
   }
 ]

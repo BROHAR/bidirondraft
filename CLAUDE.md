@@ -17,6 +17,38 @@ Flat config in `eslint.config.js` (ESLint 9). **Pinned to 9, not 10**: `eslint-p
 
 All draft-simulation randomness (AI bidding, strategies, engine jitter) flows through `src/utils/rng.js` — unseeded it delegates to `Math.random()` (app behavior unchanged); tests call `setSeed(n)` to make full simulated drafts deterministic. `tests/integration/DraftCompleteness.test.js` and `tests/integration/BudgetSpendDown.test.js` are seeded this way, so failures there are real regressions, not flakiness. When adding new randomness to AI/engine code, import `random()` from `src/utils/rng.js` rather than calling `Math.random()` directly, or seeded tests lose determinism.
 
+## Recent Updates log — `content/updates.json`
+
+The blog's "Recent Updates" page renders from `content/updates.json`. **Whenever you prepare a commit or PR containing user-visible changes, also append an entry to this file.** One entry per feature (not per commit — group a feature and its fix-ups), newest first at the top of the array.
+
+Schema (all fields required):
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "title": "Short headline",
+  "summary": "1-3 sentences in lay-person terms.",
+  "tags": ["short", "lowercase"]
+}
+```
+
+Rules:
+
+- **Write for fantasy-football players, not developers.** Say what changed for the user, never mention internals (component names, refactors, test counts). Example of a good entry:
+
+  ```json
+  {
+    "date": "2026-07-25",
+    "title": "Keeper league support",
+    "summary": "You can now set up keepers before the draft: pick each team's kept players and prices, or pull them straight from last year's imported draft. Keepers show up on rosters and reports with a K badge.",
+    "tags": ["new-feature", "keepers"]
+  }
+  ```
+
+- **Skip very minor changes**: small UI tweaks, styling/CSS fixes, refactors, dependency bumps, test-only changes, and routine data refreshes (e.g. "Refresh player projections") get no entry.
+- Common tags: `new-feature`, `ai`, `draft-room`, `reports`, `mobile`, `accessibility`, `setup`, `keepers`, `autopilot`. Reuse existing tags before inventing new ones.
+- `tests/unit/updatesLog.test.js` validates the schema and newest-first ordering — run `npm run test:run` after editing.
+
 ## "update players" — refresh the player pool
 
 When the user asks to "update players", "refresh players", "refresh projections", or similar:
