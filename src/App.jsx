@@ -43,6 +43,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>BIDIRON</h1>
+        <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
         <HeaderTimer />
       </header>
       <main className="app-main">
