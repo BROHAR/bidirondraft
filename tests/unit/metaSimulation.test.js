@@ -158,14 +158,39 @@ describe('selectBlueprints', () => {
     starters: names.map(n => ({ slot: 'RB', name: n, position: 'RB', team: 'X', price: 10, points: 100 })),
   })
 
-  it('picks the winningest strategy and returns its highest-scoring builds', () => {
+  it('features the top of preferredRanking (the scorecard leader), not the raw win-rate leader', () => {
+    // Regression: the tab used to feature winRateByStrategy[0] — a lucky
+    // small-sample seat could outrank the report's recommended strategy, so
+    // the Blueprints tab showed builds from a strategy the user was never
+    // told was leading.
+    const all = [
+      bp('HeroRB', 1100, ['a', 'b']),
+      bp('Balanced', 1500, ['e', 'f']),
+    ]
+    const winRate = [{ strategyName: 'HeroRB', winRate: 0.5 }, { strategyName: 'Balanced', winRate: 0.2 }]
+    const out = selectBlueprints(all, winRate, { preferredRanking: ['Balanced', 'HeroRB'] })
+    expect(out.strategyName).toBe('Balanced')
+    expect(out.winRate).toBe(0.2) // field-wide rate of the FEATURED strategy
+    expect(out.teams.map(t => t.starterPoints)).toEqual([1500])
+  })
+
+  it('falls down the ranking to the best strategy that actually has winning builds', () => {
+    const all = [bp('HeroRB', 1100, ['a', 'b'])]
+    const winRate = [{ strategyName: 'HeroRB', winRate: 0.5 }, { strategyName: 'Balanced', winRate: 0.2 }]
+    // Balanced leads the scorecard but never won a league — no builds exist.
+    const out = selectBlueprints(all, winRate, { preferredRanking: ['Balanced', 'HeroRB'] })
+    expect(out.strategyName).toBe('HeroRB')
+    expect(out.winRate).toBe(0.5)
+  })
+
+  it('without a ranking, falls back to the winningest strategy with builds', () => {
     const all = [
       bp('HeroRB', 1100, ['a', 'b']),
       bp('HeroRB', 1200, ['c', 'd']),
       bp('Balanced', 1500, ['e', 'f']), // higher points but not the winningest strategy
     ]
     const winRate = [{ strategyName: 'HeroRB', winRate: 0.5 }, { strategyName: 'Balanced', winRate: 0.2 }]
-    const out = selectBlueprints(all, winRate, 5)
+    const out = selectBlueprints(all, winRate)
     expect(out.strategyName).toBe('HeroRB')
     expect(out.winRate).toBe(0.5)
     expect(out.teams.map(t => t.starterPoints)).toEqual([1200, 1100]) // sorted desc, Balanced excluded
@@ -179,7 +204,7 @@ describe('selectBlueprints', () => {
       bp('HeroRB', 900, ['e', 'f']),
     ]
     const winRate = [{ strategyName: 'HeroRB', winRate: 0.4 }]
-    const out = selectBlueprints(all, winRate, 2)
+    const out = selectBlueprints(all, winRate, { limit: 2 })
     expect(out.teams.length).toBe(2)
     expect(out.teams.map(t => t.starterPoints)).toEqual([1200, 1000]) // dupe dropped, limit respected
   })

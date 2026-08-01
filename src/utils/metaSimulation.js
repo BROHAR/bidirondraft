@@ -281,17 +281,32 @@ function collectBlueprint(acc, rows, teams, rosterPositions, seed) {
   acc.push(buildWinnerBlueprint(winTeam, rosterPositions, winRow.strategyName, seed, winRow.starterPoints))
 }
 
-// Pick the "winning strategy" (the field's most successful, from winRateByStrategy)
-// and return its highest-scoring winning builds — up to `limit`, de-duplicated by
-// their starter set so the user sees genuinely different combinations, not the
-// same roster repeated across seeds. Returns { strategyName, winRate, teams }.
-export function selectBlueprints(allBlueprints, winRateByStrategy, limit = 5) {
+// Pick the strategy to feature and return its highest-scoring winning builds —
+// up to `limit`, de-duplicated by their starter set so the user sees genuinely
+// different combinations, not the same roster repeated across seeds.
+//
+// The featured strategy follows `preferredRanking` (the scorecard order — best
+// for the USER's seat), taking the highest-ranked strategy that actually
+// produced at least one league winner. The old behavior — featuring
+// winRateByStrategy[0], the field's raw win-rate leader — regularly surfaced a
+// strategy the report never recommended: raw rates over few games (a lucky
+// 8-for-43 seat) beat the field's bulk, so the tab featured "non-leading"
+// builds while the headline said the user's best strategy was something else.
+// winRateByStrategy still supplies the displayed field-wide win rate, and
+// remains the fallback order when no ranking is provided (or none of the
+// ranked strategies ever won a league).
+// Returns { strategyName, winRate, teams }.
+export function selectBlueprints(allBlueprints, winRateByStrategy, { preferredRanking = [], limit = 5 } = {}) {
   if (!winRateByStrategy.length || !allBlueprints.length) {
     return { strategyName: null, winRate: 0, teams: [] }
   }
-  const top = winRateByStrategy[0]
+
+  const candidates = [...preferredRanking, ...winRateByStrategy.map(r => r.strategyName)]
+  const featured = candidates.find(name => allBlueprints.some(b => b.strategyName === name))
+  if (!featured) return { strategyName: null, winRate: 0, teams: [] }
+
   const forStrat = allBlueprints
-    .filter(b => b.strategyName === top.strategyName)
+    .filter(b => b.strategyName === featured)
     .sort((a, b) => b.starterPoints - a.starterPoints)
 
   const teams = []
@@ -303,7 +318,8 @@ export function selectBlueprints(allBlueprints, winRateByStrategy, limit = 5) {
     teams.push(b)
     if (teams.length >= limit) break
   }
-  return { strategyName: top.strategyName, winRate: top.winRate, teams }
+  const winRate = winRateByStrategy.find(r => r.strategyName === featured)?.winRate ?? 0
+  return { strategyName: featured, winRate, teams }
 }
 
 // How many of a strategy's most-frequently-rostered players (per position) form
@@ -428,7 +444,9 @@ function finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, met
     summaries,
     fieldAverages,
     winningComposition,
-    blueprints: selectBlueprints(allBlueprints, winningComposition.winRateByStrategy),
+    blueprints: selectBlueprints(allBlueprints, winningComposition.winRateByStrategy, {
+      preferredRanking: summaries.map(s => s.strategyName),
+    }),
     dreamTeams: buildStrategyDreamTeams(strategyPools, winningComposition.winRateByStrategy, meta.rosterPositions, meta.budgetPerTeam),
     ranking: summaries.map(s => s.strategyName),
     generatedAt: new Date().toISOString(),

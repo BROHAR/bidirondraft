@@ -250,19 +250,25 @@ function WinnersTab({ winningComposition: wc }) {
   )
 }
 
-// Example winning builds for the field's most successful strategy: 3-5 of its
-// highest-scoring winning rosters, so the user can see concrete ways the winning
-// strategy comes together (rather than one synthesized "dream team").
-function BlueprintsTab({ blueprints: bp }) {
+// Example winning builds for the report's leading strategy: 3-5 of its
+// highest-scoring winning rosters, so the user can see concrete ways their
+// recommended strategy comes together (rather than one synthesized "dream
+// team"). If the scorecard leader never won a league outright, the selection
+// falls down the ranking to the best strategy with winners on record.
+function BlueprintsTab({ blueprints: bp, leaderName }) {
   if (!bp || !bp.teams.length) {
     return <div className="analysis-section"><p className="meta-foot-note">No winning rosters recorded.</p></div>
   }
+  const isLeader = bp.strategyName === leaderName
   return (
     <div className="analysis-section">
       <h3>Winning blueprints — {bp.strategyName}</h3>
       <p className="meta-foot-note">
-        {bp.teams.length} of the highest-scoring winning rosters built with <strong>{bp.strategyName}</strong>, the
-        field's most successful strategy ({(bp.winRate * 100).toFixed(0)}% win rate). Each is a real build from a
+        {bp.teams.length} of the highest-scoring winning rosters built with <strong>{bp.strategyName}</strong>
+        {isLeader
+          ? ', the top-ranked strategy for your team'
+          : ', your highest-ranked strategy with league winners on record'}
+        {' '}({(bp.winRate * 100).toFixed(0)}% field-wide win rate). Each is a real build from a
         simulated draft — different ways the same strategy can win.
       </p>
       {bp.teams.map((t, i) => (
@@ -399,7 +405,7 @@ export default function MetaSimulationReport() {
         {activeTab === 1 && <StrengthsTab summaries={summaries} fieldAverages={fieldAverages} />}
         {activeTab === 2 && <WhyTab summaries={summaries} fieldAverages={fieldAverages} />}
         {activeTab === 3 && <WinnersTab winningComposition={winningComposition} />}
-        {activeTab === 4 && <BlueprintsTab blueprints={blueprints} />}
+        {activeTab === 4 && <BlueprintsTab blueprints={blueprints} leaderName={leader?.strategyName} />}
         {activeTab === 5 && <DreamTeamsTab dreamTeams={dreamTeams} />}
       </div>
     </div>
