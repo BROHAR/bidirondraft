@@ -11,7 +11,8 @@
     "dev": "vite",
     "dev:server": "node server/index.js",
     "start": "node server/index.js",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-blog/index.mjs",
+    "build:blog": "node scripts/build-blog/index.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
@@ -28,6 +29,7 @@
     "express": "^5.2.1",
     "immer": "^10.0.2",
     "lucide-react": "^1.17.0",
+    "marked": "^18.0.7",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zustand": "^5.0.14"

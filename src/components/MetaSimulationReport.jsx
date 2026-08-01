@@ -385,7 +385,10 @@ export default function MetaSimulationReport() {
             <strong>{leader?.strategyName}</strong> ({leader?.starterPoints.mean.toFixed(0)} avg starter pts)
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={closeMetaResults}>Back to Setup</button>
+        <div className="analysis-header-actions">
+          <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
+          <button className="btn btn-secondary" onClick={closeMetaResults}>Back to Setup</button>
+        </div>
       </div>
 
       <nav className="analysis-tabs">

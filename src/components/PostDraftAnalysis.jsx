@@ -1672,6 +1672,7 @@ export default function PostDraftAnalysis({ onViewDraft }) {
       <header className="analysis-header">
         <h1>BIDIRON</h1>
         <div className="analysis-header-actions">
+          <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
           <button className="btn btn-secondary btn-sm" onClick={onViewDraft}>View Draft</button>
           <button className="btn btn-primary btn-sm" onClick={() => setConfirmNewDraft(true)}>New Draft</button>
         </div>
