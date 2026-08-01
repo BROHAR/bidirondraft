@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { markSubscribed, markDismissed } from '../utils/subscribeStore'
+import { track } from '../services/analyticsService'
 
 // Same pattern the server enforces in server/app.js — client-side it only
 // short-circuits the obvious typos before a network round trip.
@@ -25,6 +26,7 @@ function EmailSignupForm({ source, variant = 'card', onSuccess, onDismiss, autoF
     if (!EMAIL_RE.test(normalized)) {
       setStatus('error')
       setErrorMsg('ENTER A VALID EMAIL ADDRESS')
+      track('email_signup', { source, outcome: 'invalid' })
       return
     }
     setStatus('loading')
@@ -44,14 +46,17 @@ function EmailSignupForm({ source, variant = 'card', onSuccess, onDismiss, autoF
       if (!res.ok || !body?.ok) {
         setStatus('error')
         setErrorMsg((body?.error || "COULDN'T SIGN UP — TRY AGAIN LATER").toUpperCase())
+        track('email_signup', { source, outcome: 'error' })
         return
       }
       markSubscribed()
       setStatus('success')
+      track('email_signup', { source, outcome: 'success' })
       onSuccess?.()
     } catch {
       setStatus('error')
       setErrorMsg("COULDN'T SIGN UP — TRY AGAIN LATER")
+      track('email_signup', { source, outcome: 'error' })
     }
   }
 

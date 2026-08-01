@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import TeamRosters from './TeamRosters'
 import AllTeamsSummary from './AllTeamsSummary'
 import DraftHistory from './DraftHistory'
+import { track } from '../services/analyticsService'
 
 function TabbedSection() {
   const [activeTab, setActiveTab] = useState('rosters')
@@ -21,7 +22,10 @@ function TabbedSection() {
           <button
             key={tab.id}
             className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              track('report_tab_viewed', { report: 'draft_room', tab: tab.id })
+              setActiveTab(tab.id)
+            }}
           >
             {tab.label}
           </button>

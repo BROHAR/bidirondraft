@@ -2,10 +2,13 @@ import React, { useState, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { generateMetaTakeaways } from '../utils/metaSimulation.js'
 import RadarChart from './RadarChart.jsx'
+import { track } from '../services/analyticsService'
 import '../styles/components/postDraftAnalysis.css'
 import '../styles/components/metaSimulation.css'
 
 const TABS = ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams']
+// snake_case analytics ids for the tabs above ('Dream Teams' -> 'dream_teams').
+const tabId = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_')
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 const POS_COLOR = {
   QB: 'var(--pos-qb, #d65a5a)', RB: 'var(--pos-rb, #4a9d6f)', WR: 'var(--pos-wr, #4a7fd6)',
@@ -386,7 +389,15 @@ export default function MetaSimulationReport() {
           </p>
         </div>
         <div className="analysis-header-actions">
-          <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
+          <a
+            className="dispatch-link"
+            href="/blog/"
+            target="_blank"
+            rel="noopener"
+            onClick={() => track('select_content', { content_type: 'blog_link', item_id: 'meta_report' })}
+          >
+            Auction Dispatch
+          </a>
           <button className="btn btn-secondary" onClick={closeMetaResults}>Back to Setup</button>
         </div>
       </div>
@@ -396,7 +407,10 @@ export default function MetaSimulationReport() {
           <button
             key={tab}
             className={`tab-btn ${activeTab === i ? 'active' : ''}`}
-            onClick={() => setActiveTab(i)}
+            onClick={() => {
+              track('report_tab_viewed', { report: 'meta_sim', tab: tabId(tab) })
+              setActiveTab(i)
+            }}
           >
             {tab}
           </button>

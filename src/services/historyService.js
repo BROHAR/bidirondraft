@@ -36,6 +36,7 @@
 // can cost an extra (harmless, no-op) Back press. Never data loss.
 
 import { useDraftStore } from '../store/draftStore'
+import { track } from './analyticsService'
 
 // The three live-draft states collapse into one 'draft' screen so
 // NOMINATING↔BIDDING↔PAUSED churn produces no history traffic.
@@ -80,6 +81,7 @@ export function createHistoryService({ store, win = window }) {
     if (confirmRequest === kind) return
     confirmRequest = kind
     confirmListeners.forEach((listener) => listener(confirmRequest))
+    if (kind) track('leave_prompt_shown', { prompt: kind })
   }
 
   // App-initiated screen changes → keep the history stack in step.
@@ -139,6 +141,7 @@ export function createHistoryService({ store, win = window }) {
   const resolveConfirm = (confirmed) => {
     const request = confirmRequest
     setConfirmRequest(null)
+    if (request) track('leave_prompt_answered', { prompt: request, confirmed: !!confirmed })
     if (!request || !confirmed) return // cancel: we already re-pushed, stay put
     syncing = true
     try {

@@ -81,6 +81,16 @@ describe('rendered pages', () => {
     expect(html).toContain('name="website"')
   })
 
+  it('every page carries the gtag snippet and gtag-guarded signup events', () => {
+    for (const html of [renderPostPage(post), renderIndexPage([post]), renderUpdatesPage([])]) {
+      expect(html).toContain('googletagmanager.com/gtag/js?id=G-0Q8T4CC9DE')
+      expect(html).toContain("gtag('config', 'G-0Q8T4CC9DE')")
+      // Signup analytics stay no-op-safe when the tag is blocked.
+      expect(html).toContain("typeof window.gtag === 'function'")
+      expect(html).toContain("'event', 'email_signup'")
+    }
+  })
+
   it('index page lists posts, links them, and uses Blog JSON-LD with a single h1', () => {
     const html = renderIndexPage([post])
     expect(html).toContain('href="/blog/test-post/"')

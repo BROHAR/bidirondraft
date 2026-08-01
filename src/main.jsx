@@ -3,12 +3,18 @@ import ReactDOM from 'react-dom/client'
 import { enableMapSet } from 'immer'
 import App from './App.jsx'
 import BrowserHistoryGate from './components/BrowserHistoryGate.jsx'
+import { useDraftStore } from './store/draftStore.js'
+import { initAnalyticsTracker } from './services/analyticsService.js'
 import './styles/design-tokens.css'
 
 // Immer needs the MapSet plugin enabled because the store contains Map/Set
 // values (e.g. valueModifiers, doNotDraftList). Without this, mutations after
 // a New Draft reset throw "[Immer] The plugin for 'MapSet' has not been loaded".
 enableMapSet()
+
+// One store subscription drives all screen/lifecycle GA4 events (no-ops
+// entirely when gtag isn't loaded — dev server, ad-blocked browsers).
+initAnalyticsTracker(useDraftStore)
 import './styles/main.css'
 import './styles/components/title.css'
 import './styles/components/setup.css'
