@@ -5,7 +5,7 @@ export class Balanced extends BaseStrategy {
   constructor() {
     super('Balanced')
     // Slight baseline aggression so Balanced isn't always undercut by
-    // strategies with explicit position multipliers (S&S 1.12-1.15, HeroRB 1.4)
+    // strategies with explicit position multipliers (e.g. StarsAndScrubs)
     this.preferences = {
       positionMultipliers: {
         'QB': 1.10,
