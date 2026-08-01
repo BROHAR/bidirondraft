@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { enableMapSet } from 'immer'
 import App from './App.jsx'
+import BrowserHistoryGate from './components/BrowserHistoryGate.jsx'
 import './styles/design-tokens.css'
 
 // Immer needs the MapSet plugin enabled because the store contains Map/Set
@@ -25,6 +26,9 @@ import './styles/components/emailSignup.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* History integration lives beside App so its Back-navigation dialog
+        survives App's early-return screen branches (App.jsx untouched). */}
+    <BrowserHistoryGate />
     <App />
   </React.StrictMode>,
 )
