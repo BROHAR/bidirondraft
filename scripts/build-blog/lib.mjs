@@ -5,6 +5,18 @@
 import { marked } from 'marked'
 
 export const SITE_ORIGIN = 'https://www.bidirondraft.com'
+// Same GA4 property the app loads in index.html — blog pageviews land in the
+// same stream. The stub gtag() exists even when the tag script is blocked, so
+// inline event calls below stay safe no-ops.
+export const GA_MEASUREMENT_ID = 'G-0Q8T4CC9DE'
+const GA_SNIPPET = `  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${GA_MEASUREMENT_ID}');
+  </script>`
 export const BLOG_TITLE = 'The Auction Dispatch'
 export const BLOG_TAGLINE =
   'Fantasy football auction draft strategy from BIDIRON — value hunting, nomination tactics, and budget pacing, backed by thousands of simulated drafts.'
@@ -130,6 +142,14 @@ function signupSection() {
   var status = document.getElementById('signup-status')
   var EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/
   var done = false
+  // GA4 signup event; safe no-op when gtag is blocked or unavailable.
+  function trackSignup(outcome) {
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'email_signup', { source: 'blog', outcome: outcome })
+      }
+    } catch (err) { /* analytics must never break the form */ }
+  }
   form.addEventListener('submit', function (e) {
     e.preventDefault()
     if (done || button.disabled) return
@@ -137,6 +157,7 @@ function signupSection() {
     if (!EMAIL_RE.test(email)) {
       status.textContent = 'ENTER A VALID EMAIL ADDRESS'
       status.className = 'is-error'
+      trackSignup('invalid')
       return
     }
     button.disabled = true
@@ -156,12 +177,14 @@ function signupSection() {
         form.hidden = true
         status.textContent = 'SIGNED UP \\u2014 WE\\u2019LL BE IN TOUCH'
         status.className = 'is-success'
+        trackSignup('success')
       })
     }).catch(function (err) {
       button.disabled = false
       button.textContent = 'Subscribe'
       status.textContent = (err && err.message ? err.message : "COULDN'T SIGN UP \\u2014 TRY AGAIN LATER").toUpperCase()
       status.className = 'is-error'
+      trackSignup('error')
     })
   })
 })()
@@ -195,6 +218,8 @@ export function pageShell({ title, description, canonicalPath, jsonLd, main, isI
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="alternate" type="application/rss+xml" title="${escapeHtml(BLOG_TITLE)}" href="/blog/rss.xml">
   <link rel="stylesheet" href="/blog/blog.css">
+
+${GA_SNIPPET}
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="${ogType}">

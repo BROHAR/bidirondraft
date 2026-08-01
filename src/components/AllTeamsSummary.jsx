@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import TeamDetailsModal from './TeamDetailsModal'
+import { track } from '../services/analyticsService'
 
 function AllTeamsSummary() {
   const { teams, config, availablePlayers } = useDraftStore()
   const [teamDetailsModal, setTeamDetailsModal] = useState({ isOpen: false, team: null })
 
   const openTeamDetails = (team) => {
+    // Team names can be user-entered — only send whether it's the user's own.
+    track('team_details_viewed', { is_own_team: !!team.isHuman })
     setTeamDetailsModal({ isOpen: true, team })
   }
 

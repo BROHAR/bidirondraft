@@ -18,6 +18,7 @@ import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
 import { shouldShowPrompt } from '../utils/subscribeStore'
 import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
+import { track } from '../services/analyticsService'
 import LeagueImportModal from './LeagueImportModal'
 import KeeperModal from './KeeperModal'
 import { loadLeagueProfile, saveLeagueProfile, clearLeagueProfile } from '../utils/leagueProfileStore'
@@ -65,6 +66,15 @@ const STEPS = [
   { num: 2, label: 'Draft or Sim Type' },
   { num: 3, label: 'AI & Strategy' },
 ]
+
+// Analytics ids for the wizard steps (snake_case, stable across label edits).
+const STEP_IDS = { 1: 'league_settings', 2: 'draft_type', 3: 'ai_strategy' }
+
+// Open a setup modal and record which tool was reached for.
+const openTool = (tool, open) => {
+  track('setup_tool_opened', { tool })
+  open(true)
+}
 
 function SetupScreen() {
   const { initializeDraft, simulateDraft, runMetaSimulation } = useDraftStore()
@@ -211,6 +221,10 @@ function SetupScreen() {
   // teams fill seats 1..N (skipping the human seat) in imported order. The
   // existing per-seat dropdowns are the override surface.
   const handleLeagueProfileApply = (profile) => {
+    track('league_import_applied', {
+      picks: profile.parsedCount ?? 0,
+      teams: (profile.teams || []).length,
+    })
     saveLeagueProfile(profile)
     setLeagueProfile(profile)
     setLeagueProfileEnabled(true)
@@ -307,6 +321,7 @@ function SetupScreen() {
       }
     }
     setStepError(null)
+    if (step < 3) track('setup_step_completed', { step, step_name: STEP_IDS[step] })
     setStep(s => Math.min(3, s + 1))
   }
 
@@ -589,7 +604,7 @@ function SetupScreen() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setShowCustomizationModal(true)}
+                onClick={() => openTool('player_customization', setShowCustomizationModal)}
               >
                 Customize ({overrideCount}) →
               </button>
@@ -614,7 +629,7 @@ function SetupScreen() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setShowKeeperModal(true)}
+                onClick={() => openTool('keepers', setShowKeeperModal)}
               >
                 Keepers ({keeperCount}{keeperCount > 0 ? ` · $${keeperSpend}` : ''}) →
               </button>
@@ -746,7 +761,7 @@ function SetupScreen() {
                     <button
                       type="button"
                       className="btn btn-secondary"
-                      onClick={() => setShowValueModal(true)}
+                      onClick={() => openTool('player_values', setShowValueModal)}
                     >
                       Adjust Values ({playerValueAdjustments.size})
                     </button>
@@ -833,7 +848,7 @@ function SetupScreen() {
                     )}
                   </div>
                   <div className="league-profile-actions">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowLeagueImportModal(true)}>
+                    <button type="button" className="btn btn-secondary" onClick={() => openTool('league_import', setShowLeagueImportModal)}>
                       Re-import
                     </button>
                     <button type="button" className="btn btn-outline" onClick={handleLeagueProfileRemove}>
@@ -842,7 +857,7 @@ function SetupScreen() {
                   </div>
                 </>
               ) : (
-                <button type="button" className="btn btn-secondary" onClick={() => setShowLeagueImportModal(true)}>
+                <button type="button" className="btn btn-secondary" onClick={() => openTool('league_import', setShowLeagueImportModal)}>
                   Import Last Year&apos;s Draft…
                 </button>
               )}
@@ -931,7 +946,7 @@ function SetupScreen() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setShowStrategyModal(true)}
+                onClick={() => openTool('strategy_builder', setShowStrategyModal)}
               >
                 Manage ({customStrategies.length}) →
               </button>
@@ -1024,8 +1039,13 @@ function SetupScreen() {
           config={config}
           players={valueModalPlayers}
           leagueProfile={leagueProfile}
-          onApply={({ keepers, maxKeepersPerTeam }) =>
-            setConfig(prev => ({ ...prev, keepers, maxKeepersPerTeam }))}
+          onApply={({ keepers, maxKeepersPerTeam }) => {
+            track('keepers_applied', {
+              keeper_count: keepers.length,
+              keeper_spend: keepers.reduce((s, k) => s + (k.price || 0), 0),
+            })
+            setConfig(prev => ({ ...prev, keepers, maxKeepersPerTeam }))
+          }}
         />
       )}
     </div>

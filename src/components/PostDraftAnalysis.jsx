@@ -33,9 +33,12 @@ import RadarChart, { AXIS_FULL_LABEL } from './RadarChart.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import EmailSignupForm from './EmailSignupForm.jsx'
 import { shouldShowPrompt } from '../utils/subscribeStore'
+import { track } from '../services/analyticsService'
 import '../styles/components/postDraftAnalysis.css'
 
 const TABS = ['Your Roster', 'Market Intel', 'Value vs Cost', 'Budget Flow', 'The Field', 'Strengths', 'Dream Team', 'Draft Board']
+// snake_case analytics ids for the tabs above ('Your Roster' -> 'your_roster').
+const tabId = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_')
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 // Price-tier bounds are tuned for a $200 budget and scale with the league's
 // actual budget (estimated values are rescaled at draft init).
@@ -1672,8 +1675,24 @@ export default function PostDraftAnalysis({ onViewDraft }) {
       <header className="analysis-header">
         <h1>BIDIRON</h1>
         <div className="analysis-header-actions">
-          <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
-          <button className="btn btn-secondary btn-sm" onClick={onViewDraft}>View Draft</button>
+          <a
+            className="dispatch-link"
+            href="/blog/"
+            target="_blank"
+            rel="noopener"
+            onClick={() => track('select_content', { content_type: 'blog_link', item_id: 'post_draft' })}
+          >
+            Auction Dispatch
+          </a>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              track('select_content', { content_type: 'draft_board', item_id: 'post_draft_view_draft' })
+              onViewDraft()
+            }}
+          >
+            View Draft
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setConfirmNewDraft(true)}>New Draft</button>
         </div>
       </header>
@@ -1736,7 +1755,10 @@ export default function PostDraftAnalysis({ onViewDraft }) {
           <button
             key={tab}
             className={`tab-btn ${activeTab === i ? 'active' : ''}`}
-            onClick={() => setActiveTab(i)}
+            onClick={() => {
+              track('report_tab_viewed', { report: 'post_draft', tab: tabId(tab) })
+              setActiveTab(i)
+            }}
           >
             {tab}
           </button>

@@ -4,6 +4,7 @@ import { DraftEngine } from '../services/draftEngine.js'
 import { AIManager } from '../services/aiManager.js'
 import { autoPilotService } from '../services/autoPilotService.js'
 import { runMetaSimulationAsync } from '../utils/metaSimulation.js'
+import { track, draftStartParams, strategyParam } from '../services/analyticsService.js'
 
 let draftEngine = null
 let metaSimWorker = null
@@ -70,6 +71,7 @@ export const useDraftStore = create(
       if (draftEngine) draftEngine.dispose()
       draftEngine = new DraftEngine({ getState: get, setState: set })
       draftEngine.initializeDraft(config, playersData)
+      track('draft_started', draftStartParams(config, 'live'))
     },
 
     simulateDraft: (config, playersData) => {
@@ -86,6 +88,10 @@ export const useDraftStore = create(
         playersData,
         { simulate: true }
       )
+      track('draft_started', draftStartParams(
+        { ...config, autoPilotEnabled: true, autoPilotStrategy: strategy },
+        'simulate'
+      ))
     },
 
     // Run a batch of headless drafts on `config` and aggregate by strategy.
@@ -100,6 +106,12 @@ export const useDraftStore = create(
       metaCancelRequested = false
       set((draft) => {
         draft.metaSim = { running: true, done: 0, total, result: null, error: null }
+      })
+      track('draft_started', {
+        ...draftStartParams({ ...config, autoPilotEnabled: true }, 'meta'),
+        drafts_per_strategy: draftsPerStrategy,
+        strategy_count: strategies?.length || 0,
+        total_drafts: total,
       })
 
       // Guard so the worker's error/done and the fallback can't both finish.
@@ -217,13 +229,22 @@ export const useDraftStore = create(
         const humanTeam = get().teams.find(t => t.isHuman)
         if (humanTeam) {
           draftEngine.nominatePlayer(player, humanTeam.id)
+          track('player_nominated', {
+            player_name: player.name,
+            player_position: player.position,
+          })
         }
       }
     },
 
     skipPlayerAction: () => {
       if (draftEngine) {
+        const skipped = get().currentPlayer
         draftEngine.skipPlayer()
+        track('player_skipped', {
+          player_name: skipped?.name,
+          player_position: skipped?.position,
+        })
       }
     },
     
@@ -241,11 +262,13 @@ export const useDraftStore = create(
 
     simulateToEnd: () => {
       if (draftEngine) {
+        track('simulate_to_end', { picks_so_far: get().draftHistory.length })
         draftEngine.simulateToEnd()
       }
     },
-    
+
     restartDraft: () => {
+      track('draft_restarted', { from_state: get().draftState })
       if (draftEngine) {
         draftEngine.dispose()
         draftEngine = null
@@ -285,6 +308,10 @@ export const useDraftStore = create(
           autoPilotService.initializeStrategy(humanTeam, state.autoPilotStrategy)
         }
       }
+      track('autopilot_toggled', {
+        enabled: state.autoPilotEnabled,
+        strategy: strategyParam(state.autoPilotStrategy),
+      })
     },
 
     setAutoPilotStrategy: (strategy) => {
@@ -302,6 +329,7 @@ export const useDraftStore = create(
           autoPilotService.initializeStrategy(humanTeam, strategy, state.config?.customStrategies)
         }
       }
+      track('autopilot_strategy_set', { strategy: strategyParam(strategy) })
     },
     
     updatePlayerValueAdjustment: (playerId, multiplier) => set((draft) => {

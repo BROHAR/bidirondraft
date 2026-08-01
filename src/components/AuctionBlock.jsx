@@ -3,6 +3,7 @@ import { useDraftStore } from '../store/draftStore'
 import { getReplacementLevels, getPlayerVORP } from '../utils/draftAnalysis'
 import { getBidAdvice } from '../utils/bidAdvisor'
 import { budgetScaleFor } from '../utils/budgetScaling'
+import { track } from '../services/analyticsService'
 
 function AuctionBlock() {
   const [isSkipping, setIsSkipping] = useState(false)
@@ -32,10 +33,18 @@ function AuctionBlock() {
     return getReplacementLevels(allPlayers, config.rosterPositions, config.numberOfTeams).levels
   }, [availablePlayers, teams, config?.rosterPositions, config?.numberOfTeams])
 
-  const handleBid = (increment) => {
+  // `bidType` labels which quick-bid button fired: plus_1 | mid | big | max.
+  const handleBid = (increment, bidType) => {
     const humanTeam = teams.find(t => t.isHuman)
     if (humanTeam) {
-      placeBid(humanTeam.id, currentBid + increment)
+      const success = placeBid(humanTeam.id, currentBid + increment)
+      track('bid_placed', {
+        amount: currentBid + increment,
+        increment,
+        bid_type: bidType,
+        success: !!success,
+        player_position: currentPlayer?.position,
+      })
     }
   }
 
@@ -291,7 +300,7 @@ function AuctionBlock() {
         <div className="bid-buttons">
           <button
             className="btn btn-success"
-            onClick={() => handleBid(1)}
+            onClick={() => handleBid(1, 'plus_1')}
             disabled={isPaused || currentBid + 1 > getMaxBid()}
             title={isPaused ? 'Draft is paused' : currentBid + 1 > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
@@ -299,7 +308,7 @@ function AuctionBlock() {
           </button>
           <button
             className="btn btn-success"
-            onClick={() => handleBid(midStep)}
+            onClick={() => handleBid(midStep, 'mid')}
             disabled={isPaused || currentBid + midStep > getMaxBid()}
             title={isPaused ? 'Draft is paused' : currentBid + midStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
@@ -307,7 +316,7 @@ function AuctionBlock() {
           </button>
           <button
             className="btn btn-success"
-            onClick={() => handleBid(bigStep)}
+            onClick={() => handleBid(bigStep, 'big')}
             disabled={isPaused || currentBid + bigStep > getMaxBid()}
             title={isPaused ? 'Draft is paused' : currentBid + bigStep > getMaxBid() ? `Over your max bid of $${getMaxBid()}` : undefined}
           >
@@ -315,7 +324,7 @@ function AuctionBlock() {
           </button>
           <button
             className="btn btn-danger"
-            onClick={() => handleBid(getMaxBid() - currentBid)}
+            onClick={() => handleBid(getMaxBid() - currentBid, 'max')}
             disabled={isPaused || getMaxBid() <= currentBid}
             title={isPaused ? 'Draft is paused' : getMaxBid() <= currentBid ? 'The bid already meets or exceeds your max' : undefined}
           >

@@ -7,6 +7,7 @@ import PostDraftAnalysis from './components/PostDraftAnalysis'
 import MetaSimulationReport from './components/MetaSimulationReport'
 import MetaSimulationProgress from './components/MetaSimulationProgress'
 import HeaderTimer from './components/HeaderTimer'
+import { track } from './services/analyticsService'
 
 function App() {
   const draftState = useDraftStore(state => state.draftState)
@@ -43,7 +44,15 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>BIDIRON</h1>
-        <a className="dispatch-link" href="/blog/" target="_blank" rel="noopener">Auction Dispatch</a>
+        <a
+          className="dispatch-link"
+          href="/blog/"
+          target="_blank"
+          rel="noopener"
+          onClick={() => track('select_content', { content_type: 'blog_link', item_id: 'app_header' })}
+        >
+          Auction Dispatch
+        </a>
         <HeaderTimer />
       </header>
       <main className="app-main">
