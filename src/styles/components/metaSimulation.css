@@ -295,3 +295,212 @@
     flex-basis: 92px;
   }
 }
+
+/* ---- Build-a-Champ ---- */
+.champ-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.champ-stat {
+  background: var(--bg-card);
+  border: 2px solid var(--gray-950);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 110px;
+}
+
+.champ-stat-label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+
+.champ-stat-value {
+  font-family: var(--font-numeric);
+  font-size: var(--fs-lg);
+  color: var(--fg1);
+}
+
+.champ-stat-value.champ-over {
+  color: var(--accent-negative);
+}
+
+.champ-warning {
+  color: var(--accent-negative);
+  font-size: var(--fs-sm);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.champ-notice {
+  color: var(--fg2);
+  font-size: var(--fs-sm);
+  margin: var(--space-2) 0 0 0;
+}
+
+/* Save/load bar */
+.champ-save-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.champ-save-input,
+.champ-search {
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.champ-saved-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid var(--gray-950);
+  background: var(--bg-card);
+}
+
+.champ-saved-load {
+  background: none;
+  border: none;
+  color: var(--fg1);
+  font-size: var(--fs-sm);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.champ-saved-load:hover {
+  color: var(--accent-money);
+}
+
+.champ-saved-delete,
+.champ-remove {
+  background: none;
+  border: none;
+  color: var(--fg3);
+  font-size: var(--fs-md);
+  padding: 0 var(--space-2);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.champ-saved-delete:hover,
+.champ-remove:hover {
+  color: var(--accent-negative);
+}
+
+.champ-save-note {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+/* Two-pane layout: roster left, market right. */
+.champ-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 900px) {
+  .champ-layout { grid-template-columns: 1fr; }
+}
+
+/* The nowrap tables can outgrow a narrow pane — scroll inside the pane
+   instead of widening the page. min-width:0 lets the grid item shrink. */
+.champ-roster,
+.champ-pool {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.champ-empty-slot td {
+  color: var(--fg3);
+}
+
+.champ-open {
+  font-style: italic;
+}
+
+.champ-pos-tag {
+  color: var(--fg3);
+  font-size: var(--fs-xs);
+  margin-left: var(--space-1);
+}
+
+.champ-boost-input {
+  width: 64px;
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg1);
+  font-family: var(--font-numeric);
+  font-size: var(--fs-sm);
+  padding: 2px var(--space-1);
+  text-align: right;
+}
+
+.champ-boost-delta {
+  margin-left: var(--space-1);
+  font-size: var(--fs-xs);
+}
+
+.champ-boost-delta.up { color: var(--accent-money); }
+.champ-boost-delta.down { color: var(--accent-negative); }
+
+/* Pool controls */
+.champ-pool-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.champ-search {
+  flex: 1;
+  min-width: 160px;
+}
+
+.champ-pos-filters {
+  display: flex;
+  gap: 2px;
+}
+
+.champ-pos-btn {
+  background: var(--gray-800);
+  border: 2px solid var(--gray-950);
+  color: var(--fg3);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.champ-pos-btn.active {
+  background: var(--bg-card);
+  color: var(--fg1);
+}
+
+.champ-add {
+  font-size: var(--fs-xs);
+  padding: 2px var(--space-2);
+}
+
+/* The pool table scrolls inside its pane instead of stretching the page. */
+.champ-pool .meta-scorecard {
+  display: block;
+  max-height: 560px;
+  overflow-y: auto;
+}

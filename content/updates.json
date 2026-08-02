@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-08-02",
+    "title": "Build-a-Champ: hand-pick a roster from your sim results",
+    "summary": "The Meta Simulation report has a new Build-a-Champ tab. Pick any players the simulations drafted — each priced at what your league actually pays for them on average — and see the roster's projected points, finish, and title odds against every simulated team. Set a +/- % on players you expect to beat or miss their projections, and save up to 5 rosters that carry over to your next meta sim.",
+    "tags": [
+      "new-feature",
+      "ai",
+      "reports"
+    ]
+  },
+  {
     "date": "2026-08-01",
     "title": "The Auction Dispatch: our new strategy blog",
     "summary": "BIDIRON now has a blog. The Auction Dispatch covers auction draft strategy — starting with why auctions beat snake drafts — plus this Recent Updates page, an RSS feed, and an email signup. Find the link in the app header once you leave the title screen.",

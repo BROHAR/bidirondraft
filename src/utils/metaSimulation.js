@@ -388,6 +388,40 @@ export function buildStrategyDreamTeams(strategyPools, winRateByStrategy, roster
   return out
 }
 
+// Accumulate the market-wide player pool across every simulated draft: how
+// often each player was rostered (by any seat) and the total price paid. This
+// is the raw material for the Build-a-Champ tab, where "price" means what this
+// league actually pays for a player on average. Mutates `market` in place.
+function accumulateMarketPool(market, teams) {
+  for (const t of teams) {
+    for (const p of t.roster || []) {
+      let e = market.get(p.id)
+      if (!e) {
+        e = { id: p.id, name: p.name, position: p.position, team: p.team, projectedPoints: p.projectedPoints || 0, count: 0, priceSum: 0 }
+        market.set(p.id, e)
+      }
+      e.count++
+      e.priceSum += p.purchasePrice ?? 0
+    }
+  }
+}
+
+// Flatten the market pool into the shipped payload: one row per player ever
+// drafted in the simulations, priced at the average paid (floored at $1, like
+// blueprints/dream teams), sorted priciest-first. draftRate is the share of
+// simulated drafts in which SOME team rostered the player.
+export function finalizeMarketPool(market, totalDrafts) {
+  return [...market.values()]
+    .map(e => ({
+      id: e.id, name: e.name, position: e.position, team: e.team,
+      projectedPoints: e.projectedPoints,
+      avgPrice: Math.max(1, Math.round(e.priceSum / e.count)),
+      timesDrafted: e.count,
+      draftRate: totalDrafts > 0 ? Math.min(1, e.count / totalDrafts) : 0,
+    }))
+    .sort((a, b) => (b.avgPrice - a.avgPrice) || (b.projectedPoints - a.projectedPoints))
+}
+
 const POS_LABEL = { QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'kicker', DST: 'defense' }
 
 // 2-4 plain-English sentences on how this strategy fared for the user's team and
@@ -434,7 +468,7 @@ export function generateMetaTakeaways(summary, fieldAverages) {
 // allBlueprints (one full roster per draft winner) feed the example builds for
 // the winning strategy; the raw rows/blueprints are consumed here and only the
 // aggregates + a handful of selected builds ship.
-function finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, meta) {
+function finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, marketPool, meta) {
   const summaries = aggregateRows(userRows).sort((a, b) => b.starterPoints.mean - a.starterPoints.mean)
   summaries.forEach((s, i) => { s.rank = i + 1 })
   const fieldAverages = computeFieldAverages(summaries)
@@ -444,6 +478,11 @@ function finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, met
     summaries,
     fieldAverages,
     winningComposition,
+    playerPool: finalizeMarketPool(marketPool, meta.totalDrafts),
+    // Every team's starter points across every simulated draft, sorted
+    // ascending — the opponent distribution Build-a-Champ ranks a custom
+    // roster against.
+    leagueBenchmark: { teamStarterPoints: allTeamRows.map(r => r.starterPoints).sort((a, b) => a - b) },
     blueprints: selectBlueprints(allBlueprints, winningComposition.winRateByStrategy, {
       preferredRanking: summaries.map(s => s.strategyName),
     }),
@@ -476,6 +515,7 @@ export function runMetaSimulation(config, playersData, { strategies = DEFAULT_ST
   const allTeamRows = []
   const allBlueprints = []
   const strategyPools = new Map()
+  const marketPool = new Map()
   try {
     plan.forEach(({ strat, seed }, i) => {
       const { teams, availablePlayers } = runSingleDraft({ ...config, autoPilotStrategy: strat }, playersData, seed)
@@ -488,12 +528,13 @@ export function runMetaSimulation(config, playersData, { strategies = DEFAULT_ST
       if (userRow) userRows.push({ ...userRow, strategyName: displayMap[strat] || strat })
       collectBlueprint(allBlueprints, rows, teams, rosterPositions, seed)
       accumulateStrategyPool(strategyPools, teams)
+      accumulateMarketPool(marketPool, teams)
       onProgress?.(i + 1, plan.length)
     })
   } finally {
     resetRng()
   }
-  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
+  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, marketPool, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
 }
 
 // Async, cooperatively-yielding variant for the main thread: runs drafts in
@@ -510,6 +551,7 @@ export async function runMetaSimulationAsync(config, playersData, { strategies =
   const allTeamRows = []
   const allBlueprints = []
   const strategyPools = new Map()
+  const marketPool = new Map()
   try {
     for (let i = 0; i < plan.length; i++) {
       if (shouldCancel?.()) break
@@ -521,11 +563,12 @@ export async function runMetaSimulationAsync(config, playersData, { strategies =
       if (userRow) userRows.push({ ...userRow, strategyName: displayMap[strat] || strat })
       collectBlueprint(allBlueprints, rows, teams, rosterPositions, seed)
       accumulateStrategyPool(strategyPools, teams)
+      accumulateMarketPool(marketPool, teams)
       onProgress?.(i + 1, plan.length)
       if ((i + 1) % batchSize === 0) await new Promise(r => setTimeout(r, 0))
     }
   } finally {
     resetRng()
   }
-  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
+  return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, marketPool, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
 }

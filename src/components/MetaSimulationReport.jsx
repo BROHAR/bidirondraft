@@ -2,11 +2,12 @@ import React, { useState, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { generateMetaTakeaways } from '../utils/metaSimulation.js'
 import RadarChart from './RadarChart.jsx'
+import BuildAChampTab from './BuildAChampTab.jsx'
 import { track } from '../services/analyticsService'
 import '../styles/components/postDraftAnalysis.css'
 import '../styles/components/metaSimulation.css'
 
-const TABS = ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams']
+const TABS = ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams', 'Build-a-Champ']
 // snake_case analytics ids for the tabs above ('Dream Teams' -> 'dream_teams').
 const tabId = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_')
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
@@ -424,6 +425,7 @@ export default function MetaSimulationReport() {
         {activeTab === 3 && <WinnersTab winningComposition={winningComposition} />}
         {activeTab === 4 && <BlueprintsTab blueprints={blueprints} leaderName={leader?.strategyName} />}
         {activeTab === 5 && <DreamTeamsTab dreamTeams={dreamTeams} />}
+        {activeTab === 6 && <BuildAChampTab result={result} />}
       </div>
     </div>
   )
