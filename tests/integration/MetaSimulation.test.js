@@ -122,6 +122,34 @@ describe('runMetaSimulation (user-perspective integration)', () => {
     }
   }, 60000)
 
+  it('exposes the Build-a-Champ player market and league benchmark', () => {
+    const result = runMetaSimulation(baseConfig(), playersData, {
+      strategies: CANDIDATES.slice(0, 2), draftsPerStrategy: 2, baseSeed: 4400,
+    })
+    const totalDrafts = 2 * 2
+
+    // Market pool: every player any seat rostered, priced at the average paid.
+    expect(result.playerPool.length).toBeGreaterThan(0)
+    for (const p of result.playerPool) {
+      expect(p.avgPrice).toBeGreaterThanOrEqual(1)
+      expect(p.timesDrafted).toBeGreaterThanOrEqual(1)
+      expect(p.draftRate).toBeGreaterThan(0)
+      expect(p.draftRate).toBeLessThanOrEqual(1)
+      expect(p.projectedPoints).toBeGreaterThanOrEqual(0)
+    }
+    // Sorted priciest-first for the market table.
+    for (let i = 1; i < result.playerPool.length; i++) {
+      expect(result.playerPool[i - 1].avgPrice).toBeGreaterThanOrEqual(result.playerPool[i].avgPrice)
+    }
+
+    // Benchmark: one starter-points sample per seat per draft, sorted ascending.
+    const bench = result.leagueBenchmark.teamStarterPoints
+    expect(bench.length).toBe(totalDrafts * 12)
+    for (let i = 1; i < bench.length; i++) {
+      expect(bench[i - 1]).toBeLessThanOrEqual(bench[i])
+    }
+  }, 60000)
+
   it('rates a custom strategy candidate, labeled by its name', () => {
     const customDef = {
       id: 'meta-zero',

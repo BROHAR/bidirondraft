@@ -9,6 +9,7 @@ import {
   aggregateWinningComposition,
   selectBlueprints,
   buildStrategyDreamTeams,
+  finalizeMarketPool,
 } from '../../src/utils/metaSimulation.js'
 
 const zeroPos = () => ({ QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 })
@@ -295,5 +296,28 @@ describe('computeFieldAverages + generateMetaTakeaways', () => {
     const f = computeFieldAverages(summaries)
     const takeaways = generateMetaTakeaways(summaries[1], f)
     expect(takeaways.join(' ')).toMatch(/Overpaid by \$8/)
+  })
+})
+
+describe('finalizeMarketPool', () => {
+  it('averages prices, floors at $1, and sorts priciest-first', () => {
+    const market = new Map([
+      ['p1', { id: 'p1', name: 'Stud', position: 'RB', team: 'ATL', projectedPoints: 280, count: 4, priceSum: 220 }],
+      ['p2', { id: 'p2', name: 'Scrub', position: 'WR', team: 'MIN', projectedPoints: 90, count: 2, priceSum: 0 }],
+      ['p3', { id: 'p3', name: 'Mid', position: 'QB', team: 'BUF', projectedPoints: 300, count: 10, priceSum: 200 }],
+    ])
+    const pool = finalizeMarketPool(market, 10)
+
+    expect(pool.map(p => p.id)).toEqual(['p1', 'p3', 'p2'])
+    expect(pool[0].avgPrice).toBe(55)   // 220 / 4
+    expect(pool[1].avgPrice).toBe(20)   // 200 / 10
+    expect(pool[2].avgPrice).toBe(1)    // $0 average floors at $1
+    expect(pool[1].draftRate).toBe(1)   // 10 of 10 drafts
+    expect(pool[0].draftRate).toBeCloseTo(0.4)
+    expect(pool[0].timesDrafted).toBe(4)
+  })
+
+  it('handles an empty market and zero drafts', () => {
+    expect(finalizeMarketPool(new Map(), 0)).toEqual([])
   })
 })

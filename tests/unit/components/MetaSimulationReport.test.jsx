@@ -85,9 +85,9 @@ describe('MetaSimulationReport — Winners & Points tabs', () => {
     storeState = { metaSim: { result: makeResult() }, closeMetaResults: vi.fn() }
   })
 
-  it('renders all six tabs', () => {
+  it('renders all seven tabs', () => {
     render(<MetaSimulationReport />)
-    for (const tab of ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams']) {
+    for (const tab of ['Scorecard', 'Strengths', 'Why', 'Winners', 'Blueprints', 'Dream Teams', 'Build-a-Champ']) {
       expect(screen.getByRole('button', { name: tab })).toBeTruthy()
     }
   })
