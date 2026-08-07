@@ -1,4 +1,5 @@
 import { Team } from '../models/Team.js'
+import { isPositionStartable } from './positionEligibility.js'
 
 // Keeper leagues (not dynasty): each team may retain a small number of players
 // from last season at a fixed price. Keepers are modeled as pre-completed
@@ -75,6 +76,13 @@ export function validateKeepers(config) {
     }
     if (!KEEPER_POSITIONS.includes(k.position)) {
       errors.push(`Keeper ${label}: invalid position`)
+      continue
+    }
+    // A keeper at a position the league can never start (e.g. a kicker in a
+    // no-K league) would be silently dropped by the engine's pool exclusion —
+    // flag it loudly here instead so the user fixes the config.
+    if (!isPositionStartable(k.position, config.rosterPositions)) {
+      errors.push(`Keeper ${label}: ${k.position} has no starting slot in this league`)
       continue
     }
     if (!Number.isInteger(k.price) || k.price < 1 || k.price > config.budgetPerTeam) {
