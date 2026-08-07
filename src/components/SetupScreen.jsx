@@ -15,6 +15,12 @@ import {
 } from '../utils/playerOverrides'
 import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
 import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
+import { buildSuperflexValueDeltas } from '../utils/superflexValueAdjustment'
+import {
+  ADJUSTABLE_POSITIONS,
+  POSITION_FACTOR_LIMITS,
+  buildPositionValueDeltas,
+} from '../utils/positionValueAdjustment'
 import { shouldShowPrompt } from '../utils/subscribeStore'
 import EmailSignupForm from './EmailSignupForm'
 import { loadCustomStrategies, saveCustomStrategies } from '../utils/customStrategiesStore'
@@ -163,18 +169,47 @@ function SetupScreen() {
     [leagueProfileEnabled, leagueProfile]
   )
 
-  // Value-adjustment modal input: format- and league-adjusted book, except
-  // players whose value the user overrode — overrides are authoritative (the
-  // engine snaps them back after its own adjustments too).
+  // Superflex / 2QB QB rescale — mirrors the engine's pre-anchor adjustment
+  // so the modals preview the QB market the draft will actually use.
+  const superflexDeltas = useMemo(
+    () => buildSuperflexValueDeltas(playersData.players, {
+      numberOfTeams: config.numberOfTeams,
+      rosterPositions: config.rosterPositions,
+    }),
+    [config.numberOfTeams, config.rosterPositions]
+  )
+
+  // Manual per-position percentages (editable in step 1).
+  const positionDeltas = useMemo(
+    () => buildPositionValueDeltas(playersData.players, config.positionValueFactors),
+    [config.positionValueFactors]
+  )
+
+  // Every pre-anchor book adjustment the engine will apply, combined — the
+  // single delta source for the player modals below.
+  const previewDeltas = useMemo(() => {
+    const combined = new Map()
+    for (const deltas of [formatDeltas, superflexDeltas, leagueDeltas, positionDeltas]) {
+      for (const [id, delta] of deltas) {
+        combined.set(id, (combined.get(id) || 0) + delta)
+      }
+    }
+    return combined
+  }, [formatDeltas, superflexDeltas, leagueDeltas, positionDeltas])
+
+  // Value-adjustment modal input: fully adjusted book (format, superflex,
+  // league profile, position tweaks), except players whose value the user
+  // overrode — overrides are authoritative (the engine snaps them back after
+  // its own adjustments too).
   const valueModalPlayers = useMemo(
     () => customizedPlayersData.players.map(player => {
-      const delta = (formatDeltas.get(player.id) || 0) + (leagueDeltas.get(player.id) || 0)
+      const delta = previewDeltas.get(player.id) || 0
       if (delta === 0) return player
       const o = playerOverrides[player.id]
       if (o && typeof o.estimatedValue === 'number') return player
       return { ...player, estimatedValue: Math.max(1, Math.round(player.estimatedValue + delta)) }
     }),
-    [customizedPlayersData, formatDeltas, leagueDeltas, playerOverrides]
+    [customizedPlayersData, previewDeltas, playerOverrides]
   )
 
   // The presence of a SUPERFLEX roster slot is what makes a league superflex —
@@ -216,6 +251,23 @@ function SetupScreen() {
     })
   }
 
+  // Per-position value percentage editor (step 1). Stored as multipliers;
+  // the UI speaks percent deltas (+25 → 1.25×). Blank/0 clears the position.
+  const handlePositionFactorChange = (position, raw) => {
+    setConfig(prev => {
+      const next = { ...(prev.positionValueFactors || {}) }
+      const pct = parseFloat(raw)
+      const [lo, hi] = POSITION_FACTOR_LIMITS
+      if (raw === '' || !Number.isFinite(pct) || pct === 0) {
+        delete next[position]
+      } else {
+        const factor = Math.min(hi, Math.max(lo, 1 + pct / 100))
+        next[position] = Math.round(factor * 100) / 100
+      }
+      return { ...prev, positionValueFactors: next }
+    })
+  }
+
   // Apply an imported league profile: persist it, enable it, and seat-map the
   // detected teams' personas onto the AI bidder dropdowns — non-user imported
   // teams fill seats 1..N (skipping the human seat) in imported order. The
@@ -225,8 +277,20 @@ function SetupScreen() {
       picks: profile.parsedCount ?? 0,
       teams: (profile.teams || []).length,
     })
-    saveLeagueProfile(profile)
-    setLeagueProfile(profile)
+    // The fitted per-position factors seed the manual editor (step 1) and are
+    // neutralized on the stored profile so they apply exactly once — turning
+    // the import's "straight % change per position" into editable controls.
+    // Tier curves and late inflation stay on the profile.
+    const seededFactors = {}
+    for (const pos of ADJUSTABLE_POSITIONS) {
+      const f = profile.positionFactors?.[pos]
+      if (typeof f === 'number' && Number.isFinite(f) && f !== 1.0) seededFactors[pos] = f
+    }
+    const neutralFactors = {}
+    for (const pos of ADJUSTABLE_POSITIONS) neutralFactors[pos] = 1.0
+    const storedProfile = { ...profile, positionFactors: neutralFactors }
+    saveLeagueProfile(storedProfile)
+    setLeagueProfile(storedProfile)
     setLeagueProfileEnabled(true)
     setShowLeagueImportModal(false)
 
@@ -244,7 +308,13 @@ function SetupScreen() {
       // personas so the room reads like the user's actual league.
       aiTeamNames[seat - 1] = team?.name || ''
     }
-    setConfig(prev => ({ ...prev, aiTeamStrategies, aiTeamHomeTeams, aiTeamNames }))
+    setConfig(prev => ({
+      ...prev,
+      aiTeamStrategies,
+      aiTeamHomeTeams,
+      aiTeamNames,
+      positionValueFactors: seededFactors,
+    }))
     setAiBidderProfilesEnabled(true)
   }
 
@@ -597,6 +667,50 @@ function SetupScreen() {
 
           <div className="customize-box">
             <div className="customize-box-text">
+              <span className="customize-box-title">Position Value Adjustments</span>
+              <small>
+                Shift every player at a position by a percentage (e.g. QB +50).
+                Importing last year&apos;s draft pre-fills these from your league&apos;s
+                actual spending — tweak them here. Superflex QB pricing is
+                automatic; use this to push it further.
+              </small>
+            </div>
+            <div className="customize-box-actions">
+              <div className="positional-limits-grid">
+                {ADJUSTABLE_POSITIONS.map(pos => {
+                  const factor = config.positionValueFactors?.[pos]
+                  const pct = factor !== undefined ? Math.round((factor - 1) * 100) : ''
+                  return (
+                    <label key={pos} className="positional-limit-field">
+                      <span className="positional-limit-pos">{pos}</span>
+                      <input
+                        type="number"
+                        min={Math.round((POSITION_FACTOR_LIMITS[0] - 1) * 100)}
+                        max={Math.round((POSITION_FACTOR_LIMITS[1] - 1) * 100)}
+                        step="5"
+                        placeholder="0"
+                        aria-label={`Value adjustment percent for ${pos}`}
+                        value={pct}
+                        onChange={(e) => handlePositionFactorChange(pos, e.target.value)}
+                      />
+                    </label>
+                  )
+                })}
+              </div>
+              {Object.keys(config.positionValueFactors || {}).length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setConfig(prev => ({ ...prev, positionValueFactors: {} }))}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="customize-box">
+            <div className="customize-box-text">
               <span className="customize-box-title">Customize Player Values</span>
               <small>Override est. $ and projected points — used across your league for both you and the AI. Saved in this browser's local storage until cleared.</small>
             </div>
@@ -833,9 +947,11 @@ function SetupScreen() {
                     <span className="league-profile-chip">
                       {leagueProfile.parsedCount} picks · {leagueProfile.importedAt?.slice(0, 10)}
                     </span>
-                    {['QB', 'RB', 'WR', 'TE'].map(pos => {
-                      const f = leagueProfile.positionFactors?.[pos] ?? 1.0
-                      if (f === 1.0) return null
+                    {/* Position percentages live in the editable step-1
+                        controls (seeded from this import), not on the profile. */}
+                    {ADJUSTABLE_POSITIONS.map(pos => {
+                      const f = config.positionValueFactors?.[pos]
+                      if (f === undefined || f === 1.0) return null
                       const pct = Math.round((f - 1) * 100)
                       return (
                         <span key={pos} className="league-profile-chip">
@@ -992,6 +1108,8 @@ function SetupScreen() {
         isOpen={showValueModal}
         onClose={() => setShowValueModal(false)}
         players={valueModalPlayers}
+        budgetPerTeam={config.budgetPerTeam}
+        totalRosterSize={totalRosterSize}
         valueAdjustments={playerValueAdjustments}
         onUpdateAdjustment={(playerId, multiplier) => {
           const newAdjustments = new Map(playerValueAdjustments)
@@ -1011,7 +1129,7 @@ function SetupScreen() {
         overrides={playerOverrides}
         scoringFormat={config.scoringFormat}
         budgetPerTeam={config.budgetPerTeam}
-        formatDeltas={formatDeltas}
+        formatDeltas={previewDeltas}
         onChange={setPlayerOverrides}
         onClearAll={() => setPlayerOverrides({})}
       />

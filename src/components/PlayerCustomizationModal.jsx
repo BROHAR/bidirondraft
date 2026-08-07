@@ -35,8 +35,10 @@ function PlayerCustomizationModal({
   const [sortBy, setSortBy] = useState('estimatedValue')
 
   const filteredPlayers = useMemo(() => {
-    // Book values are half-PPR; the format delta reshapes them to the league's
-    // scoring so users type overrides against the book the draft will use.
+    // Book values are half-PPR 1-QB; formatDeltas carries every pre-anchor
+    // adjustment (scoring format, superflex QB rescale, league profile,
+    // position tweaks) so users type overrides against the book the draft
+    // will actually use.
     const formatValueOf = (player) =>
       Math.max(1, player.estimatedValue + (formatDeltas?.get(player.id) ?? 0))
     return basePlayers
@@ -160,7 +162,7 @@ function PlayerCustomizationModal({
                 const isModified = valueOverride !== null || pointsOverride !== null
                 const basePoints = player.projectedPoints?.[scoringFormat] ?? 0
                 // Base values are half-PPR book tuned for a $200 budget; apply
-                // the scoring-format delta, then scale to the league's budget
+                // the combined book deltas, then scale to the league's budget
                 // so users set custom values in context.
                 const formatValue = Math.max(1, player.estimatedValue + (formatDeltas?.get(player.id) ?? 0))
                 const scaledBaseValue = scaleValueToBudget(formatValue, budgetPerTeam)

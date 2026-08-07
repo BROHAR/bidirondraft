@@ -1,15 +1,43 @@
 import React, { useState, useMemo } from 'react'
+import { budgetScaleFor } from '../utils/budgetScaling'
 
-function PlayerValueModal({ 
-  isOpen, 
-  onClose, 
-  players, 
-  valueAdjustments, 
-  onUpdateAdjustment 
+// Multiplier floor, and the fallback ceiling when no budget context is
+// provided. The real ceiling is per-player: whatever multiplier takes the
+// player to the league max bid (budget minus $1 for every other roster spot)
+// — a $3 QB legitimately becomes $40 in a superflex league, so a fixed low
+// cap like the old 3x is wrong, but no adjustment should exceed what any
+// team could actually pay.
+const MIN_MULTIPLIER = 0.1
+const FALLBACK_MAX_MULTIPLIER = 100
+
+function PlayerValueModal({
+  isOpen,
+  onClose,
+  players,
+  valueAdjustments,
+  onUpdateAdjustment,
+  budgetPerTeam,
+  totalRosterSize,
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [positionFilter, setPositionFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState('estimatedValue')
+
+  // League max bid expressed in the $200-reference space the displayed base
+  // values live in, so base × multiplier compares against it directly.
+  const referenceMaxBid = useMemo(() => {
+    if (!budgetPerTeam || !totalRosterSize) return null
+    const maxBid = budgetPerTeam - (totalRosterSize - 1)
+    return maxBid > 0 ? maxBid / budgetScaleFor(budgetPerTeam) : null
+  }, [budgetPerTeam, totalRosterSize])
+
+  const maxMultiplierFor = (player) => {
+    if (referenceMaxBid === null) return FALLBACK_MAX_MULTIPLIER
+    const base = Math.max(1, player.estimatedValue)
+    // Always allow at least 1x so an already-max-priced player keeps a
+    // resettable control; round down to one decimal to match the input step.
+    return Math.max(1, Math.floor((referenceMaxBid / base) * 10) / 10)
+  }
 
   const filteredPlayers = useMemo(() => {
     return players
@@ -34,11 +62,13 @@ function PlayerValueModal({
       })
   }, [players, searchTerm, positionFilter, sortBy])
 
-  const handleAdjustmentChange = (playerId, multiplier) => {
+  const handleAdjustmentChange = (player, multiplier) => {
     const numericMultiplier = parseFloat(multiplier)
     if (isNaN(numericMultiplier)) return
-    
-    onUpdateAdjustment(playerId, numericMultiplier)
+
+    const clamped = Math.min(maxMultiplierFor(player),
+      Math.max(MIN_MULTIPLIER, numericMultiplier))
+    onUpdateAdjustment(player.id, clamped)
   }
 
   const getAdjustmentValue = (playerId) => {
@@ -117,7 +147,7 @@ function PlayerValueModal({
 
           <div className="adjustment-help">
             <p>
-              <strong>Adjustment Guide:</strong> 0.5x = Half value, 1.0x = Default value, 2.0x = Double value
+              <strong>Adjustment Guide:</strong> 0.5x = Half value, 1.0x = Default value, 2.0x = Double value. Each player caps at your league&apos;s max bid.
             </p>
           </div>
 
@@ -150,17 +180,17 @@ function PlayerValueModal({
                     <div className="multiplier-control">
                       <input
                         type="number"
-                        min="0.1"
-                        max="3.0"
+                        min={MIN_MULTIPLIER}
+                        max={maxMultiplierFor(player)}
                         step="0.1"
                         value={currentAdjustment}
-                        onChange={(e) => handleAdjustmentChange(player.id, e.target.value)}
+                        onChange={(e) => handleAdjustmentChange(player, e.target.value)}
                         className="multiplier-input"
                       />
                       {isModified && (
                         <button
                           className="reset-btn"
-                          onClick={() => handleAdjustmentChange(player.id, 1.0)}
+                          onClick={() => handleAdjustmentChange(player, 1.0)}
                           title="Reset to default"
                         >
                           ↻
