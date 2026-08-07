@@ -1,5 +1,43 @@
 [
   {
+    "date": "2026-08-07",
+    "title": "Real superflex pricing",
+    "summary": "Superflex and 2QB leagues now get a QB market that looks like a real one: elite QBs price near the top running backs and receivers, and startable QBs hold real value instead of everyone past QB5 sitting at $3. You can also shift any position's values up or down by a percentage in League Settings (importing last year's draft pre-fills these), and individual player adjustments can now go all the way up to your league's max bid.",
+    "tags": [
+      "new-feature",
+      "setup",
+      "superflex"
+    ]
+  },
+  {
+    "date": "2026-08-07",
+    "title": "Undo picks and see drafted players",
+    "summary": "Two draft-room upgrades from your feedback: an Undo Last Pick button that returns the player to the pool, refunds the winning team, and replays the nomination (undo as many picks as you want), plus a Cancel Nomination button to pull a player off the block without a sale. The player list also has a new Show Drafted toggle so you can see who's already gone, who bought them, and for how much.",
+    "tags": [
+      "new-feature",
+      "draft-room"
+    ]
+  },
+  {
+    "date": "2026-08-07",
+    "title": "Late-draft prices bottom out like a real auction",
+    "summary": "In keeper leagues and deeper lineups, end-of-board players were being valued at $4-7, so late picks never fell to $1. Player values are now calibrated so the bottom of the board stays at $1 and bids collapse the way a real auction does once the money dries up.",
+    "tags": [
+      "ai",
+      "keepers",
+      "draft-room"
+    ]
+  },
+  {
+    "date": "2026-08-07",
+    "title": "No stray kickers in kicker-less leagues",
+    "summary": "If your league doesn't start a position (like K or D/ST), those players are now left out of the draft entirely — no more kicker nominations or defenses parked on a bench spot they could never start.",
+    "tags": [
+      "draft-room",
+      "setup"
+    ]
+  },
+  {
     "date": "2026-08-02",
     "title": "Build-a-Champ: hand-pick a roster from your sim results",
     "summary": "The Meta Simulation report has a new Build-a-Champ tab. Pick any players the simulations drafted — each priced at what your league actually pays for them on average — and see the roster's projected points, finish, and title odds against every simulated team. Set a +/- % on players you expect to beat or miss their projections, and save up to 5 rosters that carry over to your next meta sim.",
