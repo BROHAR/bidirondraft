@@ -2,11 +2,14 @@ import React, { useState, useMemo } from 'react'
 import { useDraftStore } from '../store/draftStore'
 import { getReplacementLevels, getPlayerVORP } from '../utils/draftAnalysis'
 import { budgetScaleFor } from '../utils/budgetScaling'
+import { buildPoolEntries } from '../utils/playerPoolView'
+import { loadUiPrefs, saveUiPrefs } from '../utils/uiPrefsStore'
 
 function PlayerPool() {
   const {
     availablePlayers,
     draftState,
+    draftHistory,
     currentNominator,
     teams,
     config,
@@ -16,6 +19,14 @@ function PlayerPool() {
   const [positionFilter, setPositionFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState('estimatedValue')
   const [sortDirection, setSortDirection] = useState('desc')
+  // Hidden by default (the pool's historical behavior); persisted across
+  // sessions alongside the other UI prefs.
+  const [showDrafted, setShowDrafted] = useState(() => loadUiPrefs().showDraftedPlayers)
+
+  const toggleShowDrafted = (checked) => {
+    setShowDrafted(checked)
+    saveUiPrefs({ showDraftedPlayers: checked })
+  }
 
   const replacementLevels = useMemo(() => {
     if (!config?.rosterPositions) return {}
@@ -23,8 +34,8 @@ function PlayerPool() {
     return getReplacementLevels(allPlayers, config.rosterPositions, config.numberOfTeams).levels
   }, [availablePlayers, teams, config?.rosterPositions, config?.numberOfTeams])
 
-  const filteredPlayers = availablePlayers
-    .filter(player => {
+  const filteredEntries = buildPoolEntries(availablePlayers, draftHistory, showDrafted)
+    .filter(({ player }) => {
       if (positionFilter !== 'ALL' && player.position !== positionFilter) {
         return false
       }
@@ -33,9 +44,9 @@ function PlayerPool() {
       }
       return true
     })
-    .sort((a, b) => {
+    .sort(({ player: a }, { player: b }) => {
       let result = 0
-      
+
       if (sortBy === 'estimatedValue') {
         result = a.estimatedValue - b.estimatedValue
       } else if (sortBy === 'projectedPoints') {
@@ -51,7 +62,7 @@ function PlayerPool() {
       } else if (sortBy === 'vorp') {
         result = getPlayerVORP(a, replacementLevels) - getPlayerVORP(b, replacementLevels)
       }
-      
+
       return sortDirection === 'asc' ? result : -result
     })
 
@@ -94,8 +105,8 @@ function PlayerPool() {
   return (
     <div className="card player-pool">
       <div className="player-pool-header">
-        <h3>Available Players ({filteredPlayers.length})</h3>
-        
+        <h3>{showDrafted ? 'Players' : 'Available Players'} ({filteredEntries.length})</h3>
+
         <div className="player-pool-filters">
           <input
             type="text"
@@ -104,8 +115,8 @@ function PlayerPool() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-          
-          <select 
+
+          <select
             value={positionFilter}
             onChange={(e) => setPositionFilter(e.target.value)}
             className="position-filter"
@@ -118,7 +129,7 @@ function PlayerPool() {
             <option value="K">K</option>
             <option value="DST">DST</option>
           </select>
-          
+
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -129,34 +140,46 @@ function PlayerPool() {
             <option value="vorp">Sort by VORP</option>
             <option value="name">Sort by Name</option>
           </select>
+
+          <label
+            className="show-drafted-toggle"
+            title="Include players already drafted in the list"
+          >
+            <input
+              type="checkbox"
+              checked={showDrafted}
+              onChange={(e) => toggleShowDrafted(e.target.checked)}
+            />
+            <span>Show drafted</span>
+          </label>
         </div>
       </div>
 
       <div className="player-list">
         <div className="player-list-header">
-          <div 
-            className="sortable-header" 
+          <div
+            className="sortable-header"
             onClick={() => handleSort('name')}
             title="Click to sort by Player Name"
           >
             Player{getSortIcon('name')}
           </div>
-          <div 
-            className="sortable-header" 
+          <div
+            className="sortable-header"
             onClick={() => handleSort('position')}
             title="Click to sort by Position"
           >
             Pos{getSortIcon('position')}
           </div>
-          <div 
-            className="sortable-header" 
+          <div
+            className="sortable-header"
             onClick={() => handleSort('team')}
             title="Click to sort by Team"
           >
             Team{getSortIcon('team')}
           </div>
-          <div 
-            className="sortable-header" 
+          <div
+            className="sortable-header"
             onClick={() => handleSort('byeWeek')}
             title="Click to sort by Bye Week"
           >
@@ -185,9 +208,12 @@ function PlayerPool() {
           </div>
           <div>Action</div>
         </div>
-        
-        {filteredPlayers.map(player => (
-          <div key={player.id} className={`player-row ${getValueColor(player)}`}>
+
+        {filteredEntries.map(({ player, drafted, soldTo, soldPrice }) => (
+          <div
+            key={player.id}
+            className={`player-row ${drafted ? 'drafted' : getValueColor(player)}`}
+          >
             <div className="player-name">
               {player.name}
               {player.injuryStatus && (
@@ -201,14 +227,23 @@ function PlayerPool() {
             <div className="player-vorp">{Math.round(getPlayerVORP(player, replacementLevels))}</div>
             <div className="player-value">${player.estimatedValue}</div>
             <div className="player-action">
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => handleNominate(player)}
-                disabled={!canNominate()}
-                title={canNominate() ? undefined : 'You can nominate when it’s your turn'}
-              >
-                {canNominate() ? 'Nominate' : 'N/A'}
-              </button>
+              {drafted ? (
+                <span
+                  className="drafted-tag"
+                  title={`Drafted by ${soldTo} for $${soldPrice}`}
+                >
+                  ${soldPrice} · {soldTo}
+                </span>
+              ) : (
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => handleNominate(player)}
+                  disabled={!canNominate()}
+                  title={canNominate() ? undefined : 'You can nominate when it’s your turn'}
+                >
+                  {canNominate() ? 'Nominate' : 'N/A'}
+                </button>
+              )}
             </div>
           </div>
         ))}
