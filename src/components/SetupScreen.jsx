@@ -179,7 +179,7 @@ function SetupScreen() {
     [config.numberOfTeams, config.rosterPositions]
   )
 
-  // Manual per-position percentages (editable in step 1).
+  // Manual per-position percentages (editable in step 3, League History section).
   const positionDeltas = useMemo(
     () => buildPositionValueDeltas(playersData.players, config.positionValueFactors),
     [config.positionValueFactors]
@@ -251,7 +251,7 @@ function SetupScreen() {
     })
   }
 
-  // Per-position value percentage editor (step 1). Stored as multipliers;
+  // Per-position value percentage editor (step 3, League History section). Stored as multipliers;
   // the UI speaks percent deltas (+25 → 1.25×). Blank/0 clears the position.
   const handlePositionFactorChange = (position, raw) => {
     setConfig(prev => {
@@ -277,7 +277,7 @@ function SetupScreen() {
       picks: profile.parsedCount ?? 0,
       teams: (profile.teams || []).length,
     })
-    // The fitted per-position factors seed the manual editor (step 1) and are
+    // The fitted per-position factors seed the manual editor (step 3) and are
     // neutralized on the stored profile so they apply exactly once — turning
     // the import's "straight % change per position" into editable controls.
     // Tier curves and late inflation stay on the profile.
@@ -667,50 +667,6 @@ function SetupScreen() {
 
           <div className="customize-box">
             <div className="customize-box-text">
-              <span className="customize-box-title">Position Value Adjustments</span>
-              <small>
-                Shift every player at a position by a percentage (e.g. QB +50).
-                Importing last year&apos;s draft pre-fills these from your league&apos;s
-                actual spending — tweak them here. Superflex QB pricing is
-                automatic; use this to push it further.
-              </small>
-            </div>
-            <div className="customize-box-actions">
-              <div className="positional-limits-grid">
-                {ADJUSTABLE_POSITIONS.map(pos => {
-                  const factor = config.positionValueFactors?.[pos]
-                  const pct = factor !== undefined ? Math.round((factor - 1) * 100) : ''
-                  return (
-                    <label key={pos} className="positional-limit-field">
-                      <span className="positional-limit-pos">{pos}</span>
-                      <input
-                        type="number"
-                        min={Math.round((POSITION_FACTOR_LIMITS[0] - 1) * 100)}
-                        max={Math.round((POSITION_FACTOR_LIMITS[1] - 1) * 100)}
-                        step="5"
-                        placeholder="0"
-                        aria-label={`Value adjustment percent for ${pos}`}
-                        value={pct}
-                        onChange={(e) => handlePositionFactorChange(pos, e.target.value)}
-                      />
-                    </label>
-                  )
-                })}
-              </div>
-              {Object.keys(config.positionValueFactors || {}).length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
-                  onClick={() => setConfig(prev => ({ ...prev, positionValueFactors: {} }))}
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="customize-box">
-            <div className="customize-box-text">
               <span className="customize-box-title">Customize Player Values</span>
               <small>Override est. $ and projected points — used across your league for both you and the AI. Saved in this browser's local storage until cleared.</small>
             </div>
@@ -947,18 +903,6 @@ function SetupScreen() {
                     <span className="league-profile-chip">
                       {leagueProfile.parsedCount} picks · {leagueProfile.importedAt?.slice(0, 10)}
                     </span>
-                    {/* Position percentages live in the editable step-1
-                        controls (seeded from this import), not on the profile. */}
-                    {ADJUSTABLE_POSITIONS.map(pos => {
-                      const f = config.positionValueFactors?.[pos]
-                      if (f === undefined || f === 1.0) return null
-                      const pct = Math.round((f - 1) * 100)
-                      return (
-                        <span key={pos} className="league-profile-chip">
-                          {pos} {pct > 0 ? '+' : ''}{pct}%
-                        </span>
-                      )
-                    })}
                     {leagueProfile.lateInflation !== 1.0 && (
                       <span className="league-profile-chip">Late inflation {leagueProfile.lateInflation}×</span>
                     )}
@@ -977,6 +921,46 @@ function SetupScreen() {
                   Import Last Year&apos;s Draft…
                 </button>
               )}
+
+              <div className="form-group">
+                <label>Position Value Adjustments</label>
+                <div className="positional-limits-grid">
+                  {ADJUSTABLE_POSITIONS.map(pos => {
+                    const factor = config.positionValueFactors?.[pos]
+                    const pct = factor !== undefined ? Math.round((factor - 1) * 100) : ''
+                    return (
+                      <label key={pos} className="positional-limit-field">
+                        <span className="positional-limit-pos">{pos}</span>
+                        <input
+                          type="number"
+                          min={Math.round((POSITION_FACTOR_LIMITS[0] - 1) * 100)}
+                          max={Math.round((POSITION_FACTOR_LIMITS[1] - 1) * 100)}
+                          step="5"
+                          placeholder="0"
+                          aria-label={`Value adjustment percent for ${pos}`}
+                          value={pct}
+                          onChange={(e) => handlePositionFactorChange(pos, e.target.value)}
+                        />
+                      </label>
+                    )
+                  })}
+                </div>
+                {Object.keys(config.positionValueFactors || {}).length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setConfig(prev => ({ ...prev, positionValueFactors: {} }))}
+                  >
+                    Reset
+                  </button>
+                )}
+                <small>
+                  Shift every player at a position by a percentage (e.g. QB +50).
+                  Importing your draft pre-fills these from your league&apos;s actual
+                  spending. Superflex QB pricing is automatic; use this to push it
+                  further. Works with or without an import.
+                </small>
+              </div>
             </div>
           </div>
 

@@ -266,6 +266,7 @@ describe('SetupScreen wizard', () => {
 
     it('persists a typed percentage as a multiplier and clears on empty', () => {
       render(<SetupScreen />)
+      gotoStep3('real time')
       fireEvent.change(pctInput('QB'), { target: { value: '50' } })
       expect(persistedFactors()).toEqual({ QB: 1.5 })
       fireEvent.change(pctInput('RB'), { target: { value: '-20' } })
@@ -276,6 +277,7 @@ describe('SetupScreen wizard', () => {
 
     it('clamps extreme percentages to the manual range', () => {
       render(<SetupScreen />)
+      gotoStep3('real time')
       fireEvent.change(pctInput('QB'), { target: { value: '900' } })
       expect(persistedFactors()).toEqual({ QB: 4 })
       fireEvent.change(pctInput('TE'), { target: { value: '-99' } })
@@ -284,8 +286,8 @@ describe('SetupScreen wizard', () => {
 
     it('rides on the launch config so the engine applies it', () => {
       render(<SetupScreen />)
-      fireEvent.change(pctInput('QB'), { target: { value: '25' } })
       gotoStep3('real time')
+      fireEvent.change(pctInput('QB'), { target: { value: '25' } })
       fireEvent.click(screen.getByRole('button', { name: /start draft →/i }))
       expect(initializeDraft.mock.calls[0][0].positionValueFactors).toEqual({ QB: 1.25 })
     })
