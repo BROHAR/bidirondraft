@@ -8,7 +8,9 @@ import { BidValidator } from './bidValidator.js'
 import { workerTimers } from './workerTimers.js'
 import { budgetScaleFor } from '../utils/budgetScaling.js'
 import { applyFormatValueAdjustment } from '../utils/formatValueAdjustment.js'
+import { applySuperflexValueAdjustment } from '../utils/superflexValueAdjustment.js'
 import { applyLeagueProfileAdjustment } from '../utils/leagueProfile.js'
+import { applyPositionValueAdjustment } from '../utils/positionValueAdjustment.js'
 import { resolveKeepers, applyResolvedKeepers } from '../utils/keepers.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
@@ -75,10 +77,20 @@ export class DraftEngine {
     // per-player relative shifts survive — which is exactly what this applies).
     applyFormatValueAdjustment(players, config)
 
+    // Superflex / 2QB leagues: the 1-QB book undervalues the whole QB tier —
+    // rescale QBs against the deeper superflex replacement level before the
+    // anchor. Strict no-op for 1-QB rosters.
+    applySuperflexValueAdjustment(players, config)
+
     // Imported-league market shape (config.leagueProfile): positional and
     // tier-curve deltas, also pre-anchor so only the relative shape survives.
     // Strict no-op when no profile is set.
     applyLeagueProfileAdjustment(players, config)
+
+    // Manual per-position percentages (config.positionValueFactors) — the
+    // user-editable layer, applied last so it scales whatever the automatic
+    // adjustments above produced. Strict no-op when neutral.
+    applyPositionValueAdjustment(players, config)
 
     // League calibration: one adaptive power-law reshape,
     //

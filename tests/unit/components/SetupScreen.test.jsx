@@ -23,7 +23,11 @@ const nextButton = () => screen.getByRole('button', { name: /next →/i })
 const backButton = () => screen.getByRole('button', { name: /back/i })
 
 // Roster slots are compact +/- steppers; reach a slot's buttons via its card.
-const rosterSlot = (pos) => screen.getByText(pos).closest('.roster-slot')
+// Position labels also appear in the position-value editor, so filter for the
+// occurrence inside a roster slot.
+const rosterSlot = (pos) => screen.getAllByText(pos)
+  .map(el => el.closest('.roster-slot'))
+  .find(Boolean)
 const rosterDec = (pos) => within(rosterSlot(pos)).getByRole('button', { name: new RegExp(`decrease ${pos}`, 'i') })
 const rosterInc = (pos) => within(rosterSlot(pos)).getByRole('button', { name: new RegExp(`increase ${pos}`, 'i') })
 
@@ -238,6 +242,52 @@ describe('SetupScreen wizard', () => {
       render(<SetupScreen />)
       gotoStep3('real time')
       expect(screen.getByRole('switch', { name: /use my league's draft history/i })).toBeDisabled()
+    })
+
+    it('seeds the editable position percentages from the import and neutralizes the stored profile copy', () => {
+      render(<SetupScreen />)
+      gotoStep3('real time')
+      importProfile()
+
+      // The fitted factors land in the user-editable config...
+      const saved = JSON.parse(window.localStorage.getItem('adraft.setupConfig.v1'))
+      expect(Object.keys(saved.config.positionValueFactors).length).toBeGreaterThan(0)
+      // ...and the stored profile's own copy is neutral (applies exactly once).
+      const profile = JSON.parse(window.localStorage.getItem('adraft.leagueProfile.v1'))
+      for (const f of Object.values(profile.positionFactors)) expect(f).toBe(1.0)
+    })
+  })
+
+  describe('position value adjustments', () => {
+    const pctInput = (pos) =>
+      screen.getByRole('spinbutton', { name: `Value adjustment percent for ${pos}` })
+    const persistedFactors = () =>
+      JSON.parse(window.localStorage.getItem('adraft.setupConfig.v1')).config.positionValueFactors
+
+    it('persists a typed percentage as a multiplier and clears on empty', () => {
+      render(<SetupScreen />)
+      fireEvent.change(pctInput('QB'), { target: { value: '50' } })
+      expect(persistedFactors()).toEqual({ QB: 1.5 })
+      fireEvent.change(pctInput('RB'), { target: { value: '-20' } })
+      expect(persistedFactors()).toEqual({ QB: 1.5, RB: 0.8 })
+      fireEvent.change(pctInput('QB'), { target: { value: '' } })
+      expect(persistedFactors()).toEqual({ RB: 0.8 })
+    })
+
+    it('clamps extreme percentages to the manual range', () => {
+      render(<SetupScreen />)
+      fireEvent.change(pctInput('QB'), { target: { value: '900' } })
+      expect(persistedFactors()).toEqual({ QB: 4 })
+      fireEvent.change(pctInput('TE'), { target: { value: '-99' } })
+      expect(persistedFactors()).toEqual({ QB: 4, TE: 0.25 })
+    })
+
+    it('rides on the launch config so the engine applies it', () => {
+      render(<SetupScreen />)
+      fireEvent.change(pctInput('QB'), { target: { value: '25' } })
+      gotoStep3('real time')
+      fireEvent.click(screen.getByRole('button', { name: /start draft →/i }))
+      expect(initializeDraft.mock.calls[0][0].positionValueFactors).toEqual({ QB: 1.25 })
     })
   })
 

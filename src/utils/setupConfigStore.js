@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIGS } from '../models/DraftConfig'
 import { sanitizeKeepers, DEFAULT_MAX_KEEPERS, MAX_KEEPERS_LIMIT } from './keepers'
+import { sanitizePositionValueFactors } from './positionValueAdjustment'
 
 // Persists the SetupScreen's draft configuration to localStorage so it survives
 // a page refresh or starting a new draft. Mirrors playerOverrides.js: guarded,
@@ -26,6 +27,8 @@ export function defaultDraftConfig() {
     autoPilotEnabled: false,
     autoPilotStrategy: 'Balanced',
     positionalSpendLimits: {},
+    // Manual per-position value multipliers (1.0 = neutral, stored sparse).
+    positionValueFactors: {},
     aiTeamStrategies: [],
     aiTeamHomeTeams: [],
     aiTeamNames: [],
@@ -112,6 +115,7 @@ export function loadSetupState() {
           ? { ...savedConfig.rosterPositions }
           : d.rosterPositions,
         positionalSpendLimits: sanitizeSpendLimits(savedConfig.positionalSpendLimits),
+        positionValueFactors: sanitizePositionValueFactors(savedConfig.positionValueFactors),
         aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
         aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
         aiTeamNames: sanitizeTeamNames(savedConfig.aiTeamNames),
