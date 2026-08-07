@@ -19,9 +19,29 @@
 
 .player-pool-filters {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+  align-items: center;
+}
+
+.show-drafted-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.show-drafted-toggle input {
+  cursor: pointer;
+  margin: 0;
 }
 
 /* Inputs in this row inherit pixel input styling from main.css */
@@ -160,6 +180,30 @@
 .value-waiver {
   background: rgba(138, 138, 138, 0.10);
   border-left: 3px solid var(--gray-500);
+}
+
+/* Drafted players (Show Drafted toggle): muted row, sale info in place of
+   the Nominate button. Replaces the value-tier background/border. */
+.player-row.drafted {
+  border-left: 3px solid var(--gray-800);
+  opacity: 0.55;
+}
+
+.player-row.drafted .player-name {
+  text-decoration: line-through;
+}
+
+.drafted-tag {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 @media (max-width: 768px) {

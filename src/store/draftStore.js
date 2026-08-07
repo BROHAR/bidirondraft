@@ -4,6 +4,7 @@ import { DraftEngine } from '../services/draftEngine.js'
 import { AIManager } from '../services/aiManager.js'
 import { autoPilotService } from '../services/autoPilotService.js'
 import { runMetaSimulationAsync } from '../utils/metaSimulation.js'
+import { revertSale } from '../utils/undoSale.js'
 import { track, draftStartParams, strategyParam } from '../services/analyticsService.js'
 
 let draftEngine = null
@@ -258,6 +259,85 @@ export const useDraftStore = create(
       if (draftEngine) {
         draftEngine.resumeDraft()
       }
+    },
+
+    // --- Undo support -----------------------------------------------------
+    // Both actions rewind via inverse operations on live state (no snapshot
+    // stack), so undoLastSale can be applied repeatedly — multi-level undo,
+    // newest pick first. Timer/AI coherence: draftEngine.clearTimers() cancels
+    // the nomination/bidding intervals AND every pending one-shot callback
+    // (AI nominations, the AI bid cascade, the post-sale advance), and
+    // startNominationPhase() restarts the loop from the rewound state, so no
+    // stale AI callback can land on undone state.
+
+    // Cancel the auction currently on the block without a sale. The nominated
+    // player is only removed from availablePlayers when a sale completes, so
+    // clearing the block returns it to the pool; the same team then nominates
+    // again (currentNominatorIndex only advances on a completed sale).
+    cancelNomination: () => {
+      const state = get()
+      if (!draftEngine || !state.currentPlayer) return
+      if (state.draftState !== 'BIDDING' && state.draftState !== 'PAUSED') return
+      const wasPaused = state.draftState === 'PAUSED'
+      const cancelled = state.currentPlayer
+      draftEngine.clearTimers()
+      set((draft) => {
+        draft.currentPlayer = null
+        draft.currentBid = 0
+        draft.currentBidder = null
+        draft.timeRemaining = 0
+        draft.draftState = wasPaused ? 'PAUSED' : 'NOMINATING'
+      })
+      // A paused draft stays paused; resumeDraft() with no player on the
+      // block re-enters the nomination phase.
+      if (!wasPaused) draftEngine.startNominationPhase()
+      track('nomination_cancelled', {
+        player_name: cancelled.name,
+        player_position: cancelled.position,
+      })
+    },
+
+    // Undo the most recent completed sale: return the player to the pool,
+    // refund the buying team and free its roster slot, revert AI bid-outcome
+    // psychology, and rewind the nomination turn to that pick. If a new
+    // auction is already on the block it is cancelled too (its player was
+    // never removed from the pool).
+    undoLastSale: () => {
+      const state = get()
+      if (!draftEngine || state.draftHistory.length === 0) return
+      if (!['NOMINATING', 'BIDDING', 'PAUSED'].includes(state.draftState)) return
+      const wasPaused = state.draftState === 'PAUSED'
+      const entry = state.draftHistory[state.draftHistory.length - 1]
+
+      draftEngine.clearTimers()
+
+      // Revert the Team/Player instance mutations in place — the same
+      // mutate-then-set pattern completeBidding itself uses.
+      revertSale(state.teams, entry)
+
+      // completeBidding advanced the nominator index after this sale; step it
+      // back so the team whose pick was undone nominates again.
+      draftEngine.currentNominatorIndex = Math.max(0, draftEngine.currentNominatorIndex - 1)
+
+      set((draft) => {
+        draft.draftHistory.pop()
+        if (!draft.availablePlayers.some(p => p.id === entry.player.id)) {
+          draft.availablePlayers.push(entry.player)
+        }
+        draft.currentPlayer = null
+        draft.currentBid = 0
+        draft.currentBidder = null
+        // startNominationPhase re-derives the nominator from the rewound index.
+        draft.currentNominator = null
+        draft.timeRemaining = 0
+        draft.draftState = wasPaused ? 'PAUSED' : 'NOMINATING'
+      })
+      if (!wasPaused) draftEngine.startNominationPhase()
+      track('pick_undone', {
+        player_name: entry.player.name,
+        player_position: entry.player.position,
+        price: entry.price,
+      })
     },
 
     simulateToEnd: () => {
