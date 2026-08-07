@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { produce } from 'immer'
 import { DraftEngine } from '../../src/services/draftEngine.js'
+import { runSingleDraft } from '../../src/utils/metaSimulation.js'
 import { setSeed, resetRng } from '../../src/utils/rng.js'
 import playersData from '../../src/data/players.json'
 
@@ -208,6 +209,44 @@ describe('Keeper draft — completeness and spend-down invariants', () => {
     const keepers = [asKeeper(dst, 1, 2), asKeeper(k, 1, 1), ...standardKeepers().slice(2)]
     const state = runSimulatedDraft(baseConfig({ keepers }))
     expectAllTeamsComplete(state.teams)
+  }, 60000)
+})
+
+// User report: "Is there a way to make the draft sim include keepers? It
+// doesn't seem to be." The simulated-draft paths all funnel through
+// DraftEngine.initializeDraft (covered above); this block proves the same
+// end-to-end keeper semantics through the META-SIM entry point
+// (runSingleDraft — the per-draft core used by both the worker and the
+// main-thread fallback), including a human seat with keepers.
+describe('Keeper draft — keepers flow through the meta-sim path', () => {
+  afterEach(() => { resetRng() })
+
+  it('runSingleDraft applies keepers to rosters, budgets, and the pool', () => {
+    const keepers = standardKeepers()
+    const config = baseConfig({ keepers, humanDraftPosition: 1, humanTeamName: 'Me' })
+    const { teams, availablePlayers } = runSingleDraft(config, playersData, 12345)
+
+    for (const k of keepers) {
+      const team = teams[k.teamPosition - 1]
+      const onRoster = team.roster.find(p => p.id === k.playerId)
+      expect(onRoster, `${k.name} kept by ${team.name}`).toBeTruthy()
+      expect(onRoster.purchasePrice).toBe(k.price)
+      expect(onRoster.isKeeper).toBe(true)
+      expect(availablePlayers.some(p => p.id === k.playerId)).toBe(false)
+    }
+    // The human seat (team 1) kept two players and its auction spend came out
+    // of the keeper-reduced budget.
+    const me = teams[0]
+    expect(me.isHuman).toBe(true)
+    expect(me.roster.filter(p => p.isKeeper)).toHaveLength(2)
+    const auctionSpend = me.roster
+      .filter(p => !p.isKeeper)
+      .reduce((s, p) => s + (p.purchasePrice || 0), 0)
+    expect(auctionSpend + 35 + 30 + me.remainingBudget).toBe(200)
+    // Draft completed for every team.
+    for (const t of teams) {
+      expect(t.getRosterSpotsRemaining(), `${t.name} unfilled spots`).toBe(0)
+    }
   }, 60000)
 })
 

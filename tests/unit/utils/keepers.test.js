@@ -67,6 +67,14 @@ describe('validateKeepers', () => {
     }
   })
 
+  it('rejects a keeper at a position the league cannot start', () => {
+    const cfg = config({
+      rosterPositions: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 3, K: 0, DST: 0, BENCH: 6 },
+      keepers: [keeper({ position: 'K', name: 'Some Kicker' })],
+    })
+    expect(validateKeepers(cfg).join(' ')).toMatch(/no starting slot/)
+  })
+
   it('rejects the same player kept twice', () => {
     const errors = validateKeepers(config({
       keepers: [keeper(), keeper({ teamPosition: 2 })],

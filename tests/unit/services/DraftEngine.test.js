@@ -254,8 +254,12 @@ describe('DraftEngine', () => {
 
     it('keeps K/DST tiering floors intact under ppr (zero format delta)', () => {
       // Tiering is a floor (Math.max), so the budget anchor can lift these
-      // slightly above $3/$2 — assert the floors and the tier order.
-      const byId = initWithFormat('ppr')
+      // slightly above $3/$2 — assert the floors and the tier order. The
+      // league must actually START K/DST here: positions with zero starting
+      // slots are now excluded from the pool entirely.
+      const byId = initWithFormat('ppr', {
+        rosterPositions: { QB: 1, RB: 1, WR: 1, K: 1, DST: 1 },
+      })
       expect(byId.k1.estimatedValue).toBeGreaterThanOrEqual(3)
       expect(byId.k2.estimatedValue).toBeGreaterThanOrEqual(2)
       expect(byId.k1.estimatedValue).toBeGreaterThanOrEqual(byId.k2.estimatedValue)

@@ -10,6 +10,7 @@ import { budgetScaleFor } from '../utils/budgetScaling.js'
 import { applyFormatValueAdjustment } from '../utils/formatValueAdjustment.js'
 import { applyLeagueProfileAdjustment } from '../utils/leagueProfile.js'
 import { resolveKeepers, applyResolvedKeepers } from '../utils/keepers.js'
+import { isPositionStartable } from '../utils/positionEligibility.js'
 
 // Roster positions that map directly to a player.position value. FLEX,
 // SUPERFLEX, and BENCH are intentionally excluded — they can be filled by
@@ -68,7 +69,15 @@ export class DraftEngine {
   initializeDraft(config, playersData, options = {}) {
     const teams = this.createTeams(config)
     const scoringFormat = config.scoringFormat || 'halfPPR'
-    const players = playersData.players.map(p => new Player(p, scoringFormat))
+    // Positions with zero startable slots (a league with no K/DST slot, etc.)
+    // are dropped from the draft universe up front: no lineup spot can ever
+    // hold them, so they must not clutter the pool, be nominated (Taco's
+    // K/DST stacking, top-150 fallback nominations), or eat a bench spot.
+    // This also keeps the budget calibration below netted against players
+    // that are actually sellable.
+    const players = playersData.players
+      .map(p => new Player(p, scoringFormat))
+      .filter(p => isPositionStartable(p.position, config.rosterPositions))
 
     // estimatedValue is half-PPR book; reshape it for standard/PPR before the
     // calibration below (the budget anchor re-normalizes the total, so only
@@ -82,7 +91,7 @@ export class DraftEngine {
 
     // League calibration: one adaptive power-law reshape,
     //
-    //   calibrated = a × book^gamma
+    //   calibrated = scale × (1 + a × (book^gamma − 1))
     //
     // `a` (level) is solved so the top-(totalSpots) players — the ones that
     // will actually be drafted — sum to the money actually in the room, so
@@ -105,9 +114,13 @@ export class DraftEngine {
     // toward $1 — the same star-concentration the old top-60 tilt encoded,
     // which this replaces. gamma is derived in $200-reference space so pure
     // budget scaling ($1000 leagues) stays a uniform multiply, and clamped so
-    // extreme keeper configs flatten the curve only so far.
+    // extreme keeper configs flatten the curve only so far. GAMMA_MIN was
+    // lowered 0.62 -> 0.50 alongside the $1-tail-floor change below: deep
+    // flattening used to drag the whole tail up with it (the very distortion
+    // the floor now prevents), so heavy-keeper rooms can now flatten harder
+    // and send more of their surplus to the mid board instead of the stars.
     const GAMMA_COEFF = 0.5   // fraction of the level-stretch that becomes shape
-    const GAMMA_MIN = 0.62    // heavy-keeper flattening floor
+    const GAMMA_MIN = 0.50    // heavy-keeper flattening floor
     const GAMMA_MAX = 1.25    // small-league sharpening ceiling
 
     // Keeper netting: kept players never hit the auction and their prices are
@@ -139,15 +152,33 @@ export class DraftEngine {
         if (rawTopNSum > 0) {
           // Shape from the reference-space stretch (budget-scale factored out),
           // level from the real-dollar budget.
-          const refScale = totalAuctionBudget /
-            (budgetScaleFor(config.budgetPerTeam) * rawTopNSum)
+          const scale = budgetScaleFor(config.budgetPerTeam)
+          const refScale = totalAuctionBudget / (scale * rawTopNSum)
           const gamma = Math.min(GAMMA_MAX,
             Math.max(GAMMA_MIN, 1 - GAMMA_COEFF * (refScale - 1)))
+          const n = topN.length
           const powSum = topN.reduce(
             (s, p) => s + Math.pow(Math.max(1, p.estimatedValue), gamma), 0)
-          const level = totalAuctionBudget / powSum
-          for (const p of players) {
-            p.estimatedValue = level * Math.pow(Math.max(1, p.estimatedValue), gamma)
+          // Affine in power space, anchored at the $1 floor. Solving `a` so
+          // the top-N sum hits the money keeps the budget anchor, while the
+          // "+1" pins a $1 book player at $1 (× budget scale). The previous
+          // pure multiply (level × book^gamma) lifted the ENTIRE tail to
+          // `level` dollars — in keeper + deep-lineup leagues level reached
+          // $4+, so hundreds of end-of-board players displayed $4-7 book
+          // values, the AI's scrub pricing ($1-3 caps for sub-$4 players)
+          // never engaged, and late-draft prices sat at "value" instead of
+          // bottoming out at $1 (the reported keeper-league symptom). Surplus
+          // now flows to players in proportion to their value ABOVE the $1
+          // floor, so the tail stays $1 no matter how much keeper discount or
+          // league size inflates the room. `a` is floored at a small positive
+          // slope so a degenerate money-short room can't invert the ordering.
+          const surplusPow = powSum - n
+          if (surplusPow > 0) {
+            const a = Math.max(0.05, (totalAuctionBudget / scale - n) / surplusPow)
+            for (const p of players) {
+              p.estimatedValue =
+                scale * (1 + a * (Math.pow(Math.max(1, p.estimatedValue), gamma) - 1))
+            }
           }
         }
       }

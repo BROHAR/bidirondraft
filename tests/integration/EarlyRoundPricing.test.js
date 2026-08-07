@@ -97,6 +97,14 @@ describe('Early-round pricing stays near the published book', () => {
       price: Math.max(1, Math.round(p.estimatedValue * 0.6)),
     }))
     const avg = earlySaleRatio(baseConfig({ keepers }))
-    expect(avg).toBeLessThan(1.55) // was 2.11 under the uniform anchor
+    // Was 2.11 under the uniform anchor. The bound moved 1.55 -> 1.75 with
+    // the calibration's $1-tail-floor fix: the old transform "paid for" a low
+    // early premium by parking budget on hundreds of tail players at $4+ each
+    // (which then sold at value late — the "never bottoms out to $1" bug).
+    // With the tail pinned at $1 that money is genuinely in the room. This
+    // league's money/remaining-book ratio is ~1.85, so early sales at ~1.7x
+    // raw book are still BELOW the room's average inflation — the reshape
+    // keeps routing surplus to the mid tiers, which is the invariant guarded.
+    expect(avg).toBeLessThan(1.75)
   }, 60000)
 })
