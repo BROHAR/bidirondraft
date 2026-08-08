@@ -160,4 +160,68 @@ describe('setupConfigStore', () => {
     const { config } = loadSetupState()
     expect(config.humanDraftPosition).toBe(defaultDraftConfig().humanDraftPosition)
   })
+
+  // The loaded config is built from an explicit field allowlist — a stored
+  // blob can't smuggle arbitrary extra keys into the config object the whole
+  // app (and DraftConfig constructor) trusts.
+  it('drops unknown keys from a stored config (allowlist)', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: { numberOfTeams: 10, evilExtra: { nested: true }, onload: 'alert(1)' },
+    }))
+    const { config } = loadSetupState()
+    expect(config.numberOfTeams).toBe(10)
+    expect('evilExtra' in config).toBe(false)
+    expect('onload' in config).toBe(false)
+    expect(Object.keys(config).sort()).toEqual(Object.keys(defaultDraftConfig()).sort())
+  })
+
+  it('clamps humanTeamName length and falls back on non-strings', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { humanTeamName: 'x'.repeat(500) } }))
+    expect(loadSetupState().config.humanTeamName).toBe('x'.repeat(24))
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { humanTeamName: { toString: 'nope' } } }))
+    expect(loadSetupState().config.humanTeamName).toBe('Your Team')
+  })
+
+  it('validates rosterPositions keys and clamps counts to 0–30', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: {
+        rosterPositions: { QB: 1, RB: 500, WR: -2, TE: 1.5, HACKER: 9, BENCH: 6 },
+      },
+    }))
+    const { config } = loadSetupState()
+    expect(config.rosterPositions).toEqual({ QB: 1, RB: 30, WR: 0, BENCH: 6 })
+    // Nothing valid left → defaults.
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { rosterPositions: { HACKER: 9 } } }))
+    expect(loadSetupState().config.rosterPositions).toEqual(defaultDraftConfig().rosterPositions)
+  })
+
+  it('rejects unknown scoringFormat values', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { scoringFormat: 'superDuperPPR' } }))
+    expect(loadSetupState().config.scoringFormat).toBe('halfPPR')
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { scoringFormat: 'ppr' } }))
+    expect(loadSetupState().config.scoringFormat).toBe('ppr')
+  })
+
+  it('maps non-string AI strategy/home-team seats to empty strings (indices preserved)', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: {
+        aiTeamStrategies: ['ZeroRB', 42, null, 'Taco'],
+        aiTeamHomeTeams: [null, { evil: 1 }, 'KC'],
+      },
+    }))
+    const { config } = loadSetupState()
+    expect(config.aiTeamStrategies).toEqual(['ZeroRB', '', '', 'Taco'])
+    expect(config.aiTeamHomeTeams).toEqual(['', '', 'KC'])
+  })
+
+  it('still loads sanitized positionValueFactors (sparse multipliers preserved)', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      config: { positionValueFactors: { RB: 1.25, QB: 999, K: 'x' } },
+    }))
+    const { config } = loadSetupState()
+    expect(config.positionValueFactors.RB).toBe(1.25)
+    // Out-of-range clamps to the sanitizer's limit; non-numbers drop.
+    expect(typeof config.positionValueFactors.QB).toBe('number')
+    expect('K' in config.positionValueFactors).toBe(false)
+  })
 })

@@ -58,6 +58,15 @@ describe('LeagueImportModal', () => {
     expect(document.querySelector('.simulate-error')).toHaveTextContent(/1 valid rows/i)
   })
 
+  it('rejects an uploaded file larger than 5 MB with an inline error', () => {
+    render(<LeagueImportModal isOpen={true} onClose={vi.fn()} existingProfile={null} onApply={vi.fn()} />)
+    const input = document.querySelector('input[type="file"]')
+    const bigFile = new File(['x'], 'huge.csv', { type: 'text/csv' })
+    Object.defineProperty(bigFile, 'size', { value: 6 * 1024 * 1024 })
+    fireEvent.change(input, { target: { files: [bigFile] } })
+    expect(document.querySelector('.simulate-error')).toHaveTextContent(/over 5 MB/i)
+  })
+
   it('parses to a preview with classified personas and requires the "this is me" pick', () => {
     const onApply = openAndParse()
 

@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { BUILTIN_STRATEGIES, BUILTIN_BY_KEY } from '../strategies/registry'
-import { upsertCustomStrategy, removeCustomStrategy } from '../utils/customStrategiesStore'
+import { upsertCustomStrategy, removeCustomStrategy, MULT_RANGE, SKIP_RANGE } from '../utils/customStrategiesStore'
 import { NFL_TEAMS } from '../strategies/TacoStrategy'
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
-const MULT_MIN = 0.5
-const MULT_MAX = 2.0
-const SKIP_MIN = 0.02
-const SKIP_MAX = 0.45
+// Knob ranges live in customStrategiesStore (single source of truth with the
+// store's read-path clamps).
+const [MULT_MIN, MULT_MAX] = MULT_RANGE
+const [SKIP_MIN, SKIP_MAX] = SKIP_RANGE
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 

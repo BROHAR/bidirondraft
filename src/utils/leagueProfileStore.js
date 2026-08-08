@@ -49,6 +49,25 @@ export function sanitizeLeagueProfile(raw) {
     })
   }
 
+  // Raw pick pass-through (the "keepers from last year's draft" source).
+  // Optional on older stored profiles; entries must be structurally sound and
+  // the array is length-capped, which also bounds per-pick work downstream
+  // (name matching runs per entry during render).
+  const picks = (Array.isArray(raw.picks) ? raw.picks : [])
+    .slice(0, 1000)
+    .filter(p =>
+      p && typeof p === 'object' &&
+      typeof p.name === 'string' && p.name.length > 0 &&
+      POSITIONS.includes(p.position) &&
+      Number.isInteger(p.price) && p.price >= 1 && p.price <= 100000 &&
+      typeof p.fantasyTeam === 'string' && p.fantasyTeam.length > 0)
+    .map(p => ({
+      name: p.name.slice(0, 128),
+      position: p.position,
+      price: p.price,
+      fantasyTeam: p.fantasyTeam.slice(0, 128),
+    }))
+
   const teams = (Array.isArray(raw.teams) ? raw.teams : [])
     .filter(t => t && typeof t.name === 'string' && t.name.length > 0)
     .map(t => ({
@@ -67,6 +86,7 @@ export function sanitizeLeagueProfile(raw) {
     source: typeof raw.source === 'string' ? raw.source : 'csv',
     leagueBudget: typeof raw.leagueBudget === 'number' && raw.leagueBudget > 0 ? raw.leagueBudget : 200,
     parsedCount: Number.isInteger(raw.parsedCount) ? raw.parsedCount : 0,
+    picks,
     positionFactors,
     tierFactors,
     lateInflation: clampFactor(raw.lateInflation, LATE_INFLATION_RANGE),

@@ -30,6 +30,10 @@ function validProfile(overrides = {}) {
       WR: neutralTiers(), TE: neutralTiers(), K: neutralTiers(), DST: neutralTiers(),
     },
     lateInflation: 1.18,
+    picks: [
+      { name: 'Patrick Mahomes', position: 'QB', price: 38, fantasyTeam: 'Alpha' },
+      { name: 'Bijan Robinson', position: 'RB', price: 55, fantasyTeam: 'Beta' },
+    ],
     teams: [
       { name: 'Alpha', isUser: true, persona: 'StarsAndScrubs', confidence: 'high', spend: 200, picks: 17, homeTeam: null },
       { name: 'Beta', isUser: false, persona: 'Taco', confidence: 'medium', spend: 198, picks: 17, homeTeam: 'KC' },
@@ -110,6 +114,50 @@ describe('leagueProfileStore', () => {
     expect(p.teams[0]).toEqual({
       name: 'X', isUser: false, persona: 'Balanced', confidence: 'low', spend: 0, picks: 0, homeTeam: null,
     })
+  })
+
+  // fitLeagueProfile stores the raw picks so keeper selection can offer
+  // "from last year's draft" — the sanitizer must pass them through, or the
+  // feature silently dies on every page reload.
+  it('picks survive a save/load round-trip', () => {
+    saveLeagueProfile(validProfile())
+    expect(loadLeagueProfile().picks).toEqual(validProfile().picks)
+  })
+
+  it('tolerates profiles saved without picks (older stored profiles)', () => {
+    const { picks: _omitted, ...withoutPicks } = validProfile()
+    saveLeagueProfile(withoutPicks)
+    expect(loadLeagueProfile().picks).toEqual([])
+  })
+
+  it('drops malformed pick entries and caps the array at 1000', () => {
+    const good = { name: 'Josh Allen', position: 'QB', price: 40, fantasyTeam: 'Alpha' }
+    const p = sanitizeLeagueProfile(validProfile({
+      picks: [
+        good,
+        { name: '', position: 'QB', price: 5, fantasyTeam: 'A' },        // empty name
+        { name: 'X', position: 'LB', price: 5, fantasyTeam: 'A' },       // bad position
+        { name: 'X', position: 'RB', price: 0, fantasyTeam: 'A' },       // price < 1
+        { name: 'X', position: 'RB', price: 5.5, fantasyTeam: 'A' },     // non-integer
+        { name: 'X', position: 'RB', price: 5, fantasyTeam: 7 },         // non-string team
+        'not an object',
+        null,
+      ],
+    }))
+    expect(p.picks).toEqual([good])
+
+    const flood = Array.from({ length: 5000 }, (_, i) => ({
+      name: `P${i}`, position: 'RB', price: 1, fantasyTeam: 'A',
+    }))
+    expect(sanitizeLeagueProfile(validProfile({ picks: flood })).picks.length).toBe(1000)
+  })
+
+  it('length-caps pick name and fantasyTeam strings', () => {
+    const p = sanitizeLeagueProfile(validProfile({
+      picks: [{ name: 'n'.repeat(500), position: 'WR', price: 3, fantasyTeam: 't'.repeat(500) }],
+    }))
+    expect(p.picks[0].name).toBe('n'.repeat(128))
+    expect(p.picks[0].fantasyTeam).toBe('t'.repeat(128))
   })
 
   it('clearLeagueProfile removes the entry', () => {

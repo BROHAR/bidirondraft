@@ -18,6 +18,13 @@ export const EXAMPLE_HEADER = 'Pick,Player,NFL Team,Position,Salary,Fantasy Team
 
 const VALID_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST']
 
+// Hard caps so a hostile/garbled file can't wedge the importer. Real auction
+// drafts are <400 picks; anything past MAX_ROWS is not a draft file. MAX_FIELD
+// bounds the per-field text that downstream code (name normalization, team
+// grouping, React rendering) has to chew on.
+export const MAX_ROWS = 5000
+const MAX_FIELD_LENGTH = 128
+
 // Minimal quote-aware CSV field splitter. Team/player names carry apostrophes
 // but commas-in-quotes are cheap insurance for hand-edited files.
 export function splitCsvFields(line) {
@@ -61,6 +68,10 @@ export function parseDraftCsv(text) {
   if (lines.length === 0) {
     return { records, teams: [], hasPickOrder: false, suggestedBudget: 200, errors: ['The file is empty.'], warnings }
   }
+  if (lines.length - 1 > MAX_ROWS) {
+    errors.push(`Too many rows (${lines.length - 1}) — a draft results file should have at most ${MAX_ROWS}. Check that this is the right file.`)
+    return { records, teams: [], hasPickOrder: false, suggestedBudget: 200, errors, warnings }
+  }
 
   // Header: every required column must be present by name.
   const headerFields = splitCsvFields(lines[0]).map(f => f.toLowerCase().replace(/\s+/g, ' ').trim())
@@ -80,8 +91,8 @@ export function parseDraftCsv(text) {
     const fields = splitCsvFields(lines[i])
     const get = col => fields[colIndex[col]] ?? ''
 
-    const name = get('player')
-    const fantasyTeam = get('fantasy team')
+    const name = get('player').slice(0, MAX_FIELD_LENGTH)
+    const fantasyTeam = get('fantasy team').slice(0, MAX_FIELD_LENGTH)
     const position = normalizePosition(get('position'))
     const salaryRaw = get('salary').replace(/^\$/, '')
     const price = /^\d+$/.test(salaryRaw) ? parseInt(salaryRaw, 10) : NaN
@@ -142,8 +153,12 @@ export function parseDraftCsv(text) {
   const hasPickOrder = records.length > 0 && blankPicks <= records.length / 3
 
   // A team can't spend more than its budget, so the max team total is the
-  // best available floor for what the league's budget was.
-  const suggestedBudget = teams.length > 0 ? Math.max(...teams.map(t => t.spend), 1) : 200
+  // best available floor for what the league's budget was. reduce, not a
+  // Math.max spread — spreading a huge array overflows the arg stack (throws),
+  // which would break this function's never-throws contract.
+  const suggestedBudget = teams.length > 0
+    ? teams.reduce((max, t) => Math.max(max, t.spend), 1)
+    : 200
 
   return { records, teams, hasPickOrder, suggestedBudget, errors, warnings }
 }

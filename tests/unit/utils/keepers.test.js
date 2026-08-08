@@ -223,6 +223,28 @@ describe('matchPicksToPlayers', () => {
     expect(matched[2].player).toBeNull()
     expect(matched[3].player).toBeNull()
   })
+
+  it('still strips suffixes across internal whitespace runs', () => {
+    const picks = [
+      { name: 'Marvin   Harrison   Jr.', position: 'WR', price: 30, fantasyTeam: 'A' },
+    ]
+    const matched = matchPicksToPlayers(picks, players)
+    expect(matched[0].player?.id).toBe('p1')
+  })
+
+  // Regression: the old suffix regex (`/\s+(jr|…)$/` on raw input) backtracked
+  // quadratically on long internal whitespace — ~5s at 100k spaces, running
+  // per pick during render. The fix normalizes whitespace first and caps
+  // input length, so pathological names must complete near-instantly.
+  it('handles pathological whitespace-bomb names fast (ReDoS regression)', () => {
+    const bomb = 'a' + ' '.repeat(100000) + 'b!'
+    const picks = [{ name: bomb, position: 'RB', price: 1, fantasyTeam: 'A' }]
+    const start = performance.now()
+    const matched = matchPicksToPlayers(picks, players)
+    const elapsed = performance.now() - start
+    expect(matched[0].player).toBeNull()
+    expect(elapsed).toBeLessThan(250)
+  })
 })
 
 describe('KEEPER_PRICE_RULES', () => {

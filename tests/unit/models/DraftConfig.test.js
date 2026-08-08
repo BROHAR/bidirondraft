@@ -82,6 +82,23 @@ describe('DraftConfig', () => {
       expect(isValid).toBe(true)
     })
 
+    // Regression: a cleared budget field parseInts to NaN; `NaN || 200` used
+    // to default it to $200 silently, and NaN range comparisons are false so
+    // validate() passed. NaN must now be preserved and rejected.
+    it('rejects a NaN budget (cleared input field) instead of defaulting to 200', () => {
+      const c = new DraftConfig({ budgetPerTeam: NaN })
+      expect(Number.isNaN(c.budgetPerTeam)).toBe(true)
+      const { isValid, errors } = c.validate()
+      expect(isValid).toBe(false)
+      expect(errors).toContain('Budget per team must be between $100 and $2000')
+    })
+
+    it('still defaults a missing budget to 200', () => {
+      expect(new DraftConfig({}).budgetPerTeam).toBe(200)
+      expect(new DraftConfig({ budgetPerTeam: undefined }).budgetPerTeam).toBe(200)
+      expect(new DraftConfig({ budgetPerTeam: null }).budgetPerTeam).toBe(200)
+    })
+
     it('rejects humanDraftPosition outside team range', () => {
       const { isValid, errors } = new DraftConfig({ numberOfTeams: 10, humanDraftPosition: 12 }).validate()
       expect(isValid).toBe(false)

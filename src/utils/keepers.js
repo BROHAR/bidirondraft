@@ -165,13 +165,21 @@ export function applyResolvedKeepers(resolved, players) {
 // Loose name key for matching imported picks to the current pool: lowercase,
 // strip punctuation and generational suffixes. Position must also match, so
 // collisions are effectively impossible in practice.
+//
+// Ordering matters for safety: whitespace is collapsed BEFORE the anchored
+// suffix match. The previous `/\s+(jr|…)$/` ran against raw input and
+// backtracked quadratically on long internal whitespace runs (ReDoS — this
+// runs per imported pick during render). After collapse+trim, the suffix
+// pattern needs no `\s+` and cannot backtrack. The length cap bounds work on
+// adversarial single-token input; no real player name approaches 128 chars.
 function nameKey(name) {
   return String(name || '')
+    .slice(0, 128)
     .toLowerCase()
     .replace(/[.'’-]/g, '')
-    .replace(/\s+(jr|sr|ii|iii|iv|v)$/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/ (jr|sr|ii|iii|iv|v)$/, '')
 }
 
 // Match imported league-profile picks ({name, position, price, fantasyTeam})
