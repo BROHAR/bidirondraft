@@ -19,6 +19,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   parsePost,
+  isValidUpdate,
   renderPostPage,
   renderIndexPage,
   renderUpdatesPage,
@@ -63,7 +64,7 @@ async function loadUpdates() {
   try {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((u) => u && typeof u.date === 'string' && typeof u.title === 'string')
+    return parsed.filter(isValidUpdate)
   } catch (err) {
     console.warn(`build-blog: could not parse content/updates.json (${err.message}); rendering empty updates page`)
     return []

@@ -3,6 +3,16 @@
 // unit-testable (tests/unit/scripts/buildBlog.test.js) and the orchestrator
 // (index.mjs) stays a thin I/O shell.
 import { marked } from 'marked'
+import createDOMPurify from 'dompurify'
+import { JSDOM } from 'jsdom'
+
+// marked 18.x has no sanitize option: raw HTML (and javascript: hrefs) in the
+// markdown source pass through verbatim. Post sources are ours, but the build
+// must not be a stored-XSS vector, so every parsed body goes through DOMPurify
+// (jsdom-backed — this runs in Node, not a browser). Defaults keep normal
+// markup (headings, links, images, code, tables) and strip scripts, event
+// handlers, and javascript: URLs.
+const purify = createDOMPurify(new JSDOM('').window)
 
 export const SITE_ORIGIN = 'https://www.bidirondraft.com'
 // Same GA4 property the app loads in index.html — blog pageviews land in the
@@ -50,10 +60,28 @@ export function parseFrontmatter(src) {
 
 const REQUIRED_KEYS = ['title', 'description', 'date', 'slug']
 
+// Sanity caps on frontmatter scalars — a title should never be a novel, and
+// oversized values are a sign the file is malformed (or hostile).
+const MAX_FIELD_LENGTHS = { title: 300, description: 500, author: 100 }
+const MAX_TAG_LENGTH = 50
+const MAX_TAGS = 20
+
 export function parsePost(src, filename = 'post') {
   const { attrs, body } = parseFrontmatter(src)
   for (const key of REQUIRED_KEYS) {
     if (!attrs[key]) throw new Error(`${filename}: missing frontmatter key "${key}"`)
+  }
+  for (const [key, max] of Object.entries(MAX_FIELD_LENGTHS)) {
+    if (attrs[key] && attrs[key].length > max) {
+      throw new Error(`${filename}: frontmatter "${key}" exceeds ${max} characters`)
+    }
+  }
+  const tags = attrs.tags ?? []
+  if (tags.length > MAX_TAGS) {
+    throw new Error(`${filename}: more than ${MAX_TAGS} tags`)
+  }
+  if (tags.some((t) => t.length > MAX_TAG_LENGTH)) {
+    throw new Error(`${filename}: tag exceeds ${MAX_TAG_LENGTH} characters`)
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(attrs.date)) {
     throw new Error(`${filename}: date must be YYYY-MM-DD, got "${attrs.date}"`)
@@ -66,9 +94,9 @@ export function parsePost(src, filename = 'post') {
     description: attrs.description,
     date: attrs.date,
     slug: attrs.slug,
-    tags: attrs.tags ?? [],
+    tags,
     author: attrs.author ?? 'BIDIRON',
-    html: marked.parse(body),
+    html: purify.sanitize(marked.parse(body)),
   }
 }
 
@@ -87,6 +115,32 @@ export function escapeHtml(s) {
 
 // XML text nodes need the same five entities; alias for intent at call sites.
 export const escapeXml = escapeHtml
+
+// Serialize JSON-LD for embedding inside a <script> block. JSON.stringify
+// does not escape < or >, so a value containing "</script>" would terminate
+// the script element and inject live markup. Escaping & as well prevents any
+// entity-based reinterpretation. & goes first so it can't touch the \u00XX
+// sequences the later replacements introduce (they contain no & anyway, but
+// the ordering makes that a non-issue by construction).
+export function serializeJsonLd(value) {
+  return JSON.stringify(value)
+    .replace(/&/g, '\\u0026')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+}
+
+// Entry filter for content/updates.json (used by index.mjs's loader). Date is
+// strict YYYY-MM-DD — mirroring parsePost's frontmatter rule — because it is
+// interpolated into <time datetime> and fed to formatDate, so a malformed
+// value is both a rendering bug and a markup-injection vector.
+export function isValidUpdate(u) {
+  return Boolean(
+    u &&
+    typeof u.date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(u.date) &&
+    typeof u.title === 'string'
+  )
+}
 
 // '2026-08-01' -> 'August 1, 2026' (UTC-pinned so the build machine's zone
 // can't shift the calendar day).
@@ -238,7 +292,7 @@ ${GA_SNIPPET}
   <meta name="twitter:description" content="${d}">
   <meta name="twitter:image" content="${SITE_ORIGIN}/og-image.png">
 
-  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <script type="application/ld+json">${serializeJsonLd(jsonLd)}</script>
 </head>
 <body>
 ${masthead({ isIndex })}
@@ -357,7 +411,7 @@ export function renderUpdatesPage(updates) {
 ${updates.map((u) => `    <li>
       <article class="update">
         <h2>${escapeHtml(u.title)}</h2>
-        <p class="post-meta"><time datetime="${u.date}">${formatDate(u.date)}</time></p>
+        <p class="post-meta"><time datetime="${escapeHtml(u.date)}">${formatDate(u.date)}</time></p>
         <p>${escapeHtml(u.summary)}</p>
         ${Array.isArray(u.tags) && u.tags.length ? `<ul class="tag-list">${u.tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
       </article>
@@ -394,7 +448,7 @@ export function renderSitemap(posts, updatesLastmod) {
   ]
   const entries = urls.map((u) => `  <url>
     <loc>${escapeXml(u.loc)}</loc>${u.lastmod ? `
-    <lastmod>${u.lastmod}</lastmod>` : ''}
+    <lastmod>${escapeXml(u.lastmod)}</lastmod>` : ''}
   </url>`).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
