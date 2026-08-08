@@ -6,6 +6,7 @@
 import fs from 'fs'
 import path from 'path'
 import { byeWeekForTeam } from './byeWeeks.mjs'
+import { decodeCsvField } from './csv.mjs'
 
 const PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
 const PLAYERS_JSON = path.join(PROJECT_ROOT, 'src/data/players.json')
@@ -32,17 +33,41 @@ export function splitCsvLine(line) {
   return out
 }
 
+// Quote-aware record split: csvField (csv.mjs) quotes fields containing
+// CR/LF, so a newline inside a quoted field is data, not a record boundary —
+// a plain text.split('\n') would shear such a row in two. Skips blank lines.
+export function splitCsvRecords(text) {
+  const records = []
+  let cur = ''
+  let inQuotes = false
+  for (const ch of text) {
+    if (ch === '"') {
+      inQuotes = !inQuotes
+      cur += ch
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (cur.trim().length > 0) records.push(cur)
+      cur = ''
+    } else {
+      cur += ch
+    }
+  }
+  if (cur.trim().length > 0) records.push(cur)
+  return records
+}
+
 function parseCsv(text) {
-  const lines = text.split('\n').filter(l => l.trim().length > 0)
+  const lines = splitCsvRecords(text)
   const headers = splitCsvLine(lines[0])
   return lines.slice(1).map(line => {
     const cells = splitCsvLine(line)
     const row = {}
     headers.forEach((h, i) => {
       const v = cells[i]
-      // Numeric fields all parse to numbers; name/position/team/injury_status stay as strings
+      // Numeric fields all parse to numbers; name/position/team/injury_status
+      // stay as strings (with the write-side formula guard stripped so it
+      // never leaks into players.json).
       if (['name', 'position', 'team', 'injury_status'].includes(h)) {
-        row[h] = v || ''
+        row[h] = decodeCsvField(v || '')
       } else {
         row[h] = v === undefined || v === '' ? 0 : parseFloat(v) || 0
       }
@@ -145,14 +170,14 @@ function nextIdGenerator(existingIds) {
 
 // Parse the simpler Yahoo CSV: name,position,team,proj_dollars
 function parseYahooCsv(text) {
-  const lines = text.split('\n').filter(l => l.trim().length > 0)
+  const lines = splitCsvRecords(text)
   // skip header
   return lines.slice(1).map(line => {
     const cells = splitCsvLine(line)
     return {
-      name: cells[0] || '',
-      position: cells[1] || '',
-      team: cells[2] || '',
+      name: decodeCsvField(cells[0] || ''),
+      position: decodeCsvField(cells[1] || ''),
+      team: decodeCsvField(cells[2] || ''),
       proj_dollars: parseFloat(cells[3]) || 0,
     }
   })
