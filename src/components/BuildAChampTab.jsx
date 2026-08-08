@@ -8,7 +8,9 @@ import { getLineupSlots } from '../utils/draftAnalysis.js'
 import { track } from '../services/analyticsService'
 
 const SLOT_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST']
-const POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DST']
+const POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST']
+// Multi-position filters mirror slot eligibility in draftAnalysis.js.
+const MULTI_POS_FILTERS = { FLEX: ['RB', 'WR', 'TE'], SUPERFLEX: ['QB', 'RB', 'WR', 'TE'] }
 // Keep the pool table snappy — filters/search reach everyone below the fold.
 const POOL_ROW_LIMIT = 150
 
@@ -49,7 +51,8 @@ export default function BuildAChampTab({ result }) {
     const q = search.trim().toLowerCase()
     return (playerPool || [])
       .filter(p => !selectedIds.has(p.id))
-      .filter(p => posFilter === 'ALL' || p.position === posFilter)
+      .filter(p => posFilter === 'ALL'
+        || (MULTI_POS_FILTERS[posFilter] ? MULTI_POS_FILTERS[posFilter].includes(p.position) : p.position === posFilter))
       .filter(p => !q || p.name.toLowerCase().includes(q))
   }, [playerPool, selectedIds, posFilter, search])
 

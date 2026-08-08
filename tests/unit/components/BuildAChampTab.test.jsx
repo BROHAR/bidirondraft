@@ -118,6 +118,20 @@ describe('BuildAChampTab', () => {
     expect(screen.getByText(/Bijan Robinson.*left off/)).toBeTruthy()
   })
 
+  it('filters the market pool by FLEX and SUPERFLEX eligibility', () => {
+    render(<BuildAChampTab result={makeResult()} />)
+    // FLEX: RB/WR/TE only — both QBs drop out.
+    fireEvent.click(screen.getByRole('button', { name: 'FLEX' }))
+    expect(screen.getByText('Bijan Robinson')).toBeTruthy()
+    expect(screen.getByText('Justin Jefferson')).toBeTruthy()
+    expect(screen.queryByText('Josh Allen')).toBeNull()
+    expect(screen.queryByText('Jalen Hurts')).toBeNull()
+    // SUPERFLEX adds QBs back in.
+    fireEvent.click(screen.getByRole('button', { name: 'SUPERFLEX' }))
+    expect(screen.getByText('Josh Allen')).toBeTruthy()
+    expect(screen.getByText('Bijan Robinson')).toBeTruthy()
+  })
+
   it('shows a fallback when the report has no market data', () => {
     render(<BuildAChampTab result={makeResult({ playerPool: [] })} />)
     expect(screen.getByText(/run a new meta simulation/i)).toBeTruthy()

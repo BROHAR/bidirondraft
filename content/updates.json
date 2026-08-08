@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-08",
+    "title": "Flex and Superflex filters in Build-a-Champ",
+    "summary": "The Build-a-Champ player market now has FLEX and SUPERFLEX filters, so you can browse every flex-eligible player (RB/WR/TE) or superflex-eligible player (QB/RB/WR/TE) at once instead of checking one position at a time.",
+    "tags": [
+      "new-feature",
+      "superflex"
+    ]
+  },
+  {
     "date": "2026-08-07",
     "title": "Real superflex pricing",
     "summary": "Superflex and 2QB leagues now get a QB market that looks like a real one: elite QBs price near the top running backs and receivers, and startable QBs hold real value instead of everyone past QB5 sitting at $3. You can also shift any position's values up or down by a percentage in League Settings (importing last year's draft pre-fills these), and individual player adjustments can now go all the way up to your league's max bid.",
