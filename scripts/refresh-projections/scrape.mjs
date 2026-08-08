@@ -16,6 +16,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 import path from 'path'
 import { normalizePosition } from './positions.mjs'
+import { csvField } from './csv.mjs'
 
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
@@ -161,12 +162,13 @@ async function fetchEspnProjections() {
   return rows
 }
 
-function rowToCsv(row) {
+// Field quoting + formula-injection guard live in csv.mjs (shared with the
+// process.mjs read side). Missing numeric stats keep their historical '0'.
+export function rowToCsv(row) {
   return CSV_COLUMNS.map(col => {
     const v = row[col]
     if (v === undefined || v === null) return '0'
-    if (typeof v === 'string' && v.includes(',')) return `"${v.replace(/"/g, '""')}"`
-    return String(v)
+    return csvField(v)
   }).join(',')
 }
 
@@ -206,11 +208,8 @@ async function scrapeYahooSalcap(page) {
     .filter(r => r.name && r.position)
 }
 
-function rowToYahooCsv(row) {
-  return [row.name, row.position, row.team, row.projDollars].map(v => {
-    const s = String(v ?? '')
-    return s.includes(',') ? `"${s.replace(/"/g, '""')}"` : s
-  }).join(',')
+export function rowToYahooCsv(row) {
+  return [row.name, row.position, row.team, row.projDollars].map(csvField).join(',')
 }
 
 // ── Orchestration ───────────────────────────────────────────────────────────

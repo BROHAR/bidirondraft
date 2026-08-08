@@ -2,6 +2,7 @@ import express from 'express'
 import path from 'node:path'
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { insertSubscriber, listSubscribers } from './db.js'
+import { buildContentSecurityPolicy, collectScriptHashes } from './csp.js'
 
 // Deliberately simple validation: enough to reject garbage and typos without
 // chasing the full RFC. 254 chars is the SMTP max address length.
@@ -23,9 +24,21 @@ export function createApp({ db, distDir, adminToken, rateLimiter }) {
   app.set('trust proxy', 1)
   app.disable('x-powered-by')
 
+  // Hash-locked CSP derived from the built site at startup (see csp.js):
+  // dist/ is produced by the same deploy that starts this process, so the
+  // allowed inline-script hashes always match the HTML actually served.
+  const contentSecurityPolicy = buildContentSecurityPolicy(collectScriptHashes(distDir))
+
   app.use((req, res, next) => {
+    res.set('Content-Security-Policy', contentSecurityPolicy)
     res.set('X-Content-Type-Options', 'nosniff')
     res.set('X-Frame-Options', 'DENY')
+    res.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    // Railway terminates TLS ahead of this process; the header is inert on
+    // plain-HTTP local runs and meaningful in production. 2-year max-age.
+    res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains')
+    // The app uses none of these powerful features; deny them outright.
+    res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
     if (req.path.startsWith('/api/')) res.set('Cache-Control', 'no-store')
     next()
   })
