@@ -537,6 +537,18 @@ export function runMetaSimulation(config, playersData, { strategies = DEFAULT_ST
   return finalizeResult(userRows, allTeamRows, allBlueprints, strategyPools, marketPool, { strategies, draftsPerStrategy, totalDrafts: plan.length, baseSeed, rosterPositions, numberOfTeams, budgetPerTeam })
 }
 
+// Yield to the event loop between batches. MessageChannel rather than
+// setTimeout: hidden tabs clamp timers to >=1s (1/min after 5 minutes), which
+// effectively paused the main-thread fallback whenever the user switched tabs;
+// message tasks are exempt from that throttling.
+const yieldToEventLoop = typeof MessageChannel !== 'undefined'
+  ? () => new Promise((resolve) => {
+      const channel = new MessageChannel()
+      channel.port1.onmessage = () => { channel.port1.close(); resolve() }
+      channel.port2.postMessage(null)
+    })
+  : () => new Promise((resolve) => setTimeout(resolve, 0))
+
 // Async, cooperatively-yielding variant for the main thread: runs drafts in
 // small batches and awaits a macrotask between batches so React can paint the
 // progress bar and the tab stays responsive. shouldCancel() lets the caller
@@ -565,7 +577,7 @@ export async function runMetaSimulationAsync(config, playersData, { strategies =
       accumulateStrategyPool(strategyPools, teams)
       accumulateMarketPool(marketPool, teams)
       onProgress?.(i + 1, plan.length)
-      if ((i + 1) % batchSize === 0) await new Promise(r => setTimeout(r, 0))
+      if ((i + 1) % batchSize === 0) await yieldToEventLoop()
     }
   } finally {
     resetRng()
