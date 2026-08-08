@@ -6,6 +6,9 @@ import { NFL_TEAMS } from '../strategies/TacoStrategy'
 import playersData from '../data/players.json'
 
 const MIN_RECORDS = 20
+// Draft-results CSVs are a few KB; anything past 5 MB is the wrong file, and
+// reading it into state/parsing it would only lock up the tab.
+const MAX_FILE_BYTES = 5 * 1024 * 1024
 
 // Two-phase import: paste/upload the league's draft-results CSV, then review
 // the detected teams (with inferred AI personas, editable) and mark which one
@@ -33,8 +36,13 @@ function LeagueImportModal({ isOpen, onClose, existingProfile, onApply }) {
   const handleFile = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > MAX_FILE_BYTES) {
+      setInputError('That file is over 5 MB — draft results CSVs are far smaller. Check that this is the right file.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
     const reader = new FileReader()
-    reader.onload = () => setCsvText(String(reader.result || ''))
+    reader.onload = () => { setCsvText(String(reader.result || '')); setInputError(null) }
     reader.readAsText(file)
   }
 
@@ -78,7 +86,9 @@ function LeagueImportModal({ isOpen, onClose, existingProfile, onApply }) {
     onApply(profile)
   }
 
-  const maxPrice = parsed ? Math.max(...parsed.records.map(r => r.price)) : 0
+  // reduce, not a Math.max spread — this runs in the component body, and
+  // spreading a very large array throws RangeError mid-render.
+  const maxPrice = parsed ? parsed.records.reduce((max, r) => Math.max(max, r.price), 0) : 0
 
   return (
     <div className="modal-overlay" onClick={close}>

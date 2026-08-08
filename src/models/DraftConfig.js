@@ -3,7 +3,10 @@ import { validateKeepers, DEFAULT_MAX_KEEPERS } from '../utils/keepers.js'
 export class DraftConfig {
   constructor(options = {}) {
     this.numberOfTeams = options.numberOfTeams || 12
-    this.budgetPerTeam = options.budgetPerTeam || 200
+    // ?? not || — a cleared budget field parses to NaN, and `NaN || 200`
+    // would silently launch a $200 draft the user never asked for. NaN must
+    // survive to validate(), which rejects it.
+    this.budgetPerTeam = options.budgetPerTeam ?? 200
     this.humanTeamName = options.humanTeamName || 'Your Team'
     this.humanDraftPosition = options.humanDraftPosition || 1
     this.nominationTimer = options.nominationTimer || 20
@@ -45,7 +48,9 @@ export class DraftConfig {
       errors.push('Number of teams must be between 8 and 14')
     }
     
-    if (this.budgetPerTeam < 100 || this.budgetPerTeam > 2000) {
+    // Negated in-range form so NaN (empty budget field) fails validation —
+    // `NaN < 100 || NaN > 2000` is false and would slip through.
+    if (!(this.budgetPerTeam >= 100 && this.budgetPerTeam <= 2000)) {
       errors.push('Budget per team must be between $100 and $2000')
     }
     

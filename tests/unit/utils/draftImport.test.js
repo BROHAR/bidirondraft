@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseDraftCsv, splitCsvFields, EXAMPLE_HEADER } from '../../../src/utils/draftImport.js'
+import { parseDraftCsv, splitCsvFields, EXAMPLE_HEADER, MAX_ROWS } from '../../../src/utils/draftImport.js'
 
 // Vitest runs from the repo root. The golden fixture is an anonymized copy of
 // a real 2025 league draft (team names swapped for Team A..J; players, prices,
@@ -119,5 +119,35 @@ describe('parseDraftCsv — validation', () => {
   it('returns an empty-file error on blank input and never throws', () => {
     expect(parseDraftCsv('').errors.length).toBe(1)
     expect(parseDraftCsv(null).errors.length).toBe(1)
+  })
+
+  it('length-caps player and fantasy team names at 128 chars', () => {
+    const longName = 'X'.repeat(500)
+    const r = parseDraftCsv(`${HEADER}\n1,${longName},KC,QB,5,${longName}`)
+    expect(r.records[0].name).toBe('X'.repeat(128))
+    expect(r.records[0].fantasyTeam).toBe('X'.repeat(128))
+  })
+
+  it(`accepts up to ${MAX_ROWS} rows and errors cleanly above it (never throws)`, () => {
+    const row = i => `${i},Player ${i},KC,RB,${(i % 50) + 1},Team ${i % 12}`
+    const atCap = parseDraftCsv([HEADER, ...Array.from({ length: MAX_ROWS }, (_, i) => row(i + 1))].join('\n'))
+    expect(atCap.errors).toEqual([])
+    expect(atCap.records.length).toBe(MAX_ROWS)
+
+    // 200k rows: the old Math.max spread over per-team spends could RangeError
+    // (breaking the never-throws contract); now the cap rejects with a
+    // user-facing error before any per-row work happens.
+    const huge = parseDraftCsv([HEADER, ...Array.from({ length: 200000 }, (_, i) => row(i + 1))].join('\n'))
+    expect(huge.records).toEqual([])
+    expect(huge.errors.length).toBe(1)
+    expect(huge.errors[0]).toContain('Too many rows')
+  })
+
+  it('computes suggestedBudget without Math.max spreads (large inputs safe)', () => {
+    // One team's spend dominates; reduce must find it.
+    const rows = Array.from({ length: 30 }, (_, i) => `${i + 1},P${i},KC,RB,${i === 7 ? 90 : 5},Team ${i % 3}`)
+    const r = parseDraftCsv([HEADER, ...rows].join('\n'))
+    const maxSpend = Math.max(...r.teams.map(t => t.spend))
+    expect(r.suggestedBudget).toBe(maxSpend)
   })
 })

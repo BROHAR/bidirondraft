@@ -328,4 +328,16 @@ describe('classifyTeams', () => {
     const [t] = classifyTeams(picks, { leagueBudget: 100 })
     expect(t.persona).toBe('Taco')
   })
+
+  // Regression: qbMaxPrice/rbMaxPrice used Math.max(...prices) spreads, which
+  // throw RangeError once a team has ~130k+ picks of one position. The reduce
+  // replacement must survive 200k synthetic records.
+  it('handles 200k-record teams without throwing (Math.max spread regression)', () => {
+    const records = Array.from({ length: 200000 }, (_, i) =>
+      rec(i % 2 === 0 ? 'QB' : 'RB', (i % 40) + 1, { fantasyTeam: 'Huge', name: `P${i}` }))
+    const out = classifyTeams(records)
+    expect(out.length).toBe(1)
+    expect(out[0].name).toBe('Huge')
+    expect(typeof out[0].persona).toBe('string')
+  })
 })

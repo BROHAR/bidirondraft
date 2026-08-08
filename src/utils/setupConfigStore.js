@@ -89,6 +89,30 @@ function sanitizeSpendLimits(value) {
   return limits
 }
 
+// Roster slots the app knows how to draft for — anything else stored under
+// rosterPositions is dropped, and counts are clamped to a sane per-slot range.
+const ROSTER_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SUPERFLEX', 'K', 'DST', 'BENCH']
+
+function sanitizeRosterPositions(value, fallback) {
+  if (!value || typeof value !== 'object') return { ...fallback }
+  const roster = {}
+  for (const slot of ROSTER_SLOTS) {
+    const count = value[slot]
+    if (Number.isInteger(count)) roster[slot] = Math.min(30, Math.max(0, count))
+  }
+  return Object.keys(roster).length > 0 ? roster : { ...fallback }
+}
+
+const SCORING_FORMATS = ['standard', 'halfPPR', 'ppr']
+
+// Seat-indexed string arrays (AI strategies / Taco home teams). Indices must
+// be preserved — a hole means "default for that seat" — so non-strings map to
+// '' rather than being filtered out, mirroring sanitizeTeamNames.
+function sanitizeStringSeats(value) {
+  if (!Array.isArray(value)) return []
+  return value.slice(0, 20).map(v => (typeof v === 'string' ? v.slice(0, 64) : ''))
+}
+
 export function loadSetupState() {
   const defaults = defaultSetupState()
   if (typeof window === 'undefined' || !window.localStorage) return defaults
@@ -99,25 +123,37 @@ export function loadSetupState() {
     if (!parsed || typeof parsed !== 'object') return defaults
     const savedConfig = parsed.config && typeof parsed.config === 'object' ? parsed.config : {}
     const d = defaults.config
-    // Merge over defaults so configs saved before a field existed still load.
     const numberOfTeams = intInRange(savedConfig.numberOfTeams, 2, 20, d.numberOfTeams)
+    // Explicit field allowlist — never spread savedConfig. localStorage is
+    // user-editable, so a blanket spread would let arbitrary extra keys (or
+    // unclamped known keys) ride into the config the whole app trusts. Every
+    // field falls back to its default, so configs saved before a field
+    // existed still load (same forward-compatibility the old merge gave).
     return {
       config: {
-        ...d,
-        ...savedConfig,
         numberOfTeams,
         budgetPerTeam: intInRange(savedConfig.budgetPerTeam, 10, 100000, d.budgetPerTeam),
+        humanTeamName: typeof savedConfig.humanTeamName === 'string'
+          ? savedConfig.humanTeamName.trim().slice(0, MAX_TEAM_NAME_LENGTH) || d.humanTeamName
+          : d.humanTeamName,
         humanDraftPosition: intInRange(savedConfig.humanDraftPosition, 1, numberOfTeams, d.humanDraftPosition),
         nominationTimer: intInRange(savedConfig.nominationTimer, 1, 3600, d.nominationTimer),
         biddingTimer: intInRange(savedConfig.biddingTimer, 1, 3600, d.biddingTimer),
         minBidIncrement: intInRange(savedConfig.minBidIncrement, 1, 1000, d.minBidIncrement),
-        rosterPositions: savedConfig.rosterPositions && typeof savedConfig.rosterPositions === 'object'
-          ? { ...savedConfig.rosterPositions }
-          : d.rosterPositions,
+        scoringFormat: SCORING_FORMATS.includes(savedConfig.scoringFormat)
+          ? savedConfig.scoringFormat
+          : d.scoringFormat,
+        rosterPositions: sanitizeRosterPositions(savedConfig.rosterPositions, d.rosterPositions),
+        autoPilotEnabled: !!savedConfig.autoPilotEnabled,
+        // Any string is a legal strategy key (built-ins plus custom ids);
+        // resolution falls back to Balanced for unknown keys downstream.
+        autoPilotStrategy: typeof savedConfig.autoPilotStrategy === 'string' && savedConfig.autoPilotStrategy
+          ? savedConfig.autoPilotStrategy.slice(0, 64)
+          : d.autoPilotStrategy,
         positionalSpendLimits: sanitizeSpendLimits(savedConfig.positionalSpendLimits),
         positionValueFactors: sanitizePositionValueFactors(savedConfig.positionValueFactors),
-        aiTeamStrategies: Array.isArray(savedConfig.aiTeamStrategies) ? savedConfig.aiTeamStrategies : [],
-        aiTeamHomeTeams: Array.isArray(savedConfig.aiTeamHomeTeams) ? savedConfig.aiTeamHomeTeams : [],
+        aiTeamStrategies: sanitizeStringSeats(savedConfig.aiTeamStrategies),
+        aiTeamHomeTeams: sanitizeStringSeats(savedConfig.aiTeamHomeTeams),
         aiTeamNames: sanitizeTeamNames(savedConfig.aiTeamNames),
         // Keeper entries for seats beyond the loaded team count are dropped —
         // they'd only resurface as launch-blocking validation errors.

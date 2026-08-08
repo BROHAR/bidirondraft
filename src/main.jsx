@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { enableMapSet } from 'immer'
 import App from './App.jsx'
 import BrowserHistoryGate from './components/BrowserHistoryGate.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { useDraftStore } from './store/draftStore.js'
 import { initAnalyticsTracker } from './services/analyticsService.js'
 import './styles/design-tokens.css'
@@ -32,9 +33,13 @@ import './styles/components/emailSignup.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* History integration lives beside App so its Back-navigation dialog
-        survives App's early-return screen branches (App.jsx untouched). */}
-    <BrowserHistoryGate />
-    <App />
+    {/* Boundary around everything: a render throw shows a recovery card
+        instead of unmounting the root to a blank page. */}
+    <ErrorBoundary>
+      {/* History integration lives beside App so its Back-navigation dialog
+          survives App's early-return screen branches (App.jsx untouched). */}
+      <BrowserHistoryGate />
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 )

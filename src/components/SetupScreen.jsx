@@ -13,7 +13,7 @@ import {
   applyOverrides,
   countOverrides,
 } from '../utils/playerOverrides'
-import { loadSetupState, saveSetupState } from '../utils/setupConfigStore'
+import { loadSetupState, saveSetupState, MAX_TEAM_NAME_LENGTH } from '../utils/setupConfigStore'
 import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
 import { buildSuperflexValueDeltas } from '../utils/superflexValueAdjustment'
 import {
@@ -580,6 +580,7 @@ function SetupScreen() {
                 value={config.humanTeamName}
                 onChange={(e) => handleConfigChange('humanTeamName', e.target.value)}
                 placeholder="Enter your team name"
+                maxLength={MAX_TEAM_NAME_LENGTH}
               />
             </div>
 

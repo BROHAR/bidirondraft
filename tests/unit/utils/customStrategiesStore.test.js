@@ -35,6 +35,32 @@ describe('customStrategiesStore', () => {
     expect(loaded[0].id).toBe('ok')
   })
 
+  // The builder clamps on write, but localStorage is hand-editable, so the
+  // same clamps re-apply on load — a stored 50× multiplier or 0.99 skip
+  // probability must never reach the bidding engine.
+  it('re-applies knob clamps on load (hand-edited storage)', () => {
+    window.localStorage.setItem(KEY, JSON.stringify([{
+      id: 'a',
+      name: 'Wild',
+      baseKey: 'Balanced',
+      positionMultipliers: { QB: 50, RB: 0.001, WR: 1.3, TE: NaN, K: 'x', HACKER: 3 },
+      skipProbability: 0.99,
+    }]))
+    const [def] = loadCustomStrategies()
+    expect(def.positionMultipliers).toEqual({ QB: 2.0, RB: 0.5, WR: 1.3 })
+    expect(def.skipProbability).toBe(0.45)
+  })
+
+  it('drops a non-numeric skipProbability and clamps the low end', () => {
+    window.localStorage.setItem(KEY, JSON.stringify([
+      { id: 'a', name: 'A', skipProbability: 'often' },
+      { id: 'b', name: 'B', skipProbability: 0.0001 },
+    ]))
+    const [a, b] = loadCustomStrategies()
+    expect('skipProbability' in a).toBe(false)
+    expect(b.skipProbability).toBe(0.02)
+  })
+
   describe('upsertCustomStrategy', () => {
     it('appends a new definition', () => {
       const next = upsertCustomStrategy([], { id: 'a', name: 'A' })

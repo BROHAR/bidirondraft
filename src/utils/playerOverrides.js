@@ -1,12 +1,43 @@
 const STORAGE_KEY = 'adraft.playerOverrides.v1'
 
+// Value bounds for stored overrides. estimatedValue mirrors the caps other
+// stores use for dollar figures; projectedPoints just has to be a finite
+// number under a known scoring-format key.
+const MAX_ESTIMATED_VALUE = 100000
+const SCORING_FORMATS = ['standard', 'halfPPR', 'ppr']
+
+// localStorage is user-editable, so nothing read from it is trusted as-is:
+// keep only well-shaped entries and drop the rest (same posture as the
+// sibling stores — drop, don't repair). Exported for tests.
+export function sanitizeOverrides(parsed) {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+  const clean = {}
+  for (const [playerId, entry] of Object.entries(parsed)) {
+    if (!entry || typeof entry !== 'object') continue
+    const out = {}
+    const ev = entry.estimatedValue
+    if (typeof ev === 'number' && Number.isFinite(ev) && ev >= 0 && ev <= MAX_ESTIMATED_VALUE) {
+      out.estimatedValue = ev
+    }
+    if (entry.projectedPoints && typeof entry.projectedPoints === 'object') {
+      const pp = {}
+      for (const format of SCORING_FORMATS) {
+        const v = entry.projectedPoints[format]
+        if (typeof v === 'number' && Number.isFinite(v)) pp[format] = v
+      }
+      if (Object.keys(pp).length > 0) out.projectedPoints = pp
+    }
+    if (Object.keys(out).length > 0) clean[playerId] = out
+  }
+  return clean
+}
+
 export function loadOverrides() {
   if (typeof window === 'undefined' || !window.localStorage) return {}
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    return sanitizeOverrides(JSON.parse(raw))
   } catch {
     return {}
   }

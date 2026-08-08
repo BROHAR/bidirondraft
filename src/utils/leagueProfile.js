@@ -293,9 +293,10 @@ function teamFeatures(picks, norm) {
     kdstCount: byPos('K').length + byPos('DST').length,
     nflCluster,
     clusterTeam,
-    qbMaxPrice: Math.max(0, ...qbPrices),
+    // reduce, not Math.max spreads — spreading huge arrays throws RangeError.
+    qbMaxPrice: qbPrices.reduce((max, v) => Math.max(max, v), 0),
     qbTotalSpend: qbPrices.reduce((s, v) => s + v, 0),
-    rbMaxPrice: Math.max(0, ...rbPrices),
+    rbMaxPrice: rbPrices.reduce((max, v) => Math.max(max, v), 0),
     rbCountAbove: min => rbPrices.filter(v => v >= min).length,
     wrTeSpendShare: total > 0 ? wrTeSpend / total : 0,
     leftover: Math.max(0, REFERENCE_BUDGET - total),
