@@ -23,6 +23,7 @@ export function defaultDraftConfig() {
     biddingTimer: 20,
     minBidIncrement: 1,
     scoringFormat: 'halfPPR',
+    projectionSource: 'espn',
     rosterPositions: { ...DEFAULT_CONFIGS.standard.rosterPositions },
     autoPilotEnabled: false,
     autoPilotStrategy: 'Balanced',
@@ -104,6 +105,7 @@ function sanitizeRosterPositions(value, fallback) {
 }
 
 const SCORING_FORMATS = ['standard', 'halfPPR', 'ppr']
+const PROJECTION_SOURCES = ['espn', 'fantasyPros']
 
 // Seat-indexed string arrays (AI strategies / Taco home teams). Indices must
 // be preserved — a hole means "default for that seat" — so non-strings map to
@@ -143,6 +145,9 @@ export function loadSetupState() {
         scoringFormat: SCORING_FORMATS.includes(savedConfig.scoringFormat)
           ? savedConfig.scoringFormat
           : d.scoringFormat,
+        projectionSource: PROJECTION_SOURCES.includes(savedConfig.projectionSource)
+          ? savedConfig.projectionSource
+          : d.projectionSource,
         rosterPositions: sanitizeRosterPositions(savedConfig.rosterPositions, d.rosterPositions),
         autoPilotEnabled: !!savedConfig.autoPilotEnabled,
         // Any string is a legal strategy key (built-ins plus custom ids);

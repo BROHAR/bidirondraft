@@ -14,6 +14,7 @@ import {
   countOverrides,
 } from '../utils/playerOverrides'
 import { loadSetupState, saveSetupState, MAX_TEAM_NAME_LENGTH } from '../utils/setupConfigStore'
+import { applyProjectionSource } from '../utils/projectionSource'
 import { buildFormatValueDeltas } from '../utils/formatValueAdjustment'
 import { buildSuperflexValueDeltas } from '../utils/superflexValueAdjustment'
 import {
@@ -141,9 +142,17 @@ function SetupScreen() {
     saveSetupState({ config, aiBidderProfilesEnabled, leagueProfileEnabled, metaDraftsPerStrategy, launchMode })
   }, [config, aiBidderProfilesEnabled, leagueProfileEnabled, metaDraftsPerStrategy, launchMode])
 
+  // The pool with the configured projection source applied — every consumer
+  // below (drafts, sims, modals, deltas) reads projections through this, so
+  // the ESPN/FantasyPros toggle changes the numbers everywhere at once.
+  // Players FantasyPros doesn't project keep their ESPN numbers.
+  const sourcedPlayersData = useMemo(
+    () => applyProjectionSource(playersData, config.projectionSource),
+    [config.projectionSource]
+  )
   const customizedPlayersData = useMemo(
-    () => applyOverrides(playersData, playerOverrides),
-    [playerOverrides]
+    () => applyOverrides(sourcedPlayersData, playerOverrides),
+    [sourcedPlayersData, playerOverrides]
   )
   const overrideCount = countOverrides(playerOverrides)
 
@@ -151,12 +160,12 @@ function SetupScreen() {
   // player modals show format-adjusted values so users customize against the
   // same book the draft will actually use.
   const formatDeltas = useMemo(
-    () => buildFormatValueDeltas(playersData.players, {
+    () => buildFormatValueDeltas(sourcedPlayersData.players, {
       scoringFormat: config.scoringFormat,
       numberOfTeams: config.numberOfTeams,
       rosterPositions: config.rosterPositions,
     }),
-    [config.scoringFormat, config.numberOfTeams, config.rosterPositions]
+    [sourcedPlayersData, config.scoringFormat, config.numberOfTeams, config.rosterPositions]
   )
 
   // Imported-league market deltas (same additive $200-space convention as
@@ -164,25 +173,25 @@ function SetupScreen() {
   // matching what the engine will apply at launch.
   const leagueDeltas = useMemo(
     () => (leagueProfileEnabled && leagueProfile
-      ? buildLeagueProfileDeltas(playersData.players, leagueProfile)
+      ? buildLeagueProfileDeltas(sourcedPlayersData.players, leagueProfile)
       : new Map()),
-    [leagueProfileEnabled, leagueProfile]
+    [sourcedPlayersData, leagueProfileEnabled, leagueProfile]
   )
 
   // Superflex / 2QB QB rescale — mirrors the engine's pre-anchor adjustment
   // so the modals preview the QB market the draft will actually use.
   const superflexDeltas = useMemo(
-    () => buildSuperflexValueDeltas(playersData.players, {
+    () => buildSuperflexValueDeltas(sourcedPlayersData.players, {
       numberOfTeams: config.numberOfTeams,
       rosterPositions: config.rosterPositions,
     }),
-    [config.numberOfTeams, config.rosterPositions]
+    [sourcedPlayersData, config.numberOfTeams, config.rosterPositions]
   )
 
   // Manual per-position percentages (editable in step 3, League History section).
   const positionDeltas = useMemo(
-    () => buildPositionValueDeltas(playersData.players, config.positionValueFactors),
-    [config.positionValueFactors]
+    () => buildPositionValueDeltas(sourcedPlayersData.players, config.positionValueFactors),
+    [sourcedPlayersData, config.positionValueFactors]
   )
 
   // Every pre-anchor book adjustment the engine will apply, combined — the
@@ -605,6 +614,17 @@ function SetupScreen() {
                 <option value="standard">Standard</option>
                 <option value="halfPPR">Half PPR</option>
                 <option value="ppr">PPR</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Point Projections</label>
+              <select
+                value={config.projectionSource}
+                onChange={(e) => handleConfigChange('projectionSource', e.target.value)}
+              >
+                <option value="espn">ESPN</option>
+                <option value="fantasyPros">FantasyPros</option>
               </select>
             </div>
 
@@ -1110,7 +1130,7 @@ function SetupScreen() {
       <PlayerCustomizationModal
         isOpen={showCustomizationModal}
         onClose={() => setShowCustomizationModal(false)}
-        basePlayers={playersData.players}
+        basePlayers={sourcedPlayersData.players}
         overrides={playerOverrides}
         scoringFormat={config.scoringFormat}
         budgetPerTeam={config.budgetPerTeam}

@@ -269,6 +269,9 @@ export async function processCsv(csvPath, yahooCsvPath = null) {
         team: p.team,
         estimatedValue,
         projectedPoints: p.projectedPoints,
+        // FantasyPros projections come from a separate manual import
+        // (npm run import-fantasypros) — carry them across ESPN refreshes.
+        ...(old.projectedPointsFP ? { projectedPointsFP: old.projectedPointsFP } : {}),
         byeWeek: byeWeekForTeam(p.team),
         injuryStatus: p.injuryStatus || '',
       }

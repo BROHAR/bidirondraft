@@ -202,6 +202,13 @@ describe('setupConfigStore', () => {
     expect(loadSetupState().config.scoringFormat).toBe('ppr')
   })
 
+  it('rejects unknown projectionSource values', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { projectionSource: 'psychicHotline' } }))
+    expect(loadSetupState().config.projectionSource).toBe('espn')
+    window.localStorage.setItem(KEY, JSON.stringify({ config: { projectionSource: 'fantasyPros' } }))
+    expect(loadSetupState().config.projectionSource).toBe('fantasyPros')
+  })
+
   it('maps non-string AI strategy/home-team seats to empty strings (indices preserved)', () => {
     window.localStorage.setItem(KEY, JSON.stringify({
       config: {

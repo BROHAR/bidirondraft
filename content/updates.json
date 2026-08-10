@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-09",
+    "title": "Choose your projections: ESPN or FantasyPros",
+    "summary": "League Settings has a new Point Projections option that lets you run your drafts on FantasyPros projections instead of ESPN's. The two sources disagree by 15-20 points on some first-round players, so it's an easy way to see how a different set of projections changes who's worth what in your league.",
+    "tags": [
+      "new-feature",
+      "setup"
+    ]
+  },
+  {
     "date": "2026-08-08",
     "title": "Flex and Superflex filters in Build-a-Champ",
     "summary": "The Build-a-Champ player market now has FLEX and SUPERFLEX filters, so you can browse every flex-eligible player (RB/WR/TE) or superflex-eligible player (QB/RB/WR/TE) at once instead of checking one position at a time.",

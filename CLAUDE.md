@@ -85,6 +85,10 @@ After it finishes, optionally:
 
 Expected runtime: ~15-30 seconds. ESPN is a single JSON API request; the only browser work is the Yahoo page scrape.
 
+### FantasyPros projections — `npm run import-fantasypros`
+
+A second, manually-fed projection source. The user downloads per-position CSVs from fantasypros.com/nfl/projections into `data/projections/` (named `FantasyPros_Fantasy_Football_Projections_<POS>.csv`, POS ∈ QB/RB/WR/TE/K/DST), then `npm run import-fantasypros` merges them into `src/data/players.json` as `projectedPointsFP` next to the ESPN-derived `projectedPoints` (same scoring math, computed in `scripts/import-fantasypros/index.mjs`; columns are mapped positionally because FantasyPros repeats header names across stat groups). The Setup screen's "Point Projections" option (`config.projectionSource`) picks which block feeds drafts via `src/utils/projectionSource.js`; players without FP data fall back to ESPN numbers. `refresh-projections` preserves `projectedPointsFP` across ESPN refreshes; the import aborts if <200 FP players match the pool.
+
 ### What the refresh does
 
 Implemented in `scripts/refresh-projections/`:
