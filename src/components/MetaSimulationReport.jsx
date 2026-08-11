@@ -259,7 +259,7 @@ function WinnersTab({ winningComposition: wc }) {
 // recommended strategy comes together (rather than one synthesized "dream
 // team"). If the scorecard leader never won a league outright, the selection
 // falls down the ranking to the best strategy with winners on record.
-function BlueprintsTab({ blueprints: bp, leaderName }) {
+function BlueprintsTab({ blueprints: bp, leaderName, onBuildInChamp }) {
   if (!bp || !bp.teams.length) {
     return <div className="analysis-section"><p className="meta-foot-note">No winning rosters recorded.</p></div>
   }
@@ -282,6 +282,12 @@ function BlueprintsTab({ blueprints: bp, leaderName }) {
             <span className="meta-blueprint-stats">
               {t.starterPoints.toFixed(0)} starter pts · ${t.totalSpent} spent · {t.benchCount} bench
             </span>
+            <button
+              className="meta-blueprint-champ"
+              onClick={() => onBuildInChamp(`${bp.strategyName} build ${i + 1}`, t.starters, 'blueprints')}
+            >
+              Open in Build-a-Champ →
+            </button>
           </div>
           <table className="meta-scorecard">
             <thead>
@@ -314,7 +320,7 @@ function BlueprintsTab({ blueprints: bp, leaderName }) {
 // The best-possible budget team for each of the top strategies: the post-draft
 // Dream Team optimizer run over the players each strategy typically acquires,
 // priced at what it typically pays. One ideal lineup per strategy, top 5.
-function DreamTeamsTab({ dreamTeams }) {
+function DreamTeamsTab({ dreamTeams, onBuildInChamp }) {
   if (!dreamTeams || !dreamTeams.length) {
     return <div className="analysis-section"><p className="meta-foot-note">No dream teams available.</p></div>
   }
@@ -333,6 +339,12 @@ function DreamTeamsTab({ dreamTeams }) {
             <span className="meta-blueprint-stats">
               {dt.totalPoints.toFixed(0)} pts · ${dt.totalCost} spent · {(dt.winRate * 100).toFixed(0)}% win rate
             </span>
+            <button
+              className="meta-blueprint-champ"
+              onClick={() => onBuildInChamp(`${dt.strategyName} dream team`, dt.rows.filter(r => r.id), 'dream_teams')}
+            >
+              Open in Build-a-Champ →
+            </button>
           </div>
           <table className="meta-scorecard">
             <thead>
@@ -366,6 +378,16 @@ export default function MetaSimulationReport() {
   const result = useDraftStore(state => state.metaSim.result)
   const closeMetaResults = useDraftStore(state => state.closeMetaResults)
   const [activeTab, setActiveTab] = useState(0)
+  // A roster handed to Build-a-Champ from the Blueprints / Dream Teams tabs.
+  // Shaped like a saved roster ({ name, players }) so the champ tab can reuse
+  // its saved-roster resolution against the sim's player market.
+  const [champTransfer, setChampTransfer] = useState(null)
+
+  const openInChamp = (name, players, source) => {
+    setChampTransfer({ name, players: players.map(p => ({ id: p.id, name: p.name })) })
+    track('champ_roster_transferred', { source, players: players.length })
+    setActiveTab(TABS.indexOf('Build-a-Champ'))
+  }
 
   if (!result) {
     return (
@@ -423,9 +445,9 @@ export default function MetaSimulationReport() {
         {activeTab === 1 && <StrengthsTab summaries={summaries} fieldAverages={fieldAverages} />}
         {activeTab === 2 && <WhyTab summaries={summaries} fieldAverages={fieldAverages} />}
         {activeTab === 3 && <WinnersTab winningComposition={winningComposition} />}
-        {activeTab === 4 && <BlueprintsTab blueprints={blueprints} leaderName={leader?.strategyName} />}
-        {activeTab === 5 && <DreamTeamsTab dreamTeams={dreamTeams} />}
-        {activeTab === 6 && <BuildAChampTab result={result} />}
+        {activeTab === 4 && <BlueprintsTab blueprints={blueprints} leaderName={leader?.strategyName} onBuildInChamp={openInChamp} />}
+        {activeTab === 5 && <DreamTeamsTab dreamTeams={dreamTeams} onBuildInChamp={openInChamp} />}
+        {activeTab === 6 && <BuildAChampTab result={result} transfer={champTransfer} />}
       </div>
     </div>
   )

@@ -137,6 +137,7 @@
 
 .meta-blueprint-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-3);
@@ -154,6 +155,22 @@
   font-family: var(--font-numeric);
   font-size: var(--fs-sm);
   color: var(--fg3);
+}
+
+/* Link-styled button that carries a blueprint / dream team into Build-a-Champ. */
+.meta-blueprint-champ {
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--gold-700);
+  padding: 0 0 1px;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-500);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .meta-spend-row {

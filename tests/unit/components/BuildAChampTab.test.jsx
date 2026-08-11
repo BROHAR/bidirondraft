@@ -132,6 +132,21 @@ describe('BuildAChampTab', () => {
     expect(screen.getByText('Bijan Robinson')).toBeTruthy()
   })
 
+  it('seeds the roster from a transferred build', () => {
+    const transfer = { name: 'HeroRB build 1', players: [{ id: 'qb1', name: 'Josh Allen' }, { id: 'rb1', name: 'Bijan Robinson' }] }
+    render(<BuildAChampTab result={makeResult()} transfer={transfer} />)
+    expect(screen.getByText('2 / 3')).toBeTruthy()
+    expect(screen.getByText(/Loaded "HeroRB build 1"/)).toBeTruthy()
+    expect(screen.getByPlaceholderText('Roster name').value).toBe('HeroRB build 1')
+  })
+
+  it('reports transferred players missing from the market', () => {
+    const transfer = { name: 'Dream', players: [{ id: 'qb1', name: 'Josh Allen' }, { id: 'ghost', name: 'Casper Wentz' }] }
+    render(<BuildAChampTab result={makeResult()} transfer={transfer} />)
+    expect(screen.getByText('1 / 3')).toBeTruthy()
+    expect(screen.getByText(/Casper Wentz was not in the player market/)).toBeTruthy()
+  })
+
   it('shows a fallback when the report has no market data', () => {
     render(<BuildAChampTab result={makeResult({ playerPool: [] })} />)
     expect(screen.getByText(/run a new meta simulation/i)).toBeTruthy()

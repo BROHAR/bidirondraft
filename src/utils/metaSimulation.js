@@ -258,6 +258,7 @@ export function buildWinnerBlueprint(team, rosterPositions, strategyName, seed, 
     for (const p of slots[slot] || []) {
       starters.push({
         slot,
+        id: p.id,
         name: p.name,
         position: p.position,
         team: p.team,
@@ -377,6 +378,7 @@ export function buildStrategyDreamTeams(strategyPools, winRateByStrategy, roster
     const dream = buildDreamTeam([{ name: strategyName, roster }], [], rosterPositions, budgetPerTeam)
     const rows = dream.rows.map(r => ({
       slotLabel: r.slotLabel,
+      id: r.player?.id || null,
       name: r.player?.name || null,
       position: r.player?.position || null,
       team: r.player?.team || null,

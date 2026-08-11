@@ -46,15 +46,15 @@ function makeResult(overrides = {}) {
         {
           strategyName: 'HeroRB', seed: 1, starterPoints: 1180, totalSpent: 198, benchCount: 6,
           starters: [
-            { slot: 'QB', name: 'Josh Allen', position: 'QB', team: 'BUF', price: 12, points: 320 },
-            { slot: 'RB', name: 'Bijan Robinson', position: 'RB', team: 'ATL', price: 62, points: 317 },
+            { slot: 'QB', id: 'qb1', name: 'Josh Allen', position: 'QB', team: 'BUF', price: 12, points: 320 },
+            { slot: 'RB', id: 'rb1', name: 'Bijan Robinson', position: 'RB', team: 'ATL', price: 62, points: 317 },
           ],
         },
         {
           strategyName: 'HeroRB', seed: 2, starterPoints: 1120, totalSpent: 200, benchCount: 6,
           starters: [
-            { slot: 'QB', name: 'Jalen Hurts', position: 'QB', team: 'PHI', price: 10, points: 300 },
-            { slot: 'RB', name: 'Saquon Barkley', position: 'RB', team: 'PHI', price: 55, points: 310 },
+            { slot: 'QB', id: 'qb2', name: 'Jalen Hurts', position: 'QB', team: 'PHI', price: 10, points: 300 },
+            { slot: 'RB', id: 'rb2', name: 'Saquon Barkley', position: 'RB', team: 'PHI', price: 55, points: 310 },
           ],
         },
       ],
@@ -63,19 +63,29 @@ function makeResult(overrides = {}) {
       {
         strategyName: 'HeroRB', winRate: 0.5, totalPoints: 1600, totalCost: 190,
         rows: [
-          { slotLabel: 'QB', name: 'Josh Allen', position: 'QB', team: 'BUF', price: 12, points: 320 },
-          { slotLabel: 'RB', name: 'Bijan Robinson', position: 'RB', team: 'ATL', price: 62, points: 317 },
-          { slotLabel: 'DST', name: null, position: null, team: null, price: 0, points: 0 },
+          { slotLabel: 'QB', id: 'qb1', name: 'Josh Allen', position: 'QB', team: 'BUF', price: 12, points: 320 },
+          { slotLabel: 'RB', id: 'rb1', name: 'Bijan Robinson', position: 'RB', team: 'ATL', price: 62, points: 317 },
+          { slotLabel: 'DST', id: null, name: null, position: null, team: null, price: 0, points: 0 },
         ],
       },
       {
         strategyName: 'Balanced', winRate: 0.333, totalPoints: 1550, totalCost: 195,
         rows: [
-          { slotLabel: 'QB', name: 'Jalen Hurts', position: 'QB', team: 'PHI', price: 10, points: 300 },
+          { slotLabel: 'QB', id: 'qb2', name: 'Jalen Hurts', position: 'QB', team: 'PHI', price: 10, points: 300 },
         ],
       },
     ],
     ranking: ['Balanced'],
+    // Build-a-Champ inputs, so transfers from Blueprints/Dream Teams resolve.
+    rosterPositions: { QB: 1, RB: 1, BENCH: 1 },
+    budgetPerTeam: 200,
+    leagueBenchmark: { teamStarterPoints: [1000, 1100, 1200] },
+    playerPool: [
+      { id: 'qb1', name: 'Josh Allen', position: 'QB', team: 'BUF', projectedPoints: 320, avgPrice: 12, timesDrafted: 6, draftRate: 1 },
+      { id: 'rb1', name: 'Bijan Robinson', position: 'RB', team: 'ATL', projectedPoints: 317, avgPrice: 62, timesDrafted: 6, draftRate: 1 },
+      { id: 'qb2', name: 'Jalen Hurts', position: 'QB', team: 'PHI', projectedPoints: 300, avgPrice: 10, timesDrafted: 6, draftRate: 1 },
+      { id: 'rb2', name: 'Saquon Barkley', position: 'RB', team: 'PHI', projectedPoints: 310, avgPrice: 55, timesDrafted: 6, draftRate: 1 },
+    ],
     ...overrides,
   }
 }
@@ -119,6 +129,27 @@ describe('MetaSimulationReport — Winners & Points tabs', () => {
     // Strategy names head each card; an empty slot renders an em dash.
     expect(screen.getByText('Jalen Hurts')).toBeTruthy()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('transfers a blueprint into Build-a-Champ with its players selected', () => {
+    render(<MetaSimulationReport />)
+    fireEvent.click(screen.getByRole('button', { name: 'Blueprints' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /Open in Build-a-Champ/ })[1])
+    // Landed on the champ tab with build 2's roster loaded and named.
+    expect(screen.getByText('Player market')).toBeTruthy()
+    expect(screen.getByText(/Loaded "HeroRB build 2"/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove Jalen Hurts' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove Saquon Barkley' })).toBeTruthy()
+    expect(screen.getByPlaceholderText('Roster name').value).toBe('HeroRB build 2')
+  })
+
+  it('transfers a dream team into Build-a-Champ, skipping empty slots', () => {
+    render(<MetaSimulationReport />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dream Teams' }))
+    fireEvent.click(screen.getAllByRole('button', { name: /Open in Build-a-Champ/ })[0])
+    expect(screen.getByText(/Loaded "HeroRB dream team"/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove Josh Allen' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove Bijan Robinson' })).toBeTruthy()
   })
 
   it('renders empty states when there are no winning rosters', () => {

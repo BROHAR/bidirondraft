@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-10",
+    "title": "Send winning builds straight to Build-a-Champ",
+    "summary": "Every roster on the meta sim's Blueprints and Dream Teams tabs now has an Open in Build-a-Champ link. One click loads that build into Build-a-Champ with the roster name pre-filled, so you can tweak it, boost players, fill out the bench, and save it as your draft-day target.",
+    "tags": [
+      "new-feature",
+      "ai"
+    ]
+  },
+  {
     "date": "2026-08-09",
     "title": "Choose your projections: ESPN or FantasyPros",
     "summary": "League Settings has a new Point Projections option that lets you run your drafts on FantasyPros projections instead of ESPN's. The two sources disagree by 15-20 points on some first-round players, so it's an easy way to see how a different set of projections changes who's worth what in your league.",

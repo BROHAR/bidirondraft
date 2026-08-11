@@ -18,16 +18,30 @@ const POOL_ROW_LIMIT = 150
 // drafted, priced at the average the configured league pays for each. A boost
 // % per player bends their projection, and the roster is scored/ranked against
 // every simulated team. Rosters persist to localStorage across meta sims.
-export default function BuildAChampTab({ result }) {
+export default function BuildAChampTab({ result, transfer }) {
   const { playerPool, leagueBenchmark, rosterPositions, numberOfTeams, budgetPerTeam } = result
-  const [selection, setSelection] = useState([])
+  const poolById = useMemo(() => new Map((playerPool || []).map(p => [p.id, p])), [playerPool])
+
+  // A roster handed over from the Blueprints / Dream Teams tabs ({ name,
+  // players } — the saved-roster shape). Resolved into initial state only:
+  // the tab remounts on every tab switch, so no effect is needed, and
+  // re-opening the tab re-seeds the same build.
+  const transferLoad = useMemo(
+    () => (transfer ? resolveSavedRoster(transfer, poolById) : null),
+    [transfer, poolById]
+  )
+  const [selection, setSelection] = useState(() => (transferLoad ? transferLoad.selection : []))
   const [search, setSearch] = useState('')
   const [posFilter, setPosFilter] = useState('ALL')
   const [savedRosters, setSavedRosters] = useState(() => loadSavedRosters())
-  const [saveName, setSaveName] = useState('')
-  const [notice, setNotice] = useState(null)
-
-  const poolById = useMemo(() => new Map((playerPool || []).map(p => [p.id, p])), [playerPool])
+  const [saveName, setSaveName] = useState(() => (transfer?.name || '').slice(0, 30))
+  const [notice, setNotice] = useState(() => {
+    if (!transferLoad) return null
+    const { missing } = transferLoad
+    return missing.length
+      ? `Loaded "${transfer.name}" — ${missing.join(', ')} ${missing.length === 1 ? 'was' : 'were'} not in the player market and left off.`
+      : `Loaded "${transfer.name}" — tweak it, boost players, or save it.`
+  })
   const entries = useMemo(() => buildChampEntries(selection, poolById), [selection, poolById])
   const projection = useMemo(
     () => computeChampProjection(entries, {
