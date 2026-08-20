@@ -24,8 +24,11 @@ function AuctionBlock() {
     skipPlayerAction
   } = useDraftStore()
 
-  const currentBidderTeam = teams.find(t => t.id === currentBidder)
   const nominatorTeam = teams.find(t => t.id === currentNominator)
+  // An untouched $1 opening bid belongs to the nominator — the engine awards
+  // them the player at $1 if nobody outbids — so show them as the leader.
+  const currentBidderTeam = teams.find(t => t.id === currentBidder) ??
+    (draftState === 'BIDDING' ? nominatorTeam : null)
 
   const replacementLevels = useMemo(() => {
     if (!config?.rosterPositions) return {}
