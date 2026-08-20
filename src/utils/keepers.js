@@ -172,7 +172,7 @@ export function applyResolvedKeepers(resolved, players) {
 // runs per imported pick during render). After collapse+trim, the suffix
 // pattern needs no `\s+` and cannot backtrack. The length cap bounds work on
 // adversarial single-token input; no real player name approaches 128 chars.
-function nameKey(name) {
+export function nameKey(name) {
   return String(name || '')
     .slice(0, 128)
     .toLowerCase()

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import PlayerCustomizationModal from '../../../src/components/PlayerCustomizationModal.jsx'
 
 const PLAYERS = [
@@ -52,5 +52,49 @@ describe('PlayerCustomizationModal', () => {
   it('shows format-specific base points', () => {
     renderModal({ scoringFormat: 'ppr' })
     expect(screen.getByText('250.0')).toBeTruthy()
+  })
+
+  describe('CSV import', () => {
+    const openImport = () => fireEvent.click(screen.getByRole('button', { name: 'Import CSV' }))
+    const pasteCsv = (text) =>
+      fireEvent.change(screen.getByPlaceholderText(/Player,Position,Value,Points/), { target: { value: text } })
+
+    it('previews and applies a pasted CSV as overrides', () => {
+      const onChange = vi.fn()
+      renderModal({ onChange })
+      openImport()
+      pasteCsv('Player,Position,Value,Points\nPuka Nacua,WR,52,240.5')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+      expect(screen.getByText(/1 player matched/)).toBeTruthy()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Apply 1 Player' }))
+      expect(onChange).toHaveBeenCalledWith({
+        wr1: { estimatedValue: 52, projectedPoints: { halfPPR: 240.5 } },
+      })
+    })
+
+    it('shows a parse error instead of applying an unusable file', () => {
+      const onChange = vi.fn()
+      renderModal({ onChange })
+      openImport()
+      pasteCsv('Foo,Bar\n1,2')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+      expect(screen.getByText(/No player-name column found/)).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Apply' }).disabled).toBe(true)
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it('surfaces skipped rows as warnings in the preview', () => {
+      renderModal()
+      openImport()
+      pasteCsv('Player,Position,Value\nPuka Nacua,WR,40\nRetired Guy,RB,10')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+      expect(screen.getByText(/1 player matched/)).toBeTruthy()
+      expect(screen.getByText(/1 row skipped or flagged/)).toBeTruthy()
+      expect(screen.getByText(/"Retired Guy" \(RB\) not found in the player pool/)).toBeTruthy()
+    })
   })
 })

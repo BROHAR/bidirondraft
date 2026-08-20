@@ -51,6 +51,9 @@
 
 .customization-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .customization-badge {
@@ -84,6 +87,67 @@
 
 .customization-help strong {
   color: var(--fg1);
+}
+
+/* --- Values CSV import panel ---------------------------------------------- */
+.values-import-panel {
+  background: var(--bg-card-alt);
+  border: 2px solid var(--gray-950);
+  border-radius: 0;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  flex-shrink: 0;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.values-import-panel .section-hint {
+  margin: 0 0 var(--space-2);
+}
+
+.values-import-header-example {
+  display: block;
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.values-import-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.values-import-textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: var(--fs-sm);
+  resize: vertical;
+}
+
+.values-import-summary {
+  font-size: var(--fs-sm);
+  color: var(--fg1);
+  margin-bottom: var(--space-2);
+}
+
+.values-import-warnings {
+  margin: 0 0 var(--space-2);
+  padding-left: var(--space-4);
+  font-size: var(--fs-xs);
+  color: var(--fg2);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.values-import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
 .customization-list {

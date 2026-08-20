@@ -1,10 +1,15 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import {
   setEstimatedValueOverride,
   setProjectedPointsOverride,
   clearPlayerOverride,
   countOverrides,
 } from '../utils/playerOverrides'
+import {
+  parsePlayerValuesCsv,
+  mergeImportedOverrides,
+  EXAMPLE_HEADER,
+} from '../utils/playerValuesImport'
 import { scaleValueToBudget } from '../utils/budgetScaling'
 
 const SCORING_LABELS = {
@@ -12,6 +17,14 @@ const SCORING_LABELS = {
   halfPPR: 'Half PPR',
   ppr: 'PPR',
 }
+
+// Values CSVs are a few KB; anything past 5 MB is the wrong file, and reading
+// it into state/parsing it would only lock up the tab (same cap as the
+// league draft-history import).
+const MAX_FILE_BYTES = 5 * 1024 * 1024
+// Cap the rendered warning list — a garbled 5000-row file yields thousands of
+// row warnings and rendering them all would swamp the panel.
+const MAX_SHOWN_WARNINGS = 6
 
 function parseNumber(raw) {
   if (raw === '' || raw === null || raw === undefined) return null
@@ -33,6 +46,11 @@ function PlayerCustomizationModal({
   const [searchTerm, setSearchTerm] = useState('')
   const [positionFilter, setPositionFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState('estimatedValue')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importError, setImportError] = useState(null)
+  const [importPreview, setImportPreview] = useState(null) // parsePlayerValuesCsv result
+  const fileInputRef = useRef(null)
 
   const filteredPlayers = useMemo(() => {
     // Book values are half-PPR 1-QB; formatDeltas carries every pre-anchor
@@ -76,6 +94,53 @@ function PlayerCustomizationModal({
     if (confirm('Clear all player customizations?')) {
       onClearAll()
     }
+  }
+
+  const resetImport = () => {
+    setImportText('')
+    setImportError(null)
+    setImportPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const toggleImport = () => {
+    if (importOpen) resetImport()
+    setImportOpen(!importOpen)
+  }
+
+  const handleImportFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_FILE_BYTES) {
+      setImportError('That file is over 5 MB — a player values CSV is far smaller. Check that this is the right file.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setImportText(String(reader.result || ''))
+      setImportError(null)
+      setImportPreview(null)
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImportPreview = () => {
+    const result = parsePlayerValuesCsv(importText, basePlayers)
+    if (result.errors.length > 0) {
+      setImportError(result.errors.join(' '))
+      setImportPreview(null)
+      return
+    }
+    setImportError(null)
+    setImportPreview(result)
+  }
+
+  const handleImportApply = () => {
+    if (!importPreview || importPreview.entries.length === 0) return
+    onChange(mergeImportedOverrides(overrides, importPreview.entries, scoringFormat))
+    resetImport()
+    setImportOpen(false)
   }
 
   if (!isOpen) return null
@@ -132,6 +197,12 @@ function PlayerCustomizationModal({
               {modifiedCount > 0 && (
                 <span className="customization-badge">{modifiedCount} customized</span>
               )}
+              <button
+                className={`btn ${importOpen ? 'btn-secondary' : 'btn-outline'}`}
+                onClick={toggleImport}
+              >
+                {importOpen ? 'Close Import' : 'Import CSV'}
+              </button>
             </div>
           </div>
 
@@ -140,6 +211,71 @@ function PlayerCustomizationModal({
               <strong>Customize Players:</strong> Override est value and projected points to match your projections. Edits persist in this browser until cleared.
             </p>
           </div>
+
+          {importOpen && (
+            <div className="values-import-panel">
+              <p className="section-hint">
+                Upload or paste a CSV of your own values and/or projected points. Needs a header row with a player-name
+                column plus a Value and/or Points column (Position recommended), e.g.:
+              </p>
+              <code className="values-import-header-example">{EXAMPLE_HEADER}</code>
+              <div className="values-import-inputs">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  aria-label="Upload values CSV"
+                  onChange={handleImportFile}
+                />
+                <textarea
+                  className="values-import-textarea"
+                  rows={4}
+                  placeholder={`${EXAMPLE_HEADER}\nBijan Robinson,RB,55,290.5\n…`}
+                  value={importText}
+                  onChange={(e) => {
+                    setImportText(e.target.value)
+                    setImportPreview(null)
+                  }}
+                />
+              </div>
+              {importError && <div className="simulate-error">{importError}</div>}
+              {importPreview && (
+                <div className="values-import-preview">
+                  <div className="values-import-summary">
+                    {importPreview.entries.length} player{importPreview.entries.length === 1 ? '' : 's'} matched
+                    {importPreview.warnings.length > 0 && ` · ${importPreview.warnings.length} row${importPreview.warnings.length === 1 ? '' : 's'} skipped or flagged`}
+                    {' '}· values in your league&apos;s dollars, points as {formatLabel}
+                  </div>
+                  {importPreview.warnings.length > 0 && (
+                    <ul className="values-import-warnings">
+                      {importPreview.warnings.slice(0, MAX_SHOWN_WARNINGS).map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                      {importPreview.warnings.length > MAX_SHOWN_WARNINGS && (
+                        <li>…and {importPreview.warnings.length - MAX_SHOWN_WARNINGS} more.</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
+              <div className="values-import-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={handleImportPreview}
+                  disabled={!importText.trim()}
+                >
+                  Preview
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleImportApply}
+                  disabled={!importPreview || importPreview.entries.length === 0}
+                >
+                  {importPreview ? `Apply ${importPreview.entries.length} Player${importPreview.entries.length === 1 ? '' : 's'}` : 'Apply'}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="customization-list">
             <div className="customization-header">

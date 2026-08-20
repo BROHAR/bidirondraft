@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-20",
+    "title": "Upload your own player values as a CSV",
+    "summary": "The Customize Players screen now has an Import CSV option. Upload or paste a spreadsheet with your own auction values and projected points, preview what matched, and apply it in one click instead of typing values player by player. Common column names like AAV, Salary, and FPTS are recognized automatically.",
+    "tags": [
+      "new-feature",
+      "setup"
+    ]
+  },
+  {
     "date": "2026-08-10",
     "title": "Send winning builds straight to Build-a-Champ",
     "summary": "Every roster on the meta sim's Blueprints and Dream Teams tabs now has an Open in Build-a-Champ link. One click loads that build into Build-a-Champ with the roster name pre-filled, so you can tweak it, boost players, fill out the bench, and save it as your draft-day target.",
